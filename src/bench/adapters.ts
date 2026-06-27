@@ -54,6 +54,8 @@ export function buildAgentCommand(agent: AgentId, workspacePath: string): AgentC
   }
 
   const args = [
+    "--ask-for-approval",
+    "never",
     "exec",
     "-C",
     workspacePath,
@@ -66,8 +68,6 @@ export function buildAgentCommand(agent: AgentId, workspacePath: string): AgentC
     'model_reasoning_effort="xhigh"',
     "--sandbox",
     "workspace-write",
-    "--ask-for-approval",
-    "never",
     "--json",
   ];
   return makeCommand(agent, "Codex", "gpt-5.5", "xhigh", "codex", args, workspacePath);
@@ -101,4 +101,3 @@ export function normalizeAgent(input: string): AgentId {
   if (input === "codex") return "codex";
   throw new Error(`Unknown agent: ${input}`);
 }
-

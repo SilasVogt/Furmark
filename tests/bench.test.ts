@@ -31,7 +31,7 @@ describe("benchmark harness", () => {
     const workspace = "/tmp/furmark-workspace";
     expect(buildAgentCommand("claude-code", workspace).command).toContain("claude -p --safe-mode --model claude-opus-4-8");
     expect(buildAgentCommand("opencode", workspace).command).toContain("opencode run --pure --model zai-coding-plan/glm-5.2");
-    expect(buildAgentCommand("codex", workspace).command).toContain("codex exec -C /tmp/furmark-workspace");
+    expect(buildAgentCommand("codex", workspace).command).toContain("codex --ask-for-approval never exec -C /tmp/furmark-workspace");
     expect(buildAgentCommand("codex", workspace).command).toContain("--model gpt-5.5");
   });
 

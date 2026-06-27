@@ -22,6 +22,10 @@ export type RunSelection = {
   task?: TaskId;
   batchId?: string;
   dryRun?: boolean;
+  resume?: boolean;
+  force?: boolean;
+  maxRuns?: number;
+  stopOnError?: boolean;
   installDependencies?: boolean;
   timeoutMs?: number;
 };
@@ -32,36 +36,142 @@ type CaseSpec = {
   task: TaskSpec;
 };
 
+type CaseState = {
+  runId: string;
+  agent: AgentId;
+  mode: Mode;
+  taskId: TaskId;
+  status: "pending" | "running" | "reused" | "passed" | "failed" | "skipped" | "error";
+  previousStatus?: RunResult["status"];
+  startedAt?: string;
+  completedAt?: string;
+};
+
+type BatchRunState = {
+  batchId: string;
+  status: "running" | "paused" | "complete" | "error";
+  timestamp: string;
+  updatedAt: string;
+  resume: boolean;
+  force: boolean;
+  maxRuns: number | null;
+  stopOnError: boolean;
+  totalCases: number;
+  executedRuns: number;
+  reusedRuns: number;
+  completedRuns: number;
+  pendingRuns: number;
+  failedRuns: number;
+  nextRunId: string | null;
+  pauseReason: string | null;
+  cases: CaseState[];
+};
+
 export async function runBenchmark(selection: RunSelection, repoRoot = process.cwd()): Promise<RunResult[]> {
   const tasks = await loadTaskSpecs(repoRoot);
   const cases = selectCases(selection, tasks);
   const batchId = selection.batchId ?? (selection.dryRun ? "dry-run-seed" : makeBatchId());
   const timestamp = selection.dryRun ? "2026-01-01T00:00:00.000Z" : new Date().toISOString();
   const repoCommit = await currentRepoCommit(repoRoot);
-  const runs: RunResult[] = [];
+  const resume = selection.resume ?? !selection.dryRun;
+  const force = selection.force ?? false;
+  const stopOnError = selection.stopOnError ?? !selection.dryRun;
+  const maxRuns = selection.maxRuns ?? null;
+  const logProgress = !selection.dryRun || maxRuns !== null || selection.resume === true;
+  const batchRunsById = await loadExistingBatchRuns(repoRoot, batchId);
+  const selectedRuns: RunResult[] = [];
+  const caseStates: CaseState[] = cases.map((caseSpec) => {
+    const runId = makeRunId(batchId, caseSpec.agent, caseSpec.mode, caseSpec.task.id);
+    const existing = batchRunsById.get(runId);
+    return {
+      runId,
+      agent: caseSpec.agent,
+      mode: caseSpec.mode,
+      taskId: caseSpec.task.id,
+      status: "pending",
+      previousStatus: existing?.status,
+    };
+  });
+  const stateContext = {
+    repoRoot,
+    batchId,
+    timestamp,
+    resume,
+    force,
+    maxRuns,
+    stopOnError,
+    cases: caseStates,
+    executedRuns: 0,
+    reusedRuns: 0,
+    pauseReason: null as string | null,
+  };
+
+  await writeBatchState({ ...stateContext, status: "running" });
 
   for (const caseSpec of cases) {
-    const run = selection.dryRun
-      ? await createDryRun({ repoRoot, batchId, timestamp, repoCommit, ...caseSpec })
-      : await runRealCase({
-          repoRoot,
-          batchId,
-          timestamp,
-          repoCommit,
-          caseSpec,
-          installDependencies: selection.installDependencies ?? true,
-          timeoutMs: selection.timeoutMs ?? 3_600_000,
-        });
-    runs.push(run);
+    const runId = makeRunId(batchId, caseSpec.agent, caseSpec.mode, caseSpec.task.id);
+    const caseState = caseStates.find((candidate) => candidate.runId === runId);
+    if (!caseState) throw new Error(`Missing state for ${runId}`);
+
+    const existing = batchRunsById.get(runId);
+    if (existing && resume && !force && canReuseExistingRun(existing)) {
+      caseState.status = "reused";
+      caseState.completedAt = new Date().toISOString();
+      stateContext.reusedRuns += 1;
+      selectedRuns.push(existing);
+      await writeBatchState({ ...stateContext, status: "running" });
+      if (logProgress) console.log(`[resume] reused ${existing.agent}/${existing.mode}/${existing.taskId} (${existing.status})`);
+      continue;
+    }
+
+    if (maxRuns !== null && stateContext.executedRuns >= maxRuns) {
+      stateContext.pauseReason = `Reached --max-runs ${maxRuns}.`;
+      await writeBatchState({ ...stateContext, status: "paused" });
+      if (logProgress) console.log(`[pause] ${stateContext.pauseReason}`);
+      break;
+    }
+
+    caseState.status = "running";
+    caseState.startedAt = new Date().toISOString();
+    await writeBatchState({ ...stateContext, status: "running" });
+    if (logProgress) console.log(`[run] ${caseSpec.agent}/${caseSpec.mode}/${caseSpec.task.id}`);
+
+    const run = await runOneCase({
+      selection,
+      repoRoot,
+      batchId,
+      timestamp,
+      repoCommit,
+      caseSpec,
+    });
+    stateContext.executedRuns += 1;
+    caseState.status = run.status;
+    caseState.completedAt = new Date().toISOString();
+    batchRunsById.set(run.runId, run);
+    selectedRuns.push(run);
+    await writeRunJson(repoRoot, run);
+    await writeBatchState({ ...stateContext, status: "running" });
+
+    if (stopOnError && (run.status === "failed" || run.status === "error")) {
+      stateContext.pauseReason = `${run.agent}/${run.mode}/${run.taskId} ended with ${run.status}. Resume will retry this case unless --force or --no-resume changes the plan.`;
+      await writeBatchState({ ...stateContext, status: "paused" });
+      if (logProgress) console.log(`[pause] ${stateContext.pauseReason}`);
+      break;
+    }
   }
 
-  withSkillUplifts(runs);
-  await Promise.all(runs.map((run) => writeRunJson(repoRoot, run)));
-  await writeResultIndex({ repoRoot, batchId, timestamp, tasks, runs });
-  return runs;
+  const allBatchRuns = [...batchRunsById.values()];
+  withSkillUplifts(allBatchRuns);
+  await Promise.all(allBatchRuns.map((run) => writeRunJson(repoRoot, run)));
+  await writeResultIndex({ repoRoot, batchId, timestamp, tasks, runs: allBatchRuns });
+  await writeBatchState({
+    ...stateContext,
+    status: stateContext.pauseReason ? "paused" : "complete",
+  });
+  return selectedRuns;
 }
 
-function selectCases(selection: RunSelection, tasks: TaskSpec[]): CaseSpec[] {
+export function selectCases(selection: RunSelection, tasks: TaskSpec[]): CaseSpec[] {
   const agents = selection.matrix === "full" || !selection.agent ? [...AGENTS] : [selection.agent];
   const modes = selection.matrix === "full" || !selection.mode ? [...MODES] : [selection.mode];
   const taskIds = selection.matrix === "full" || !selection.task ? [...TASKS] : [selection.task];
@@ -74,6 +184,38 @@ function selectCases(selection: RunSelection, tasks: TaskSpec[]): CaseSpec[] {
       }),
     ),
   );
+}
+
+async function runOneCase(input: {
+  selection: RunSelection;
+  repoRoot: string;
+  batchId: string;
+  timestamp: string;
+  repoCommit: string;
+  caseSpec: CaseSpec;
+}): Promise<RunResult> {
+  try {
+    return input.selection.dryRun
+      ? await createDryRun({ repoRoot: input.repoRoot, batchId: input.batchId, timestamp: input.timestamp, repoCommit: input.repoCommit, ...input.caseSpec })
+      : await runRealCase({
+          repoRoot: input.repoRoot,
+          batchId: input.batchId,
+          timestamp: input.timestamp,
+          repoCommit: input.repoCommit,
+          caseSpec: input.caseSpec,
+          installDependencies: input.selection.installDependencies ?? true,
+          timeoutMs: input.selection.timeoutMs ?? 3_600_000,
+        });
+  } catch (error) {
+    return createErrorRun({
+      repoRoot: input.repoRoot,
+      batchId: input.batchId,
+      timestamp: input.timestamp,
+      repoCommit: input.repoCommit,
+      caseSpec: input.caseSpec,
+      error,
+    });
+  }
 }
 
 async function runRealCase(input: {
@@ -328,6 +470,73 @@ async function writeSkippedRun(input: {
   });
 }
 
+async function createErrorRun(input: {
+  repoRoot: string;
+  batchId: string;
+  timestamp: string;
+  repoCommit: string;
+  caseSpec: CaseSpec;
+  error: unknown;
+}): Promise<RunResult> {
+  const { agent, mode, task } = input.caseSpec;
+  const runId = makeRunId(input.batchId, agent, mode, task.id);
+  const rawDir = path.join(input.repoRoot, "results", "raw", input.batchId, runId);
+  const publicDir = path.join(input.repoRoot, "public", "results", "batches", input.batchId, runId);
+  const workspacePath = path.join(rawDir, "workspace");
+  const skill = await loadSkillForMode(mode, input.repoRoot);
+  const command = buildAgentCommand(agent, workspacePath);
+  const message = input.error instanceof Error ? input.error.message : String(input.error);
+  const artifacts = await writeArtifacts({
+    rawDir,
+    publicDir,
+    batchId: input.batchId,
+    runId,
+    stdout: "",
+    stderr: message,
+    finalText: message,
+    diffText: "",
+    metrics: { harnessError: message },
+    verificationText: message,
+    events: [{ type: "error", message }],
+    screenshots: [],
+  });
+
+  return RunResultSchema.parse({
+    runId,
+    batchId: input.batchId,
+    timestamp: input.timestamp,
+    repoCommit: input.repoCommit,
+    agent,
+    model: command.model,
+    effort: command.effort,
+    mode,
+    taskId: task.id,
+    category: task.category,
+    command: command.command,
+    workspacePath,
+    exitCode: null,
+    durationMs: 0,
+    costUsd: null,
+    tokenUsage: null,
+    status: "error",
+    scores: scoreRun({
+      task,
+      exitCode: null,
+      finalText: message,
+      diffText: "",
+      metrics: {},
+      screenshotCount: 0,
+      setupSkipped: true,
+    }),
+    artifacts,
+    errors: [{ code: "harness_error", message }],
+    skillName: skill.skillName,
+    skillPath: skill.skillPath,
+    skillSha256: skill.skillSha256,
+    activation: "prompt-injected",
+  });
+}
+
 async function writeArtifacts(input: {
   rawDir: string;
   publicDir: string;
@@ -421,6 +630,74 @@ async function verifyWorkspaceCommands(workspacePath: string): Promise<{
 
 async function writeRunJson(repoRoot: string, run: RunResult): Promise<void> {
   await writeJson(path.join(repoRoot, "public", "results", "batches", run.batchId, run.runId, "run.json"), run);
+}
+
+async function loadExistingBatchRuns(repoRoot: string, batchId: string): Promise<Map<string, RunResult>> {
+  const batchDir = path.join(repoRoot, "public", "results", "batches", batchId);
+  const runs = new Map<string, RunResult>();
+  let entries: string[] = [];
+  try {
+    entries = await fs.readdir(batchDir);
+  } catch {
+    return runs;
+  }
+
+  await Promise.all(
+    entries.map(async (entry) => {
+      const runJsonPath = path.join(batchDir, entry, "run.json");
+      try {
+        const raw = await fs.readFile(runJsonPath, "utf8");
+        const run = RunResultSchema.parse(JSON.parse(raw));
+        runs.set(run.runId, run);
+      } catch {
+        // Ignore partial artifacts. They will be regenerated on resume.
+      }
+    }),
+  );
+  return runs;
+}
+
+function canReuseExistingRun(run: RunResult): boolean {
+  return run.status === "passed" || run.status === "skipped";
+}
+
+async function writeBatchState(input: {
+  repoRoot: string;
+  batchId: string;
+  timestamp: string;
+  resume: boolean;
+  force: boolean;
+  maxRuns: number | null;
+  stopOnError: boolean;
+  status: BatchRunState["status"];
+  cases: CaseState[];
+  executedRuns: number;
+  reusedRuns: number;
+  pauseReason: string | null;
+}): Promise<void> {
+  const completedStatuses = new Set(["reused", "passed", "skipped"]);
+  const failedStatuses = new Set(["failed", "error"]);
+  const pending = input.cases.find((caseState) => caseState.status === "pending" || failedStatuses.has(caseState.status));
+  const state: BatchRunState = {
+    batchId: input.batchId,
+    status: input.status,
+    timestamp: input.timestamp,
+    updatedAt: new Date().toISOString(),
+    resume: input.resume,
+    force: input.force,
+    maxRuns: input.maxRuns,
+    stopOnError: input.stopOnError,
+    totalCases: input.cases.length,
+    executedRuns: input.executedRuns,
+    reusedRuns: input.reusedRuns,
+    completedRuns: input.cases.filter((caseState) => completedStatuses.has(caseState.status)).length,
+    pendingRuns: input.cases.filter((caseState) => caseState.status === "pending").length,
+    failedRuns: input.cases.filter((caseState) => failedStatuses.has(caseState.status)).length,
+    nextRunId: pending?.runId ?? null,
+    pauseReason: input.pauseReason,
+    cases: input.cases,
+  };
+  await writeJson(path.join(input.repoRoot, "results", "raw", input.batchId, "state.json"), state);
 }
 
 async function currentRepoCommit(repoRoot: string): Promise<string> {

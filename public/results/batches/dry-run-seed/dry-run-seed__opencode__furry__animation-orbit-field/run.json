@@ -2,7 +2,7 @@
   "runId": "dry-run-seed__opencode__furry__animation-orbit-field",
   "batchId": "dry-run-seed",
   "timestamp": "2026-01-01T00:00:00.000Z",
-  "repoCommit": "uncommitted",
+  "repoCommit": "5b1ff2f",
   "agent": "opencode",
   "model": "zai-coding-plan/glm-5.2",
   "effort": "max",

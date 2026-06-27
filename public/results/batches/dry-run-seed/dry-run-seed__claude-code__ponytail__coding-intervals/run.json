@@ -2,7 +2,7 @@
   "runId": "dry-run-seed__claude-code__ponytail__coding-intervals",
   "batchId": "dry-run-seed",
   "timestamp": "2026-01-01T00:00:00.000Z",
-  "repoCommit": "uncommitted",
+  "repoCommit": "5b1ff2f",
   "agent": "claude-code",
   "model": "claude-opus-4-8",
   "effort": "max",

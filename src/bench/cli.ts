@@ -29,9 +29,23 @@ export function parseRunSelection(argv: string[]): RunSelection {
       index += 1;
     } else if (arg === "--no-install") {
       selection.installDependencies = false;
+    } else if (arg === "--resume") {
+      selection.resume = true;
+    } else if (arg === "--no-resume") {
+      selection.resume = false;
+    } else if (arg === "--force") {
+      selection.force = true;
+    } else if (arg === "--continue-on-error") {
+      selection.stopOnError = false;
+    } else if (arg === "--max-runs") {
+      if (!next) throw new Error("--max-runs requires a value.");
+      selection.maxRuns = Number(next);
+      if (!Number.isInteger(selection.maxRuns) || selection.maxRuns < 1) throw new Error("--max-runs must be a positive integer.");
+      index += 1;
     } else if (arg === "--timeout-ms") {
       if (!next) throw new Error("--timeout-ms requires a value.");
       selection.timeoutMs = Number(next);
+      if (!Number.isFinite(selection.timeoutMs) || selection.timeoutMs < 1) throw new Error("--timeout-ms must be a positive number.");
       index += 1;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
@@ -50,4 +64,3 @@ export function printRunSummary(runs: { status: string; agent: string; mode: str
   }
   if (runs.length > 8) console.log(`... ${runs.length - 8} more`);
 }
-

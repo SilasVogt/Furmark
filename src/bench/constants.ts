@@ -1,6 +1,6 @@
 import type { AgentId, Mode, TaskId } from "./schema";
 
-export const AGENTS: readonly AgentId[] = ["claude-code", "opencode", "codex"];
+export const AGENTS: readonly AgentId[] = ["claude-code", "codex", "opencode"];
 export const MODES: readonly Mode[] = ["baseline", "ponytail", "furry"];
 export const TASKS: readonly TaskId[] = [
   "landing-incident-console",
@@ -25,4 +25,3 @@ export const MODE_LABELS: Record<Mode, string> = {
   ponytail: "Ponytail",
   furry: "Furry",
 };
-

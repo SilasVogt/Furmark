@@ -45,6 +45,13 @@ const modeLabels: Record<string, string> = {
   furry: "Furry",
 };
 
+function appUrl(path: string): string {
+  const cleanPath = path.replace(/^\/+/, "");
+  const base = import.meta.env.BASE_URL;
+  if (!base || base === "/") return `/${cleanPath}`;
+  return `${base.endsWith("/") ? base : `${base}/`}${cleanPath}`;
+}
+
 export function App() {
   const [index, setIndex] = useState<ResultIndex | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -378,7 +385,7 @@ function ArtifactDrawer({
 
   useEffect(() => {
     if (artifact.kind === "screenshot") return;
-    void fetch(`/${artifact.url}`)
+    void fetch(appUrl(artifact.url))
       .then((response) => response.text())
       .then(setContent)
       .catch((fetchError: unknown) => setContent(fetchError instanceof Error ? fetchError.message : String(fetchError)));
@@ -395,7 +402,7 @@ function ArtifactDrawer({
           Close
         </button>
       </div>
-      {artifact.kind === "screenshot" ? <img src={`/${artifact.url}`} alt={`${artifact.run.runId} screenshot`} /> : <pre>{content}</pre>}
+      {artifact.kind === "screenshot" ? <img src={appUrl(artifact.url)} alt={`${artifact.run.runId} screenshot`} /> : <pre>{content}</pre>}
     </aside>
   );
 }
@@ -420,7 +427,7 @@ function IconButton({ label, icon: Icon, onClick }: { label: string; icon: typeo
 }
 
 async function loadIndex(): Promise<ResultIndex> {
-  const response = await fetch("/results/index.json", { cache: "no-store" });
+  const response = await fetch(appUrl("results/index.json"), { cache: "no-store" });
   if (!response.ok) throw new Error(`public/results/index.json returned ${response.status}`);
   return response.json();
 }

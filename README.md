@@ -40,6 +40,21 @@ codex
 
 Then open `/plugins`, install Ponytail, open `/hooks`, trust its hooks, and start a new thread.
 
+## GitHub Pages
+
+The repository includes a GitHub Actions workflow at `.github/workflows/pages.yml`. It builds the static viewer with:
+
+```bash
+pnpm build:pages
+```
+
+To publish results:
+
+1. Commit generated `public/results` artifacts.
+2. Push to `main`.
+3. In GitHub repository settings, set Pages source to GitHub Actions.
+4. Run the `Publish GitHub Pages` workflow, or let the push trigger it.
+
 ## Common Commands
 
 ```bash
@@ -51,5 +66,6 @@ pnpm bench:skill import ponytail --from <path>
 pnpm dev
 pnpm test
 pnpm build
+pnpm build:pages
 pnpm test:e2e
 ```

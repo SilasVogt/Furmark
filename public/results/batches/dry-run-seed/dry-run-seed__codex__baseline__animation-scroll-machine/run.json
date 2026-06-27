@@ -2,7 +2,7 @@
   "runId": "dry-run-seed__codex__baseline__animation-scroll-machine",
   "batchId": "dry-run-seed",
   "timestamp": "2026-01-01T00:00:00.000Z",
-  "repoCommit": "5b1ff2f",
+  "repoCommit": "a7e6bd0",
   "agent": "codex",
   "model": "gpt-5.5",
   "effort": "xhigh",

@@ -1,5 +1,5 @@
 {
-  "final": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
+  "final": "Dry run completed for landing-hardware-studio. Verification was simulated.",
   "usage": {
     "total_tokens": 15900
   }

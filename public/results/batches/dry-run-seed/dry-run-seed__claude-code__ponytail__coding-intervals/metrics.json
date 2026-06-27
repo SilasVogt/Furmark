@@ -1,7 +1,10 @@
 {
-  "setupError": {
-    "code": "skill_missing",
-    "message": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
-    "detail": "ENOENT: no such file or directory, open '/home/silas/Projects/Furmark/skills/ponytail/SKILL.md'"
-  }
+  "testPassRate": 0.76,
+  "typecheck": true,
+  "runtimeErrors": false,
+  "nonblankPixels": false,
+  "responsiveRender": false,
+  "consoleErrors": 0,
+  "pauseBehavior": false,
+  "reducedMotion": false
 }

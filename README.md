@@ -23,6 +23,23 @@ Useful controls:
 
 Progress is checkpointed at `results/raw/<batchId>/state.json`. Raw logs stay ignored by git.
 
+## Ponytail Skill
+
+Official Furmark runs use prompt injection, so they only need the canonical Ponytail skill file in this repo:
+
+```bash
+pnpm bench:skill import ponytail --from github:DietrichGebert/ponytail
+```
+
+That copies `skills/ponytail/SKILL.md` from the Ponytail repository into `skills/ponytail/SKILL.md` here. Native Ponytail plugin installation is separate and host-specific. For Codex, Ponytail documents:
+
+```bash
+codex plugin marketplace add DietrichGebert/ponytail
+codex
+```
+
+Then open `/plugins`, install Ponytail, open `/hooks`, trust its hooks, and start a new thread.
+
 ## Common Commands
 
 ```bash
@@ -36,4 +53,3 @@ pnpm test
 pnpm build
 pnpm test:e2e
 ```
-

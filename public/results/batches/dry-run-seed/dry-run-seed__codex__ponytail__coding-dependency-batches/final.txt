@@ -1,1 +1,1 @@
-Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.
+Dry run completed for coding-dependency-batches. Verification was simulated.

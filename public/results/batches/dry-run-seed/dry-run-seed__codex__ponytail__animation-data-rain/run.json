@@ -2,7 +2,7 @@
   "runId": "dry-run-seed__codex__ponytail__animation-data-rain",
   "batchId": "dry-run-seed",
   "timestamp": "2026-01-01T00:00:00.000Z",
-  "repoCommit": "5b1ff2f",
+  "repoCommit": "a7e6bd0",
   "agent": "codex",
   "model": "gpt-5.5",
   "effort": "xhigh",
@@ -11,19 +11,21 @@
   "category": "browser-animation",
   "command": "codex exec -C /home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/workspace --ignore-user-config --ignore-rules --ephemeral --model gpt-5.5 -c 'model_reasoning_effort=\"xhigh\"' --sandbox workspace-write --ask-for-approval never --json",
   "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/workspace",
-  "exitCode": null,
+  "exitCode": 0,
   "durationMs": 42750,
-  "costUsd": null,
-  "tokenUsage": null,
-  "status": "skipped",
+  "costUsd": 0,
+  "tokenUsage": {
+    "totalTokens": 15900
+  },
+  "status": "passed",
   "scores": {
-    "correctness": 0,
-    "visual": 0,
-    "animation": 0,
-    "codeQuality": 0,
-    "styleCompliance": 0,
-    "skillUplift": -92.3,
-    "total": 0
+    "correctness": 78,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 100,
+    "skillUplift": 0,
+    "total": 92.3
   },
   "artifacts": {
     "stdout": "results/batches/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/stdout.txt",
@@ -33,17 +35,14 @@
     "diff": "results/batches/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/diff.patch",
     "metrics": "results/batches/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/metrics.json",
     "verification": "results/batches/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/verification.txt",
-    "screenshots": []
+    "screenshots": [
+      "results/batches/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/screenshots/desktop.png",
+      "results/batches/dry-run-seed/dry-run-seed__codex__ponytail__animation-data-rain/screenshots/mobile.png"
+    ]
   },
-  "errors": [
-    {
-      "code": "skill_missing",
-      "message": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
-      "detail": "ENOENT: no such file or directory, open '/home/silas/Projects/Furmark/skills/ponytail/SKILL.md'"
-    }
-  ],
+  "errors": [],
   "skillName": "ponytail",
   "skillPath": "skills/ponytail/SKILL.md",
-  "skillSha256": null,
+  "skillSha256": "d11df477b1a4e807155a7e578b135a4d9c52beef06eb3a44322940c331a06942",
   "activation": "prompt-injected"
 }

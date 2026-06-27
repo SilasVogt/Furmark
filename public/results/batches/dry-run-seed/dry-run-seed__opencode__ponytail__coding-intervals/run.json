@@ -1,0 +1,49 @@
+{
+  "runId": "dry-run-seed__opencode__ponytail__coding-intervals",
+  "batchId": "dry-run-seed",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "repoCommit": "uncommitted",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "ponytail",
+  "taskId": "coding-intervals",
+  "category": "pure-coding",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/workspace",
+  "exitCode": null,
+  "durationMs": 44400,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "skipped",
+  "scores": {
+    "correctness": 0,
+    "visual": 0,
+    "animation": 0,
+    "codeQuality": 0,
+    "styleCompliance": 0,
+    "skillUplift": -90.9,
+    "total": 0
+  },
+  "artifacts": {
+    "stdout": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/stdout.txt",
+    "stderr": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/stderr.txt",
+    "final": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/final.txt",
+    "events": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/events.jsonl",
+    "diff": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/diff.patch",
+    "metrics": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/metrics.json",
+    "verification": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__coding-intervals/verification.txt",
+    "screenshots": []
+  },
+  "errors": [
+    {
+      "code": "skill_missing",
+      "message": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
+      "detail": "ENOENT: no such file or directory, open '/home/silas/Projects/Furmark/skills/ponytail/SKILL.md'"
+    }
+  ],
+  "skillName": "ponytail",
+  "skillPath": "skills/ponytail/SKILL.md",
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

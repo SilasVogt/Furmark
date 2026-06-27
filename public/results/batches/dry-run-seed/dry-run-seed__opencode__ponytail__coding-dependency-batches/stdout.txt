@@ -1,0 +1,6 @@
+{
+  "final": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
+  "usage": {
+    "total_tokens": 16200
+  }
+}

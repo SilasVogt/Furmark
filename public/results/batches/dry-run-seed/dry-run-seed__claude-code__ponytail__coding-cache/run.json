@@ -1,0 +1,49 @@
+{
+  "runId": "dry-run-seed__claude-code__ponytail__coding-cache",
+  "batchId": "dry-run-seed",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "repoCommit": "uncommitted",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "ponytail",
+  "taskId": "coding-cache",
+  "category": "pure-coding",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/workspace",
+  "exitCode": null,
+  "durationMs": 45800,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "skipped",
+  "scores": {
+    "correctness": 0,
+    "visual": 0,
+    "animation": 0,
+    "codeQuality": 0,
+    "styleCompliance": 0,
+    "skillUplift": -91.6,
+    "total": 0
+  },
+  "artifacts": {
+    "stdout": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/stdout.txt",
+    "stderr": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/stderr.txt",
+    "final": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/final.txt",
+    "events": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/events.jsonl",
+    "diff": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/diff.patch",
+    "metrics": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/metrics.json",
+    "verification": "results/batches/dry-run-seed/dry-run-seed__claude-code__ponytail__coding-cache/verification.txt",
+    "screenshots": []
+  },
+  "errors": [
+    {
+      "code": "skill_missing",
+      "message": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
+      "detail": "ENOENT: no such file or directory, open '/home/silas/Projects/Furmark/skills/ponytail/SKILL.md'"
+    }
+  ],
+  "skillName": "ponytail",
+  "skillPath": "skills/ponytail/SKILL.md",
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

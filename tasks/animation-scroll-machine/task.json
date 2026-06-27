@@ -1,0 +1,17 @@
+{
+  "id": "animation-scroll-machine",
+  "title": "Scroll-Driven Assembly-Line Animation",
+  "category": "browser-animation",
+  "topic": "Build a scroll-driven assembly-line animation with reduced-motion fallback.",
+  "prompt": "Build a scroll-driven browser animation that shows an assembly-line machine moving parts through stations. Scroll should drive meaningful progress through the sequence, not just reveal static sections. Include a reduced-motion fallback that presents the same information without scroll hijacking or continuous motion.",
+  "successCriteria": [
+    "The page has a visible animated machine or assembly sequence.",
+    "Scroll position changes the scene state or progress.",
+    "Reduced-motion mode keeps the content usable without forced motion.",
+    "No scroll-linked React state loops or console errors.",
+    "Mobile layout remains readable."
+  ],
+  "fixturePath": null,
+  "validators": ["animation", "scroll", "reduced-motion", "responsive"]
+}
+

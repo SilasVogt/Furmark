@@ -1,0 +1,17 @@
+{
+  "id": "landing-incident-console",
+  "title": "Traceboard Incident Timeline Landing Page",
+  "category": "landing-page",
+  "topic": "Build a polished one-page landing page for an incident timeline debugger called Traceboard.",
+  "prompt": "Build a polished one-page landing page for Traceboard, an incident timeline debugger for engineering teams. The first viewport should make the product and audience clear. Include navigation, a strong hero, feature sections, a workflow section, accessible calls to action, and responsive styling. Use a real app-like visual or generated asset instead of decorative placeholder boxes. Keep the page usable as a static Vite React app.",
+  "successCriteria": [
+    "The page renders without console errors on desktop and mobile.",
+    "The first viewport clearly communicates Traceboard and incident timeline debugging.",
+    "Navigation and calls to action are keyboard accessible.",
+    "The visual design is polished, dense enough for technical buyers, and avoids generic template patterns.",
+    "Responsive layout has no horizontal overflow at 390px width."
+  ],
+  "fixturePath": null,
+  "validators": ["landing-page", "responsive", "console-clean"]
+}
+

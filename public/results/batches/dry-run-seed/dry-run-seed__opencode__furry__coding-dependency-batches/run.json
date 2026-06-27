@@ -1,0 +1,45 @@
+{
+  "runId": "dry-run-seed__opencode__furry__coding-dependency-batches",
+  "batchId": "dry-run-seed",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "repoCommit": "uncommitted",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "furry",
+  "taskId": "coding-dependency-batches",
+  "category": "pure-coding",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/workspace",
+  "exitCode": 0,
+  "durationMs": 45150,
+  "costUsd": 0,
+  "tokenUsage": {
+    "totalTokens": 16050
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 77,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 100,
+    "skillUplift": 1.1,
+    "total": 92
+  },
+  "artifacts": {
+    "stdout": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/stdout.txt",
+    "stderr": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/stderr.txt",
+    "final": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/final.txt",
+    "events": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/events.jsonl",
+    "diff": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/diff.patch",
+    "metrics": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/metrics.json",
+    "verification": "results/batches/dry-run-seed/dry-run-seed__opencode__furry__coding-dependency-batches/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "furry",
+  "skillPath": "skills/furry/SKILL.md",
+  "skillSha256": "605602554af4bc7b9cd77d1521784b019d96b02a59aee853a9b5d0f1cee18b20",
+  "activation": "prompt-injected"
+}

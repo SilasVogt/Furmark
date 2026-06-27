@@ -1,0 +1,17 @@
+{
+  "id": "landing-hardware-studio",
+  "title": "Arcwell Modular Desk Lamp Landing Page",
+  "category": "landing-page",
+  "topic": "Build a premium product landing page for a modular desk lamp called Arcwell.",
+  "prompt": "Build a premium product landing page for Arcwell, a modular desk lamp with swappable arms, lenses, and base finishes. The page should feel like a refined product site with a strong first-viewport product signal, product imagery or a generated product visual, concise specifications, configuration controls, and a buying call to action. Avoid beige craft defaults and generic feature-card layouts.",
+  "successCriteria": [
+    "The first viewport clearly shows or evokes the Arcwell lamp.",
+    "Configuration or product-detail controls are understandable and accessible.",
+    "The palette and typography feel premium without generic beige and brass styling.",
+    "Responsive layout has no text overlap or horizontal overflow.",
+    "Build and runtime checks pass."
+  ],
+  "fixturePath": null,
+  "validators": ["landing-page", "responsive", "console-clean"]
+}
+

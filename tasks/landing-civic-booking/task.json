@@ -1,0 +1,17 @@
+{
+  "id": "landing-civic-booking",
+  "title": "Civic Slot Public-Service Landing Page",
+  "category": "landing-page",
+  "topic": "Build an accessible public-service landing page for appointment booking called Civic Slot.",
+  "prompt": "Build an accessible public-service landing page for Civic Slot, an appointment booking service for local government offices. Prioritize clarity, trust, readable forms, visible focus states, and plain language. Include a booking-oriented hero, service categories, availability explanation, accessibility commitments, and a simple contact or support section. Keep it static and responsive.",
+  "successCriteria": [
+    "The page uses semantic landmarks and visible focus styles.",
+    "Copy is plain, public-service appropriate, and avoids marketing exaggeration.",
+    "Form controls or booking controls have labels, helper text, and sufficient contrast.",
+    "The page renders cleanly on mobile and desktop.",
+    "No console errors are emitted."
+  ],
+  "fixturePath": null,
+  "validators": ["landing-page", "accessibility", "responsive", "console-clean"]
+}
+

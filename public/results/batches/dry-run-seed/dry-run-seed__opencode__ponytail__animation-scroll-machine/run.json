@@ -1,0 +1,49 @@
+{
+  "runId": "dry-run-seed__opencode__ponytail__animation-scroll-machine",
+  "batchId": "dry-run-seed",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "repoCommit": "uncommitted",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "ponytail",
+  "taskId": "animation-scroll-machine",
+  "category": "browser-animation",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/workspace",
+  "exitCode": null,
+  "durationMs": 46400,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "skipped",
+  "scores": {
+    "correctness": 0,
+    "visual": 0,
+    "animation": 0,
+    "codeQuality": 0,
+    "styleCompliance": 0,
+    "skillUplift": -90.9,
+    "total": 0
+  },
+  "artifacts": {
+    "stdout": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/stdout.txt",
+    "stderr": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/stderr.txt",
+    "final": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/final.txt",
+    "events": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/events.jsonl",
+    "diff": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/diff.patch",
+    "metrics": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/metrics.json",
+    "verification": "results/batches/dry-run-seed/dry-run-seed__opencode__ponytail__animation-scroll-machine/verification.txt",
+    "screenshots": []
+  },
+  "errors": [
+    {
+      "code": "skill_missing",
+      "message": "Ponytail skill is not installed. Run pnpm bench:skill import ponytail --from <path> before official ponytail runs.",
+      "detail": "ENOENT: no such file or directory, open '/home/silas/Projects/Furmark/skills/ponytail/SKILL.md'"
+    }
+  ],
+  "skillName": "ponytail",
+  "skillPath": "skills/ponytail/SKILL.md",
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

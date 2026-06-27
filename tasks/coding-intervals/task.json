@@ -1,0 +1,17 @@
+{
+  "id": "coding-intervals",
+  "title": "Interval Coalescer",
+  "category": "pure-coding",
+  "topic": "Fix and extend an interval coalescer with edge-case tests.",
+  "prompt": "Fix and extend an interval coalescer. It should normalize reversed endpoints, reject invalid numbers, preserve deterministic ordering, merge overlapping intervals, optionally merge touching intervals, and handle empty and single-item inputs. Add edge-case tests for negative ranges, duplicates, touching ranges, reversed endpoints, and invalid values.",
+  "successCriteria": [
+    "Overlapping intervals merge correctly.",
+    "Touching interval behavior is configurable.",
+    "Invalid intervals produce useful errors.",
+    "Input order does not affect output.",
+    "TypeScript and test checks pass."
+  ],
+  "fixturePath": "tasks/coding-intervals/fixture",
+  "validators": ["vitest", "typecheck"]
+}
+

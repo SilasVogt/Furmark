@@ -1,0 +1,48 @@
+{
+  "runId": "dry-run-seed__opencode__baseline__landing-hardware-studio",
+  "batchId": "dry-run-seed",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "repoCommit": "uncommitted",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "landing-hardware-studio",
+  "category": "landing-page",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/workspace",
+  "exitCode": 0,
+  "durationMs": 46150,
+  "costUsd": 0,
+  "tokenUsage": {
+    "totalTokens": 16200
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 74,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 100,
+    "skillUplift": 0,
+    "total": 90.9
+  },
+  "artifacts": {
+    "stdout": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/stdout.txt",
+    "stderr": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/stderr.txt",
+    "final": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/final.txt",
+    "events": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/events.jsonl",
+    "diff": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/diff.patch",
+    "metrics": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/metrics.json",
+    "verification": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/verification.txt",
+    "screenshots": [
+      "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/screenshots/desktop.png",
+      "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__landing-hardware-studio/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

@@ -1,0 +1,6 @@
+{
+  "final": "Dry run completed for animation-data-rain. Verification was simulated.",
+  "usage": {
+    "total_tokens": 16500
+  }
+}

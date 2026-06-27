@@ -1,0 +1,17 @@
+{
+  "id": "animation-data-rain",
+  "title": "Metrics Data Rain Animation",
+  "category": "browser-animation",
+  "topic": "Build a browser animation that turns incoming metrics into falling, colliding bars.",
+  "prompt": "Build a browser animation that turns incoming metric events into falling bars that collide or stack. Include visible metric labels, a live or simulated feed, pause controls, and a reduced-motion mode. The animation should show measurable frame changes over time and should not rely on inaccessible color alone.",
+  "successCriteria": [
+    "Incoming metrics are represented as falling or colliding bars.",
+    "Frames differ over time while running.",
+    "Pause or resume controls work.",
+    "Reduced-motion mode prevents continuous falling motion.",
+    "Metric meaning is conveyed with labels or shapes as well as color."
+  ],
+  "fixturePath": null,
+  "validators": ["animation", "canvas-nonblank", "pause", "reduced-motion"]
+}
+

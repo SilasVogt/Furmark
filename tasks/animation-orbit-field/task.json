@@ -1,0 +1,17 @@
+{
+  "id": "animation-orbit-field",
+  "title": "Interactive Canvas Orbit Field",
+  "category": "browser-animation",
+  "topic": "Build an interactive canvas orbit field with pointer response and pause controls.",
+  "prompt": "Build an interactive canvas orbit field. Particles or satellites should orbit smoothly, respond to pointer movement, and expose a visible pause or resume control. The animation must honor prefers-reduced-motion by reducing or stopping automatic movement. Keep controls accessible and keep the canvas crisp across viewport sizes.",
+  "successCriteria": [
+    "A canvas or equivalent animated surface renders nonblank pixels.",
+    "Frames differ over time when motion is allowed.",
+    "Pointer movement visibly affects the field.",
+    "A pause or resume control stops and restarts motion.",
+    "Reduced-motion users receive a static or heavily reduced animation."
+  ],
+  "fixturePath": null,
+  "validators": ["animation", "canvas-nonblank", "pause", "reduced-motion"]
+}
+

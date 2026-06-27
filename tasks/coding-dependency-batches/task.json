@@ -1,0 +1,17 @@
+{
+  "id": "coding-dependency-batches",
+  "title": "Topological Dependency Batches",
+  "category": "pure-coding",
+  "topic": "Implement topological batching with cycle diagnostics and deterministic ordering.",
+  "prompt": "Implement topological batching for dependency graphs. Return an array of batches where each batch can run in parallel after prior batches complete. Include deterministic alphabetical ordering, include dependencies that are only referenced but not declared, and throw a diagnostic cycle error that names the cycle members. Add tests for diamonds, disconnected graphs, missing dependency declarations, and cycles.",
+  "successCriteria": [
+    "Batches obey dependency ordering.",
+    "Nodes within each batch are deterministic.",
+    "Referenced-only dependencies are included.",
+    "Cycles throw structured diagnostic errors.",
+    "TypeScript and test checks pass."
+  ],
+  "fixturePath": "tasks/coding-dependency-batches/fixture",
+  "validators": ["vitest", "typecheck"]
+}
+

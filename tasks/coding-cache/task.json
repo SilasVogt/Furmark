@@ -1,0 +1,17 @@
+{
+  "id": "coding-cache",
+  "title": "Typed LRU Cache With TTL",
+  "category": "pure-coding",
+  "topic": "Implement a typed LRU cache with TTL, eviction stats, and tests.",
+  "prompt": "Implement a typed LRU cache with TTL support. It should support get, set, has, delete, clear, size, max size enforcement, least-recently-used eviction, per-entry TTL expiration, and stats for hits, misses, evictions, and expired entries. Add focused tests for recency refresh, TTL behavior, updates, deletes, and capacity eviction.",
+  "successCriteria": [
+    "The cache is generic over key and value types.",
+    "Least-recently-used eviction is deterministic.",
+    "Expired entries are not returned and are counted.",
+    "Stats are accurate across hits, misses, evictions, deletes, and clear.",
+    "TypeScript and test checks pass."
+  ],
+  "fixturePath": "tasks/coding-cache/fixture",
+  "validators": ["vitest", "typecheck"]
+}
+

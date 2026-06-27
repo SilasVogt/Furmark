@@ -1,0 +1,45 @@
+{
+  "runId": "dry-run-seed__opencode__baseline__coding-intervals",
+  "batchId": "dry-run-seed",
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "repoCommit": "uncommitted",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "coding-intervals",
+  "category": "pure-coding",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/workspace",
+  "exitCode": 0,
+  "durationMs": 44400,
+  "costUsd": 0,
+  "tokenUsage": {
+    "totalTokens": 16200
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 74,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 100,
+    "skillUplift": 0,
+    "total": 90.9
+  },
+  "artifacts": {
+    "stdout": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/stdout.txt",
+    "stderr": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/stderr.txt",
+    "final": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/final.txt",
+    "events": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/events.jsonl",
+    "diff": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/diff.patch",
+    "metrics": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/metrics.json",
+    "verification": "results/batches/dry-run-seed/dry-run-seed__opencode__baseline__coding-intervals/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

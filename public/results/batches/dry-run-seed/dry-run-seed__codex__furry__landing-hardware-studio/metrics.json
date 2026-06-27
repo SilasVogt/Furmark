@@ -1,0 +1,10 @@
+{
+  "testPassRate": 0.81,
+  "typecheck": true,
+  "runtimeErrors": false,
+  "nonblankPixels": true,
+  "responsiveRender": true,
+  "consoleErrors": 0,
+  "pauseBehavior": false,
+  "reducedMotion": false
+}

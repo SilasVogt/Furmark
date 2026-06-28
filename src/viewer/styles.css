@@ -371,6 +371,26 @@ input:focus-visible {
   font-weight: 800;
 }
 
+.screenshotPreview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  margin: 0 0 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  padding: 0;
+}
+
+.screenshotPreview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
 .artifactButtons {
   flex-wrap: wrap;
 }

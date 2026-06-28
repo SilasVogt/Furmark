@@ -298,6 +298,7 @@ function RunPanel({
   run: RunResult;
   onOpenArtifact: (artifact: { run: RunResult; kind: ArtifactKind; url: string }) => void;
 }) {
+  const primaryScreenshot = run.artifacts.screenshots[0];
   const artifacts: { kind: ArtifactKind; label: string; icon: typeof Code2; url?: string }[] = [
     { kind: "final", label: "Final", icon: Eye, url: run.artifacts.final },
     { kind: "metrics", label: "Metrics", icon: BarChart3, url: run.artifacts.metrics },
@@ -331,6 +332,16 @@ function RunPanel({
           <dd>{run.scores.styleCompliance.toFixed(0)}</dd>
         </div>
       </dl>
+      {primaryScreenshot ? (
+        <button
+          className="screenshotPreview"
+          type="button"
+          onClick={() => onOpenArtifact({ run, kind: "screenshot", url: primaryScreenshot })}
+          aria-label={`Open screenshot for ${run.runId}`}
+        >
+          <img src={appUrl(primaryScreenshot)} alt={`${run.runId} screenshot preview`} loading="lazy" />
+        </button>
+      ) : null}
       <div className="artifactButtons">
         {run.artifacts.site ? (
           <a href={appUrl(run.artifacts.site)} target="_blank" rel="noreferrer">

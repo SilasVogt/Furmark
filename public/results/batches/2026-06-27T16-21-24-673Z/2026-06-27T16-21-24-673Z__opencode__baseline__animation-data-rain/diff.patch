@@ -1,0 +1,552 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..df5585b 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,375 @@
+-import React from "react";
++import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+ import { createRoot } from "react-dom/client";
+ import "./style.css";
+ 
++// ---- Metric taxonomy -------------------------------------------------
++// Each metric conveys meaning via: label text, glyph, color, and a hatch
++// pattern. Color is never the sole signal.
++type PatternKind = "solid" | "diag" | "dots" | "grid";
++
++type MetricDef = {
++  key: string;
++  name: string;
++  glyph: string;
++  color: string;
++  pattern: PatternKind;
++};
++
++const METRICS: MetricDef[] = [
++  { key: "cpu", name: "CPU %", glyph: "▣", color: "#5ad1ff", pattern: "diag" },
++  { key: "mem", name: "MEM MB", glyph: "▤", color: "#ffd166", pattern: "dots" },
++  { key: "lat", name: "LAT ms", glyph: "◺", color: "#ff7a7a", pattern: "grid" },
++  { key: "rps", name: "RPS", glyph: "▲", color: "#9af59a", pattern: "solid" },
++  { key: "err", name: "ERR n", glyph: "✖", color: "#c77dff", pattern: "diag" },
++];
++
++// ---- Geometry model --------------------------------------------------
++type Bar = {
++  id: number;
++  lane: number;
++  metric: MetricDef;
++  value: number;
++  height: number; // px
++  top: number; // current top y in px
++  vy: number; // px/s
++  landed: boolean;
++  opacity: number; // for reduced-motion fade-in
++  born: number; // ts
++};
++
++const LANE_COUNT = 12;
++const BAR_WIDTH = 46;
++const LANE_GAP = 8;
++const FALL_GRAVITY = 1400; // px/s^2
++const SPAWN_INTERVAL_MS = 360;
++
++function prefersReducedMotion() {
++  return (
++    typeof window !== "undefined" &&
++    window.matchMedia &&
++    window.matchMedia("(prefers-reduced-motion: reduce)").matches
++  );
++}
++
++// ---- Pattern painter -------------------------------------------------
++function makePatternCanvas(kind: PatternKind, color: string): HTMLCanvasElement {
++  const c = document.createElement("canvas");
++  c.width = 8;
++  c.height = 8;
++  const g = c.getContext("2d")!;
++  g.fillStyle = color;
++  g.fillRect(0, 0, 8, 8);
++  g.strokeStyle = "rgba(0,0,0,0.35)";
++  g.fillStyle = "rgba(0,0,0,0.35)";
++  g.lineWidth = 1;
++  if (kind === "diag") {
++    g.beginPath();
++    g.moveTo(-1, 1); g.lineTo(9, 11);
++    g.moveTo(3, -1); g.lineTo(13, 9);
++    g.stroke();
++  } else if (kind === "dots") {
++    g.beginPath();
++    g.arc(2, 2, 1.1, 0, Math.PI * 2);
++    g.arc(6, 6, 1.1, 0, Math.PI * 2);
++    g.fill();
++  } else if (kind === "grid") {
++    g.strokeRect(0.5, 0.5, 7, 7);
++  }
++  return c;
++}
++
++// ---- Component -------------------------------------------------------
++function DataRain() {
++  const canvasRef = useRef<HTMLCanvasElement | null>(null);
++  const barsRef = useRef<Bar[]>([]);
++  const stackRef = useRef<number[]>(new Array(LANE_COUNT).fill(0));
++  const rafRef = useRef<number | null>(null);
++  const lastTsRef = useRef<number>(0);
++  const idRef = useRef<number>(1);
++  const lastSpawnRef = useRef<number>(0);
++
++  const [paused, setPaused] = useState(false);
++  const [reduced, setReduced] = useState(prefersReducedMotion());
++  const [fps, setFps] = useState(0);
++  const [count, setCount] = useState(0);
++  const [height, setHeight] = useState(520);
++
++  // Live DOM refs so the rAF loop reads fresh state without re-subscribing.
++  const pausedRef = useRef(paused);
++  const reducedRef = useRef(reduced);
++  useEffect(() => { pausedRef.current = paused; }, [paused]);
++  useEffect(() => { reducedRef.current = reduced; }, [reduced]);
++
++  const laneLeft = useCallback((lane: number, w: number) => {
++    const totalW = LANE_COUNT * BAR_WIDTH + (LANE_COUNT - 1) * LANE_GAP;
++    const x0 = Math.max(8, (w - totalW) / 2);
++    return x0 + lane * (BAR_WIDTH + LANE_GAP);
++  }, []);
++
++  // Spawn a metric event into the world.
++  const spawn = useCallback((w: number, h: number, reducedMode: boolean) => {
++    const metric = METRICS[Math.floor(Math.random() * METRICS.length)];
++    const lane = Math.floor(Math.random() * LANE_COUNT);
++    // value drives bar height; metric meaning visible via label.
++    const value = Math.round(4 + Math.random() * 46);
++    const height = 14 + value * 1.4;
++    const stack = stackRef.current[lane];
++    if (reducedMode) {
++      // Reduced motion: no falling. Snap onto stack with fade-in.
++      const top = h - stack - height;
++      barsRef.current.push({
++        id: idRef.current++, lane, metric, value, height,
++        top, vy: 0, landed: true, opacity: 0, born: performance.now(),
++      });
++      stackRef.current[lane] += height + 2;
++    } else {
++      barsRef.current.push({
++        id: idRef.current++, lane, metric, value, height,
++        top: -height, vy: 0, landed: false, opacity: 1, born: performance.now(),
++      });
++    }
++  }, []);
++
++  // Main loop.
++  useEffect(() => {
++    const canvas = canvasRef.current!;
++    const g = canvas.getContext("2d")!;
++    const patterns = new Map<string, CanvasPattern>();
++    for (const m of METRICS) {
++      const pc = makePatternCanvas(m.pattern, m.color);
++      const p = g.createPattern(pc, "repeat")!;
++      patterns.set(m.key, p);
++    }
++
++    let fpsAccum = 0;
++    let fpsFrames = 0;
++    let fpsTimer = 0;
++
++    const frame = (ts: number) => {
++      rafRef.current = requestAnimationFrame(frame);
++      const last = lastTsRef.current || ts;
++      let dt = (ts - last) / 1000;
++      lastTsRef.current = ts;
++      if (dt > 0.1) dt = 0.1; // clamp tab-switch jumps
++
++      const dpr = window.devicePixelRatio || 1;
++      const w = canvas.clientWidth;
++      const h = canvas.clientHeight;
++      if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
++        canvas.width = Math.floor(w * dpr);
++        canvas.height = Math.floor(h * dpr);
++      }
++      g.setTransform(dpr, 0, 0, dpr, 0, 0);
++
++      const isPaused = pausedRef.current;
++      const isReduced = reducedRef.current;
++
++      // Spawn feed.
++      if (!isPaused) {
++        if (ts - lastSpawnRef.current >= SPAWN_INTERVAL_MS) {
++          lastSpawnRef.current = ts;
++          spawn(w, h, isReduced);
++          if (Math.random() < 0.25) spawn(w, h, isReduced); // occasional bursts
++        }
++      }
++
++      // Physics + stacking.
++      if (!isPaused) {
++        const bars = barsRef.current;
++        for (const b of bars) {
++          if (!b.landed) {
++            b.vy += FALL_GRAVITY * dt;
++            b.top += b.vy * dt;
++            const floor = h - stackRef.current[b.lane] - b.height;
++            if (b.top >= floor) {
++              b.top = floor;
++              b.landed = true;
++              stackRef.current[b.lane] += b.height + 2;
++            }
++          } else if (isReduced && b.opacity < 1) {
++            // fade-in for reduced-motion placements
++            b.opacity = Math.min(1, b.opacity + dt * 4);
++          }
++        }
++        // recycle when stacks overflow
++        for (let lane = 0; lane < LANE_COUNT; lane++) {
++          if (stackRef.current[lane] > h * 0.9) {
++            const keep: Bar[] = [];
++            for (const b of bars) {
++              if (b.lane === lane && b.landed) continue;
++              keep.push(b);
++            }
++            barsRef.current = keep;
++            stackRef.current[lane] = 0;
++          }
++        }
++      }
++
++      // Clear + bg.
++      g.fillStyle = "#0b1020";
++      g.fillRect(0, 0, w, h);
++      // floor line
++      g.strokeStyle = "rgba(255,255,255,0.08)";
++      g.lineWidth = 1;
++      g.beginPath();
++      g.moveTo(0, h - 0.5); g.lineTo(w, h - 0.5);
++      g.stroke();
++      // lane guides
++      g.fillStyle = "rgba(255,255,255,0.025)";
++      for (let i = 0; i < LANE_COUNT; i++) {
++        g.fillRect(laneLeft(i, w), 0, BAR_WIDTH, h);
++      }
++
++      // Draw bars.
++      for (const b of barsRef.current) {
++        const x = laneLeft(b.lane, w);
++        g.globalAlpha = b.opacity;
++        const pat = patterns.get(b.metric.key)!;
++        g.fillStyle = pat;
++        g.fillRect(x, b.top, BAR_WIDTH, b.height);
++        // outline (meaning not color-only)
++        g.globalAlpha = b.opacity;
++        g.strokeStyle = b.metric.color;
++        g.lineWidth = 1.5;
++        g.strokeRect(x + 0.75, b.top + 0.75, BAR_WIDTH - 1.5, b.height - 1.5);
++        // glyph + label inside bar
++        g.fillStyle = "#04111f";
++        g.font = "bold 13px system-ui, sans-serif";
++        g.textAlign = "center";
++        g.textBaseline = "middle";
++        if (b.height >= 30) {
++          g.fillText(b.metric.glyph, x + BAR_WIDTH / 2, b.top + 12);
++          g.fillStyle = "#04111f";
++          g.font = "600 10px system-ui, sans-serif";
++          g.fillText(`${b.metric.name} ${b.value}`, x + BAR_WIDTH / 2, b.top + 24);
++        } else {
++          g.fillText(b.metric.glyph, x + BAR_WIDTH / 2, b.top + b.height / 2);
++        }
++        g.globalAlpha = 1;
++      }
++
++      // HUD: paused overlay marker
++      if (isPaused) {
++        g.fillStyle = "rgba(255,210,90,0.9)";
++        g.font = "600 12px system-ui, sans-serif";
++        g.textAlign = "left";
++        g.textBaseline = "top";
++        g.fillText("⏸ PAUSED", 12, 12);
++      }
++      if (isReduced) {
++        g.fillStyle = "rgba(154,245,154,0.9)";
++        g.font = "600 12px system-ui, sans-serif";
++        g.textAlign = "left";
++        g.textBaseline = "top";
++        g.fillText("◐ REDUCED MOTION", 12, 30);
++      }
++
++      // fps tracking
++      fpsFrames++;
++      fpsAccum += dt;
++      fpsTimer += dt;
++      if (fpsTimer >= 0.5) {
++        setFps(fpsFrames / fpsAccum);
++        setCount(barsRef.current.length);
++        fpsFrames = 0; fpsAccum = 0; fpsTimer = 0;
++      }
++    };
++
++    rafRef.current = requestAnimationFrame(frame);
++    return () => {
++      if (rafRef.current) cancelAnimationFrame(rafRef.current);
++    };
++  }, [laneLeft, spawn]);
++
++  // Keep canvas height in sync.
++  useEffect(() => {
++    const onResize = () => setHeight(Math.min(620, Math.max(360, window.innerHeight - 220)));
++    onResize();
++    window.addEventListener("resize", onResize);
++    return () => window.removeEventListener("resize", onResize);
++  }, []);
++
++  // Keyboard: space=pause, r=reduced, c=clear.
++  useEffect(() => {
++    const onKey = (e: KeyboardEvent) => {
++      if (e.code === "Space") { e.preventDefault(); setPaused(p => !p); }
++      else if (e.key === "r" || e.key === "R") { setReduced(r => !r); }
++      else if (e.key === "c" || e.key === "C") {
++        barsRef.current = [];
++        stackRef.current = new Array(LANE_COUNT).fill(0);
++      }
++    };
++    window.addEventListener("keydown", onKey);
++    return () => window.removeEventListener("keydown", onKey);
++  }, []);
++
++  const legend = useMemo(() => METRICS, []);
++
++  return (
++    <main className="app">
++      <header className="hud">
++        <h1>Metrics Data Rain</h1>
++        <div className="stats">
++          <span title="Frames per second">FPS {fps.toFixed(0)}</span>
++          <span title="Active bars">BARS {count}</span>
++        </div>
++        <div className="controls">
++          <button
++            className="btn primary"
++            onClick={() => setPaused(p => !p)}
++            aria-pressed={paused}
++          >
++            {paused ? "▶ Resume" : "⏸ Pause"}
++          </button>
++          <button
++            className="btn"
++            onClick={() => setReduced(r => !r)}
++            aria-pressed={reduced}
++          >
++            {reduced ? "◐ Motion: Off" : "◐ Motion: On"}
++          </button>
++          <button
++            className="btn"
++            onClick={() => {
++              barsRef.current = [];
++              stackRef.current = new Array(LANE_COUNT).fill(0);
++            }}
++          >
++            ⎚ Clear
++          </button>
++        </div>
++      </header>
++
++      <canvas
++        ref={canvasRef}
++        className="canvas"
++        style={{ height }}
++        aria-label="Falling metric bars visualization"
++        role="img"
++      />
++
++      <section className="legend" aria-label="Metric legend">
++        {legend.map(m => (
++          <div className="legend-item" key={m.key}>
++            <span className="swatch" style={{ background: m.color }} aria-hidden="true">
++              <span className="swatch-glyph">{m.glyph}</span>
++            </span>
++            <span className="legend-name">{m.name}</span>
++            <span className="legend-pattern">{m.pattern}</span>
++          </div>
++        ))}
++      </section>
++
++      <p className="hint">
++        Keys: <kbd>Space</kbd> pause · <kbd>R</kbd> reduced motion · <kbd>C</kbd> clear.
++        Each metric shown by label, glyph, color, and hatch pattern — not color alone.
++      </p>
++    </main>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return <DataRain />;
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..ea4a8a7 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,164 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #060912;
++  --panel: #111729;
++  --ink: #e8eefc;
++  --muted: #8a97b5;
++  --accent: #5ad1ff;
++  --warn: #ffd166;
++  --good: #9af59a;
++}
++
++* { box-sizing: border-box; }
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, sans-serif;
++  background: radial-gradient(1200px 600px at 70% -10%, #1a2342 0%, var(--bg) 60%);
++  color: var(--ink);
++  min-height: 100vh;
++}
++
++.app {
++  max-width: 1100px;
++  margin: 0 auto;
++  padding: 18px 16px 40px;
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++}
++
++.hud {
++  display: flex;
++  align-items: center;
++  gap: 16px;
++  flex-wrap: wrap;
++  padding: 12px 14px;
++  background: linear-gradient(180deg, #131a30, #0d1326);
++  border: 1px solid #243154;
++  border-radius: 12px;
++}
++
++.hud h1 {
++  font-size: 16px;
++  margin: 0;
++  letter-spacing: 0.5px;
++  font-weight: 700;
++}
++
++.stats {
++  display: flex;
++  gap: 12px;
++  font-variant-numeric: tabular-nums;
++  font-size: 12px;
++  color: var(--muted);
++  background: #0a0f1f;
++  padding: 6px 10px;
++  border-radius: 8px;
++  border: 1px solid #1e2745;
++}
++
++.controls {
++  margin-left: auto;
++  display: flex;
++  gap: 8px;
++  flex-wrap: wrap;
++}
++
++.btn {
++  appearance: none;
++  border: 1px solid #2a355a;
++  background: #0e1530;
++  color: var(--ink);
++  padding: 8px 12px;
++  border-radius: 8px;
++  font-size: 13px;
++  font-weight: 600;
++  cursor: pointer;
++  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
++  font-family: inherit;
++}
++
++.btn:hover { background: #18224a; border-color: #3a4985; }
++.btn:active { transform: translateY(1px); }
++.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
++
++.btn.primary {
++  background: linear-gradient(180deg, #1d6fb0, #155b96);
++  border-color: #2a86d6;
++}
++.btn.primary[aria-pressed="true"] {
++  background: linear-gradient(180deg, #b07a1d, #965f15);
++  border-color: #d6942a;
++}
++
++.canvas {
++  width: 100%;
++  display: block;
++  border: 1px solid #1e284a;
++  border-radius: 12px;
++  background: #0b1020;
++  box-shadow: 0 18px 60px -28px rgba(90, 209, 255, 0.25) inset;
++}
++
++.legend {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 10px;
++  padding: 10px 12px;
++  background: #0d1326;
++  border: 1px solid #1e2745;
++  border-radius: 10px;
++}
++
++.legend-item {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 4px 8px;
++  background: #0a0f1f;
++  border: 1px solid #1e2745;
++  border-radius: 8px;
++  font-size: 12px;
++}
++
++.swatch {
++  width: 20px;
++  height: 20px;
++  border-radius: 4px;
++  display: grid;
++  place-items: center;
++  font-weight: 800;
++  color: #04111f;
++  font-size: 12px;
++  border: 1px solid rgba(0,0,0,0.35);
++}
++
++.legend-name { font-weight: 600; }
++.legend-pattern {
++  color: var(--muted);
++  font-size: 10px;
++  text-transform: uppercase;
++  letter-spacing: 0.5px;
++}
++
++.hint {
++  margin: 0;
++  color: var(--muted);
++  font-size: 12px;
++  text-align: center;
++}
++
++kbd {
++  background: #0a0f1f;
++  border: 1px solid #2a355a;
++  border-bottom-width: 2px;
++  border-radius: 4px;
++  padding: 1px 6px;
++  font-size: 11px;
++  font-family: ui-monospace, monospace;
++  color: var(--ink);
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .btn { transition: none; }
++}

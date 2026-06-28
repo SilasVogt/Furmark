@@ -1,0 +1,1029 @@
+diff --git a/index.html b/index.html
+index f6dacfc..6bdcf59 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,16 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta
++      name="description"
++      content="Civic Slot helps residents find and prepare for local government appointments."
++    />
++    <title>Civic Slot | Local Government Appointment Booking</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..e6337db 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,304 @@
+ import React from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  Accessibility,
++  Building2,
++  CalendarDays,
++  CheckCircle2,
++  Clock3,
++  FileText,
++  Languages,
++  Mail,
++  MapPin,
++  Phone,
++  ShieldCheck,
++  Users,
++} from "lucide-react";
+ import "./style.css";
+ 
++const civicOfficeImage = new URL("./assets/civic-service-office.png", import.meta.url).href;
++
++const serviceCategories = [
++  {
++    icon: <FileText aria-hidden="true" />,
++    title: "Records and certificates",
++    text: "Birth records, marriage certificates, public records, and copies.",
++  },
++  {
++    icon: <Building2 aria-hidden="true" />,
++    title: "Permits and licenses",
++    text: "Business permits, building permits, professional licenses, and renewals.",
++  },
++  {
++    icon: <Users aria-hidden="true" />,
++    title: "Family and resident services",
++    text: "Benefits help, senior services, housing questions, and community programs.",
++  },
++  {
++    icon: <MapPin aria-hidden="true" />,
++    title: "Transport and parking",
++    text: "Parking permits, transit support, vehicle appointments, and local passes.",
++  },
++];
++
++const availabilityNotes = [
++  {
++    title: "Search by service",
++    text: "Available times depend on the service you choose and the office that handles it.",
++  },
++  {
++    title: "Review visit details",
++    text: "Before you book, Civic Slot lists documents to bring, office address, and estimated visit length.",
++  },
++  {
++    title: "Cancel if plans change",
++    text: "Canceled appointments return to the schedule after the office confirms the change.",
++  },
++];
++
++const commitments = [
++  "Every booking control has a visible label and helper text.",
++  "Pages are designed for keyboard use, screen readers, and high-contrast settings.",
++  "Language help and interpreter requests can be added before a visit.",
++  "Accommodation requests are sent to the office with your appointment details.",
++];
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <a className="skip-link" href="#main-content">
++        Skip to main content
++      </a>
++
++      <header className="site-header">
++        <div className="site-header__inner">
++          <a className="brand" href="#top" aria-label="Civic Slot home">
++            <CalendarDays aria-hidden="true" />
++            <span>Civic Slot</span>
++          </a>
++
++          <nav className="site-nav" aria-label="Primary navigation">
++            <a href="#services">Services</a>
++            <a href="#availability">Availability</a>
++            <a href="#accessibility">Accessibility</a>
++            <a href="#support">Support</a>
++          </nav>
++        </div>
++      </header>
++
++      <main id="main-content">
++        <section className="hero" id="top" aria-labelledby="hero-title">
++          <div className="hero__content">
++            <div className="hero__copy">
++              <p className="section-kicker">Public appointments</p>
++              <h1 id="hero-title">Book a local government visit.</h1>
++              <p className="hero__lead">
++                Choose a service, see open times, and get clear instructions before you visit.
++              </p>
++              <div className="hero__actions" aria-label="Main actions">
++                <a className="button button--primary" href="#booking-form">
++                  Find a time
++                </a>
++                <a className="button button--secondary" href="#support">
++                  Get help
++                </a>
++              </div>
++            </div>
++
++            <div className="booking-panel" aria-label="Appointment search">
++              <form
++                id="booking-form"
++                className="booking-form"
++                aria-labelledby="booking-form-title"
++                onSubmit={(event) => event.preventDefault()}
++              >
++                <div className="form-header">
++                  <h2 id="booking-form-title">Start a booking</h2>
++                  <p>Search first. You can review details before you confirm.</p>
++                </div>
++
++                <div className="field-group">
++                  <label htmlFor="service">Service type</label>
++                  <select id="service" name="service" aria-describedby="service-help" required>
++                    <option value="">Select a service</option>
++                    <option value="records">Records and certificates</option>
++                    <option value="permits">Permits and licenses</option>
++                    <option value="resident">Resident services</option>
++                    <option value="parking">Transport and parking</option>
++                  </select>
++                  <p id="service-help" className="field-help">
++                    Choose the office service you need help with.
++                  </p>
++                </div>
++
++                <div className="field-grid">
++                  <div className="field-group">
++                    <label htmlFor="office">Office location</label>
++                    <select id="office" name="office" aria-describedby="office-help" required>
++                      <option value="">Select an office</option>
++                      <option value="city-hall">City Hall</option>
++                      <option value="north-center">North Service Center</option>
++                      <option value="south-center">South Service Center</option>
++                    </select>
++                    <p id="office-help" className="field-help">
++                      Pick the location that is easiest for you to visit.
++                    </p>
++                  </div>
++
++                  <div className="field-group">
++                    <label htmlFor="date">Preferred date</label>
++                    <input id="date" name="date" type="date" aria-describedby="date-help" />
++                    <p id="date-help" className="field-help">
++                      Leave blank to see the next available times.
++                    </p>
++                  </div>
++                </div>
++
++                <fieldset className="fieldset">
++                  <legend>Visit support</legend>
++                  <label className="checkbox-row" htmlFor="access-help">
++                    <input id="access-help" name="access-help" type="checkbox" />
++                    <span>I need language help or an accessibility accommodation.</span>
++                  </label>
++                </fieldset>
++
++                <button className="button button--primary button--full" type="submit">
++                  Find a time
++                </button>
++              </form>
++            </div>
++          </div>
++
++          <figure className="hero__image">
++            <img
++              src={civicOfficeImage}
++              alt="A clean local government service counter with waiting-area seating."
++              width="1570"
++              height="1001"
++            />
++          </figure>
++        </section>
++
++        <section className="section section--services" id="services" aria-labelledby="services-title">
++          <div className="section__inner">
++            <div className="section-heading">
++              <h2 id="services-title">Common appointment categories</h2>
++              <p>
++                Civic Slot helps residents find the right office before they travel.
++              </p>
++            </div>
++
++            <div className="category-grid">
++              {serviceCategories.map((category) => (
++                <article className="category-item" key={category.title}>
++                  <div className="category-item__icon">{category.icon}</div>
++                  <div>
++                    <h3>{category.title}</h3>
++                    <p>{category.text}</p>
++                  </div>
++                </article>
++              ))}
++            </div>
++          </div>
++        </section>
++
++        <section
++          className="section section--availability"
++          id="availability"
++          aria-labelledby="availability-title"
++        >
++          <div className="section__inner availability-layout">
++            <div className="availability-summary">
++              <Clock3 aria-hidden="true" />
++              <h2 id="availability-title">How availability is shown</h2>
++              <p>
++                Times come from each participating office. The page explains what is open,
++                what is full, and when phone scheduling may be needed.
++              </p>
++            </div>
++
++            <ol className="availability-list">
++              {availabilityNotes.map((note) => (
++                <li key={note.title}>
++                  <h3>{note.title}</h3>
++                  <p>{note.text}</p>
++                </li>
++              ))}
++            </ol>
++          </div>
++        </section>
++
++        <section
++          className="section section--accessibility"
++          id="accessibility"
++          aria-labelledby="accessibility-title"
++        >
++          <div className="section__inner accessibility-layout">
++            <div className="section-heading">
++              <h2 id="accessibility-title">Built for access from the start</h2>
++              <p>
++                The service is designed so residents can book without guessing what a
++                control means or where to ask for help.
++              </p>
++            </div>
++
++            <ul className="commitment-list" aria-label="Accessibility commitments">
++              {commitments.map((commitment) => (
++                <li key={commitment}>
++                  <CheckCircle2 aria-hidden="true" />
++                  <span>{commitment}</span>
++                </li>
++              ))}
++            </ul>
++          </div>
++        </section>
++
++        <section className="section section--support" id="support" aria-labelledby="support-title">
++          <div className="section__inner support-layout">
++            <div className="support-card support-card--main">
++              <ShieldCheck aria-hidden="true" />
++              <h2 id="support-title">Support for booking questions</h2>
++              <p>
++                If you cannot find the service you need, contact the office listed on
++                your appointment page or ask staff to help you book.
++              </p>
++            </div>
++
++            <div className="support-card">
++              <Phone aria-hidden="true" />
++              <h3>Call</h3>
++              <p>Use your local 311 line or the main office number on your city website.</p>
++            </div>
++
++            <div className="support-card">
++              <Mail aria-hidden="true" />
++              <h3>Email</h3>
++              <p>Send your name, service type, and preferred office to the support desk.</p>
++            </div>
++
++            <div className="support-card">
++              <Languages aria-hidden="true" />
++              <h3>Language help</h3>
++              <p>Ask for interpreter support when you book or when you arrive.</p>
++            </div>
++
++            <div className="support-card">
++              <Accessibility aria-hidden="true" />
++              <h3>Access needs</h3>
++              <p>Request step-free access, communication help, or extra time for your visit.</p>
++            </div>
++          </div>
++        </section>
++      </main>
++
++      <footer className="site-footer">
++        <div className="site-footer__inner">
++          <p>Civic Slot helps residents prepare for local government appointments.</p>
++          <a href="#top">Back to top</a>
++        </div>
++      </footer>
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..98a7a60 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,691 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: light dark;
++  --surface: #f7f9fb;
++  --surface-raised: #fbfcfe;
++  --surface-muted: #e9f1f8;
++  --surface-strong: #d6e4f0;
++  --text: #172033;
++  --text-muted: #475467;
++  --border: #b8c7d6;
++  --accent: #005ea8;
++  --accent-hover: #1a4480;
++  --accent-text: #f8fbff;
++  --focus: #ffbe2e;
++  --shadow: 0 18px 44px rgba(23, 32, 51, 0.12);
++  --radius: 8px;
++  font-family:
++    "Segoe UI",
++    Roboto,
++    Helvetica,
++    Arial,
++    sans-serif;
++  line-height: 1.5;
++  font-weight: 400;
++  color: var(--text);
++  background: var(--surface);
++  text-rendering: optimizeLegibility;
++  -webkit-font-smoothing: antialiased;
++}
++
++@media (prefers-color-scheme: dark) {
++  :root {
++    --surface: #101820;
++    --surface-raised: #182433;
++    --surface-muted: #223245;
++    --surface-strong: #30465d;
++    --text: #edf4fb;
++    --text-muted: #c3d1df;
++    --border: #597086;
++    --accent: #8cc8ff;
++    --accent-hover: #b7dcff;
++    --accent-text: #0e1924;
++    --focus: #ffd166;
++    --shadow: 0 18px 44px rgba(3, 8, 13, 0.42);
++  }
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++    scroll-behavior: auto !important;
++    transition-duration: 0.01ms !important;
++  }
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  background: var(--surface);
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++a {
++  color: inherit;
++}
++
++button,
++input,
++select,
++textarea {
++  font: inherit;
++}
++
++svg {
++  flex: 0 0 auto;
++  stroke-width: 1.8;
++}
++
++:focus-visible {
++  outline: 4px solid var(--focus);
++  outline-offset: 3px;
++}
++
++.skip-link {
++  position: fixed;
++  left: 1rem;
++  top: 1rem;
++  z-index: 30;
++  transform: translateY(-180%);
++  border-radius: var(--radius);
++  background: var(--text);
++  color: var(--surface-raised);
++  padding: 0.75rem 1rem;
++  font-weight: 700;
++}
++
++.skip-link:focus {
++  transform: translateY(0);
++}
++
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 20;
++  border-bottom: 1px solid var(--border);
++  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
++  backdrop-filter: blur(12px);
++}
++
++.site-header__inner,
++.section__inner,
++.site-footer__inner {
++  width: min(1120px, calc(100% - 2rem));
++  margin: 0 auto;
++}
++
++.site-header__inner {
++  min-height: 68px;
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1.5rem;
++}
++
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.6rem;
++  color: var(--text);
++  font-weight: 800;
++  text-decoration: none;
++  white-space: nowrap;
++}
++
++.brand svg {
++  width: 1.45rem;
++  height: 1.45rem;
++  color: var(--accent);
++}
++
++.site-nav {
++  display: flex;
++  align-items: center;
++  gap: 0.35rem;
++  white-space: nowrap;
++}
++
++.site-nav a {
++  border-radius: var(--radius);
++  color: var(--text-muted);
++  font-size: 0.95rem;
++  font-weight: 700;
++  padding: 0.6rem 0.75rem;
++  text-decoration: none;
++}
++
++.site-nav a:hover {
++  background: var(--surface-muted);
++  color: var(--text);
++}
++
++.hero {
++  width: min(1180px, calc(100% - 2rem));
++  min-height: calc(100dvh - 68px);
++  margin: 0 auto;
++  padding: 3.5rem 0 4rem;
++  display: grid;
++  grid-template-columns: minmax(0, 1fr);
++  gap: 2rem;
++}
++
++.hero__content {
++  display: grid;
++  grid-template-columns: minmax(0, 0.95fr) minmax(340px, 0.75fr);
++  align-items: center;
++  gap: 2rem;
++}
++
++.hero__copy {
++  max-width: 43rem;
++}
++
++.section-kicker {
++  margin: 0 0 0.85rem;
++  color: var(--accent);
++  font-size: 0.82rem;
++  font-weight: 800;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++}
++
++h1,
++h2,
++h3,
++p {
++  margin-top: 0;
++}
++
++h1 {
++  max-width: 17ch;
++  margin-bottom: 1rem;
++  color: var(--text);
++  font-size: clamp(2.6rem, 4.6vw, 4.35rem);
++  line-height: 1.03;
++  letter-spacing: 0;
++}
++
++h2 {
++  margin-bottom: 0.75rem;
++  color: var(--text);
++  font-size: clamp(2rem, 3vw, 3rem);
++  line-height: 1.1;
++  letter-spacing: 0;
++}
++
++h3 {
++  margin-bottom: 0.35rem;
++  color: var(--text);
++  font-size: 1.08rem;
++  line-height: 1.25;
++}
++
++.hero__lead {
++  max-width: 34rem;
++  margin-bottom: 1.5rem;
++  color: var(--text-muted);
++  font-size: clamp(1.08rem, 1.6vw, 1.25rem);
++}
++
++.hero__actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.75rem;
++}
++
++.button {
++  min-height: 48px;
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  border: 2px solid transparent;
++  border-radius: var(--radius);
++  cursor: pointer;
++  font-weight: 800;
++  line-height: 1;
++  padding: 0.85rem 1.1rem;
++  text-decoration: none;
++  transition:
++    background-color 160ms ease,
++    border-color 160ms ease,
++    color 160ms ease,
++    transform 160ms ease;
++  white-space: nowrap;
++}
++
++.button:active {
++  transform: translateY(1px);
++}
++
++.button--primary {
++  background: var(--accent);
++  color: var(--accent-text);
++}
++
++.button--primary:hover {
++  background: var(--accent-hover);
++}
++
++.button--secondary {
++  border-color: var(--border);
++  background: var(--surface-raised);
++  color: var(--text);
++}
++
++.button--secondary:hover {
++  border-color: var(--accent);
++  background: var(--surface-muted);
++}
++
++.button--full {
++  width: 100%;
++}
++
++.booking-panel {
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-raised);
++  box-shadow: var(--shadow);
++}
++
++.booking-form {
++  padding: 1.25rem;
++}
++
++.form-header {
++  padding-bottom: 1rem;
++  border-bottom: 1px solid var(--border);
++}
++
++.form-header h2 {
++  margin-bottom: 0.35rem;
++  font-size: 1.4rem;
++}
++
++.form-header p,
++.field-help,
++.category-item p,
++.availability-summary p,
++.availability-list p,
++.section-heading p,
++.commitment-list,
++.support-card p,
++.site-footer p {
++  color: var(--text-muted);
++}
++
++.form-header p,
++.field-help {
++  margin-bottom: 0;
++  font-size: 0.93rem;
++}
++
++.field-group,
++.fieldset {
++  margin-top: 1rem;
++}
++
++.field-grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 1rem;
++}
++
++label,
++legend {
++  display: block;
++  margin-bottom: 0.35rem;
++  color: var(--text);
++  font-weight: 800;
++}
++
++select,
++input[type="date"] {
++  width: 100%;
++  min-height: 48px;
++  border: 2px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-raised);
++  color: var(--text);
++  padding: 0.7rem 0.8rem;
++}
++
++select:hover,
++input[type="date"]:hover {
++  border-color: var(--accent);
++}
++
++.fieldset {
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  padding: 0.85rem;
++}
++
++.checkbox-row {
++  display: grid;
++  grid-template-columns: auto 1fr;
++  gap: 0.65rem;
++  align-items: start;
++  margin-bottom: 0;
++  font-weight: 700;
++}
++
++.checkbox-row input {
++  width: 1.25rem;
++  height: 1.25rem;
++  margin: 0.15rem 0 0;
++  accent-color: var(--accent);
++}
++
++.hero__image {
++  margin: 0;
++  overflow: hidden;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-muted);
++}
++
++.hero__image img {
++  width: 100%;
++  aspect-ratio: 16 / 7.4;
++  object-fit: cover;
++}
++
++.section {
++  padding: 4rem 0;
++}
++
++.section-heading {
++  max-width: 42rem;
++  margin-bottom: 2rem;
++}
++
++.category-grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 1px;
++  overflow: hidden;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--border);
++}
++
++.category-item {
++  display: grid;
++  grid-template-columns: auto 1fr;
++  gap: 1rem;
++  min-height: 10rem;
++  padding: 1.25rem;
++  background: var(--surface-raised);
++}
++
++.category-item__icon,
++.availability-summary > svg,
++.support-card > svg {
++  width: 2.4rem;
++  height: 2.4rem;
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  border-radius: var(--radius);
++  background: var(--surface-muted);
++  color: var(--accent);
++  padding: 0.45rem;
++}
++
++.category-item p {
++  margin-bottom: 0;
++}
++
++.section--availability {
++  background: var(--surface-muted);
++}
++
++.availability-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
++  gap: 2rem;
++  align-items: start;
++}
++
++.availability-summary {
++  position: sticky;
++  top: 92px;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-raised);
++  padding: 1.5rem;
++}
++
++.availability-summary > svg {
++  margin-bottom: 1rem;
++}
++
++.availability-list {
++  display: grid;
++  gap: 1rem;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++  counter-reset: availability;
++}
++
++.availability-list li {
++  position: relative;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-raised);
++  padding: 1.25rem 1.25rem 1.25rem 4.25rem;
++  counter-increment: availability;
++}
++
++.availability-list li::before {
++  position: absolute;
++  left: 1.25rem;
++  top: 1.25rem;
++  width: 2rem;
++  height: 2rem;
++  display: grid;
++  place-items: center;
++  border-radius: var(--radius);
++  background: var(--accent);
++  color: var(--accent-text);
++  content: counter(availability);
++  font-weight: 900;
++}
++
++.availability-list p {
++  margin-bottom: 0;
++}
++
++.accessibility-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
++  gap: 2rem;
++  align-items: start;
++}
++
++.commitment-list {
++  display: grid;
++  gap: 0.9rem;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.commitment-list li {
++  display: grid;
++  grid-template-columns: auto 1fr;
++  gap: 0.75rem;
++  align-items: start;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-raised);
++  padding: 1rem;
++}
++
++.commitment-list svg {
++  width: 1.4rem;
++  height: 1.4rem;
++  margin-top: 0.1rem;
++  color: var(--accent);
++}
++
++.section--support {
++  background: var(--surface-muted);
++}
++
++.support-layout {
++  display: grid;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++  gap: 1rem;
++}
++
++.support-card {
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--surface-raised);
++  padding: 1.25rem;
++}
++
++.support-card--main {
++  grid-column: span 2;
++  grid-row: span 2;
++  display: flex;
++  min-height: 18rem;
++  flex-direction: column;
++  justify-content: flex-end;
++}
++
++.support-card > svg {
++  margin-bottom: 1rem;
++}
++
++.support-card p {
++  margin-bottom: 0;
++}
++
++.site-footer {
++  border-top: 1px solid var(--border);
++  background: var(--surface-raised);
++}
++
++.site-footer__inner {
++  min-height: 86px;
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++  padding: 1.25rem 0;
++}
++
++.site-footer p {
++  margin-bottom: 0;
++}
++
++.site-footer a {
++  border-radius: var(--radius);
++  color: var(--accent);
++  font-weight: 800;
++  padding: 0.4rem;
++}
++
++@media (max-width: 900px) {
++  .site-header__inner {
++    align-items: flex-start;
++    flex-direction: column;
++    gap: 0.4rem;
++    padding: 0.9rem 0;
++  }
++
++  .site-nav {
++    width: 100%;
++    overflow-x: auto;
++    padding-bottom: 0.15rem;
++  }
++
++  .hero {
++    min-height: auto;
++    padding-top: 2rem;
++  }
++
++  .hero__content,
++  .availability-layout,
++  .accessibility-layout {
++    grid-template-columns: 1fr;
++  }
++
++  .booking-panel {
++    max-width: 42rem;
++  }
++
++  .availability-summary {
++    position: static;
++  }
++
++  .support-layout {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++}
++
++@media (max-width: 700px) {
++  .site-header__inner,
++  .section__inner,
++  .site-footer__inner,
++  .hero {
++    width: min(1120px, calc(100% - 1rem));
++  }
++
++  .site-nav a {
++    padding-inline: 0.65rem;
++  }
++
++  .section-kicker {
++    font-size: 0.76rem;
++  }
++
++  h1 {
++    max-width: 13ch;
++    font-size: clamp(2.25rem, 13vw, 3.4rem);
++  }
++
++  .field-grid,
++  .category-grid,
++  .support-layout {
++    grid-template-columns: 1fr;
++  }
++
++  .category-item {
++    min-height: auto;
++  }
++
++  .support-card--main {
++    grid-column: auto;
++    grid-row: auto;
++    min-height: auto;
++  }
++
++  .hero__actions,
++  .site-footer__inner {
++    align-items: stretch;
++    flex-direction: column;
++  }
++
++  .hero__actions .button {
++    width: 100%;
++  }
++}

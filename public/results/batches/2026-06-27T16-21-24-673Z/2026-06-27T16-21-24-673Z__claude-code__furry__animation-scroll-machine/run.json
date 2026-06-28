@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T04:47:36.739Z",
+  "repoCommit": "ccee22e",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "furry",
+  "taskId": "animation-scroll-machine",
+  "category": "browser-animation",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/workspace",
+  "exitCode": 0,
+  "durationMs": 1037292,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 3940,
+    "outputTokens": 72842
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 80,
+    "animation": 40,
+    "codeQuality": 55.6,
+    "styleCompliance": 75,
+    "skillUplift": 32.8,
+    "total": 75.4
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-scroll-machine/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "furry",
+  "skillPath": "skills/furry/SKILL.md",
+  "skillSha256": "605602554af4bc7b9cd77d1521784b019d96b02a59aee853a9b5d0f1cee18b20",
+  "activation": "prompt-injected"
+}

@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T04:47:36.739Z",
+  "repoCommit": "ccee22e",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "ponytail",
+  "taskId": "coding-dependency-batches",
+  "category": "pure-coding",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/workspace",
+  "exitCode": 0,
+  "durationMs": 231161,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 2746,
+    "outputTokens": 16007
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 98,
+    "styleCompliance": 75,
+    "skillUplift": -0.4,
+    "total": 95.9
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__coding-dependency-batches/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "ponytail",
+  "skillPath": "skills/ponytail/SKILL.md",
+  "skillSha256": "d11df477b1a4e807155a7e578b135a4d9c52beef06eb3a44322940c331a06942",
+  "activation": "prompt-injected"
+}

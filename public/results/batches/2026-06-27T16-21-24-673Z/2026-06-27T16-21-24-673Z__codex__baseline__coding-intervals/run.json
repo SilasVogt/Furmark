@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-27T20:59:16.129Z",
+  "repoCommit": "ccee22e",
+  "agent": "codex",
+  "model": "gpt-5.5",
+  "effort": "xhigh",
+  "mode": "baseline",
+  "taskId": "coding-intervals",
+  "category": "pure-coding",
+  "command": "codex --ask-for-approval never exec -C /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/workspace --ignore-user-config --ignore-rules --ephemeral --model gpt-5.5 -c 'model_reasoning_effort=\"xhigh\"' --sandbox workspace-write --json",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/workspace",
+  "exitCode": 0,
+  "durationMs": 281732,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 359498,
+    "outputTokens": 12841
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 100,
+    "skillUplift": 0,
+    "total": 100
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__coding-intervals/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

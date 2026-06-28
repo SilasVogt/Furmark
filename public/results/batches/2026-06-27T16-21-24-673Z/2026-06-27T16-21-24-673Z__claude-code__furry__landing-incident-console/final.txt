@@ -1,0 +1,16 @@
+Done. Built the Traceboard landing page as a static Vite React app.
+
+**What changed**
+- `src/App.tsx` — full page: sticky nav with an accessible mobile menu (aria-expanded/aria-controls, Enter to open, Escape to close), hero, stats band, 6-up feature grid, 4-step workflow, final CTA, and footer. Skip link plus focus-visible styles throughout.
+- `src/IncidentConsole.tsx` — the hero's real app-like visual: a live incident view (INC-2041, SEV-2, MTTR, status) with a color-coded event timeline (deploy → alert → metric → log → rollback → resolved), inline SVG sparklines for error rate and p99 latency, and a ranked "suspected cause" card. No placeholder boxes.
+- `src/style.css` — dark "console" design system: CSS variables, monospace data, hairline dividers, gradient accents, responsive grids, `prefers-reduced-motion` support, and overflow guards.
+- `index.html` — title, description, theme-color, and an inline SVG favicon (kills the favicon 404).
+- `src/main.tsx` — renders `App` in StrictMode.
+- `src/App.test.tsx` — server-render smoke test for product messaging, the skip link, the console visual, and CTAs.
+
+**Verification**
+- `pnpm build` (tsc --noEmit + vite build): passed.
+- `pnpm test` (vitest): 5/5 passed.
+- Headless Chromium (Playwright) at 1280px and 390px: 0 console errors/warnings, horizontal overflow 0px at 390px, and the mobile nav opens via keyboard and closes on Escape. First viewport shows "Debug incidents on one timeline" with the incident console.
+
+All five success criteria check out. :3

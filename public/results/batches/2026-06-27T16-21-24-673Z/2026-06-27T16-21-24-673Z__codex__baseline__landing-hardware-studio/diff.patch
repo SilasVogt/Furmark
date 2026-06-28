@@ -1,0 +1,1351 @@
+diff --git a/index.html b/index.html
+index f6dacfc..abc47d9 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,16 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta
++      name="description"
++      content="Arcwell is a modular desk lamp with swappable arms, lenses, and base finishes."
++    />
++    <title>Arcwell Modular Desk Lamp</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..f942258 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,483 @@
+ import React from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  ArrowRight,
++  Check,
++  CircleGauge,
++  LampDesk,
++  Package,
++  RotateCcw,
++  Ruler,
++  ShieldCheck,
++  ShoppingBag,
++  SlidersHorizontal,
++  SunMedium,
++  Zap,
++  type LucideIcon,
++} from "lucide-react";
+ import "./style.css";
+ 
++type ConfigOption = {
++  id: string;
++  label: string;
++  detail: string;
++  price: number;
++  meta?: string;
++  swatch?: string;
++};
++
++type DetailItem = {
++  icon: LucideIcon;
++  title: string;
++  body: string;
++};
++
++type SpecItem = {
++  icon: LucideIcon;
++  label: string;
++  value: string;
++  body: string;
++  featured?: boolean;
++};
++
++const armOptions: ConfigOption[] = [
++  {
++    id: "low",
++    label: "Low Arm",
++    detail: "Close desk work with a compact profile.",
++    meta: "18 in reach",
++    price: 0,
++  },
++  {
++    id: "duo",
++    label: "Duo Arm",
++    detail: "Two articulated spans for wider work zones.",
++    meta: "25 in reach",
++    price: 60,
++  },
++  {
++    id: "rail",
++    label: "Rail Arm",
++    detail: "Long linear sweep for shared benches.",
++    meta: "31 in reach",
++    price: 90,
++  },
++];
++
++const lensOptions: ConfigOption[] = [
++  {
++    id: "focus",
++    label: "Focus Lens",
++    detail: "Tight pool for writing and inspection.",
++    meta: "Crisp center",
++    price: 0,
++  },
++  {
++    id: "softfield",
++    label: "Softfield Lens",
++    detail: "Wide, low-glare wash for screens.",
++    meta: "Diffuse edge",
++    price: 35,
++  },
++  {
++    id: "halo",
++    label: "Halo Lens",
++    detail: "Ambient ring with a defined task core.",
++    meta: "Dual layer",
++    price: 45,
++  },
++];
++
++const finishOptions: ConfigOption[] = [
++  {
++    id: "graphite",
++    label: "Graphite",
++    detail: "Satin charcoal aluminum.",
++    meta: "Default",
++    swatch: "#3d444a",
++    price: 0,
++  },
++  {
++    id: "mist",
++    label: "Mist Silver",
++    detail: "Cool anodized silver.",
++    meta: "Low contrast",
++    swatch: "#c8d0d6",
++    price: 30,
++  },
++  {
++    id: "oxide",
++    label: "Oxide Black",
++    detail: "Deep matte black shell.",
++    meta: "Light absorbent",
++    swatch: "#14191f",
++    price: 40,
++  },
++];
++
++const detailItems: DetailItem[] = [
++  {
++    icon: SlidersHorizontal,
++    title: "Arm modules",
++    body: "Short reach, wide reach, and counterbalanced Rail Arm lock into the same base.",
++  },
++  {
++    icon: SunMedium,
++    title: "Lens rings",
++    body: "Focus, softfield, and halo optics twist on with a magnetic bayonet.",
++  },
++  {
++    icon: Package,
++    title: "Base finishes",
++    body: "Graphite, mist silver, and oxide black share the same low weighted core.",
++  },
++  {
++    icon: ShieldCheck,
++    title: "Service path",
++    body: "Visible fasteners and replaceable contact blocks keep repairs practical.",
++  },
++];
++
++const specItems: SpecItem[] = [
++  {
++    icon: Ruler,
++    label: "Reach",
++    value: "18 / 25 / 31 in",
++    body: "Three arm formats cover laptop work, drawing tables, and shared benches.",
++    featured: true,
++  },
++  {
++    icon: CircleGauge,
++    label: "Light engine",
++    value: "96+ CRI",
++    body: "Tunable white output from 2700-5000 K.",
++  },
++  {
++    icon: SunMedium,
++    label: "Optics",
++    value: "3 lenses",
++    body: "Focus, softfield, and halo rings ship in individual sleeves.",
++  },
++  {
++    icon: Zap,
++    label: "Power",
++    value: "USB-C",
++    body: "45 W adapter with replaceable braided cable.",
++  },
++  {
++    icon: ShieldCheck,
++    label: "Warranty",
++    value: "5 years",
++    body: "Mechanical parts and electronics covered.",
++  },
++];
++
++const basePrice = 420;
++
++function getOption(options: ConfigOption[], id: string) {
++  return options.find((option) => option.id === id) ?? options[0];
++}
++
++function formatPrice(value: number) {
++  return new Intl.NumberFormat("en-US", {
++    style: "currency",
++    currency: "USD",
++    maximumFractionDigits: 0,
++  }).format(value);
++}
++
++function OptionGroup({
++  legend,
++  name,
++  options,
++  selected,
++  onChange,
++}: {
++  legend: string;
++  name: string;
++  options: ConfigOption[];
++  selected: string;
++  onChange: (value: string) => void;
++}) {
++  return (
++    <fieldset className="option-group">
++      <legend>{legend}</legend>
++      <div className="option-grid">
++        {options.map((option) => (
++          <label
++            className={`option-card ${selected === option.id ? "is-selected" : ""}`}
++            key={option.id}
++          >
++            <input
++              checked={selected === option.id}
++              name={name}
++              onChange={() => onChange(option.id)}
++              type="radio"
++              value={option.id}
++            />
++            <span className="option-inner">
++              <span className="option-topline">
++                {option.swatch ? (
++                  <span
++                    aria-hidden="true"
++                    className="swatch"
++                    style={{ background: option.swatch }}
++                  />
++                ) : null}
++                <span className="option-title">{option.label}</span>
++                {selected === option.id ? <Check aria-hidden="true" size={17} /> : null}
++              </span>
++              <span className="option-detail">{option.detail}</span>
++              <span className="option-meta">{option.meta}</span>
++            </span>
++          </label>
++        ))}
++      </div>
++    </fieldset>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const [arm, setArm] = React.useState("duo");
++  const [lens, setLens] = React.useState("softfield");
++  const [finish, setFinish] = React.useState("graphite");
++
++  const selectedArm = getOption(armOptions, arm);
++  const selectedLens = getOption(lensOptions, lens);
++  const selectedFinish = getOption(finishOptions, finish);
++  const total = basePrice + selectedArm.price + selectedLens.price + selectedFinish.price;
++
++  const resetConfiguration = () => {
++    setArm("duo");
++    setLens("softfield");
++    setFinish("graphite");
++  };
++
++  return (
++    <div className="site-shell">
++      <header className="site-header">
++        <div className="header-inner">
++          <a className="brand" href="#top" aria-label="Arcwell home">
++            <LampDesk aria-hidden="true" size={22} strokeWidth={1.7} />
++            <span>Arcwell</span>
++          </a>
++          <nav aria-label="Primary navigation">
++            <a href="#details">Details</a>
++            <a href="#configure">Configure</a>
++            <a href="#specs">Specs</a>
++          </nav>
++          <a aria-label="Buy Arcwell" className="button button-small button-primary" href="#buy">
++            <ShoppingBag aria-hidden="true" size={17} />
++            <span>Buy Arcwell</span>
++          </a>
++        </div>
++      </header>
++
++      <main id="top">
++        <section className="hero-section" aria-labelledby="hero-title">
++          <div className="hero-copy">
++            <p className="product-kicker">Modular desk lighting</p>
++            <h1 id="hero-title">
++              <span>Arcwell</span>
++              <span>modular desk lamp</span>
++            </h1>
++            <p className="hero-text">
++              Swap arms, lenses, and base finishes without surrendering a precise pool of
++              light.
++            </p>
++            <div className="hero-actions" aria-label="Arcwell actions">
++              <a className="button button-primary" href="#buy">
++                <ShoppingBag aria-hidden="true" size={18} />
++                <span>Buy Arcwell</span>
++              </a>
++              <a className="button button-secondary" href="#configure">
++                <SlidersHorizontal aria-hidden="true" size={18} />
++                <span>Configure</span>
++              </a>
++            </div>
++          </div>
++          <figure className="hero-media">
++            <img
++              alt="Arcwell modular desk lamp with articulated arms and round base"
++              src="/images/arcwell-hero.png"
++            />
++          </figure>
++        </section>
++
++        <section className="product-bar" aria-label="Arcwell purchase highlights">
++          <div>
++            <span>From</span>
++            <strong>$420</strong>
++          </div>
++          <div>
++            <span>Delivery</span>
++            <strong>Ships in 4 weeks</strong>
++          </div>
++          <div>
++            <span>Modules</span>
++            <strong>Tool-free changes</strong>
++          </div>
++        </section>
++
++        <section className="section details-section" id="details" aria-labelledby="details-title">
++          <div className="section-copy">
++            <h2 id="details-title">A lamp built for the parts you change.</h2>
++            <p>
++              Arcwell separates reach, optics, and base finishes so the lamp can follow a
++              room, not just a task.
++            </p>
++          </div>
++          <div className="details-layout">
++            <figure className="components-media">
++              <img
++                alt="Arcwell interchangeable arms, lenses, and base finishes arranged on a studio surface"
++                src="/images/arcwell-components.png"
++              />
++            </figure>
++            <div className="detail-list">
++              {detailItems.map((item) => {
++                const Icon = item.icon;
++                return (
++                  <article key={item.title}>
++                    <span className="detail-icon">
++                      <Icon aria-hidden="true" size={20} strokeWidth={1.7} />
++                    </span>
++                    <div>
++                      <h3>{item.title}</h3>
++                      <p>{item.body}</p>
++                    </div>
++                  </article>
++                );
++              })}
++            </div>
++          </div>
++        </section>
++
++        <section
++          className="section configure-section"
++          id="configure"
++          aria-labelledby="configure-title"
++        >
++          <div className="section-copy">
++            <h2 id="configure-title">Configure Arcwell.</h2>
++            <p>
++              Choose the arm, lens, and finish. The order panel updates for review before
++              purchase.
++            </p>
++          </div>
++
++          <div className="configure-layout">
++            <div className="configurator" aria-label="Arcwell configuration controls">
++              <OptionGroup
++                legend="Arm"
++                name="arm"
++                onChange={setArm}
++                options={armOptions}
++                selected={arm}
++              />
++              <OptionGroup
++                legend="Lens"
++                name="lens"
++                onChange={setLens}
++                options={lensOptions}
++                selected={lens}
++              />
++              <OptionGroup
++                legend="Base finish"
++                name="finish"
++                onChange={setFinish}
++                options={finishOptions}
++                selected={finish}
++              />
++            </div>
++
++            <aside className="order-panel" id="buy" aria-live="polite">
++              <h3>Your Arcwell</h3>
++              <dl>
++                <div>
++                  <dt>Arm</dt>
++                  <dd>{selectedArm.label}</dd>
++                </div>
++                <div>
++                  <dt>Lens</dt>
++                  <dd>{selectedLens.label}</dd>
++                </div>
++                <div>
++                  <dt>Finish</dt>
++                  <dd>{selectedFinish.label}</dd>
++                </div>
++              </dl>
++              <div className="panel-note">
++                Includes lamp body, selected modules, 45 W USB-C adapter, and recyclable
++                shipping case.
++              </div>
++              <div className="total-row">
++                <span>Configured total</span>
++                <strong>{formatPrice(total)}</strong>
++              </div>
++              <a className="button button-primary button-wide" href="mailto:orders@arcwell.example">
++                <ShoppingBag aria-hidden="true" size={18} />
++                <span>Buy Arcwell</span>
++              </a>
++              <button
++                className="button button-secondary button-wide"
++                onClick={resetConfiguration}
++                type="button"
++              >
++                <RotateCcw aria-hidden="true" size={17} />
++                <span>Reset configuration</span>
++              </button>
++            </aside>
++          </div>
++        </section>
++
++        <section className="section specs-section" id="specs" aria-labelledby="specs-title">
++          <div className="section-copy compact">
++            <h2 id="specs-title">Core specifications.</h2>
++            <p>Concise hardware details for workspace planning and procurement review.</p>
++          </div>
++          <div className="spec-grid">
++            {specItems.map((item) => {
++              const Icon = item.icon;
++              return (
++                <article className={`spec-tile ${item.featured ? "featured" : ""}`} key={item.label}>
++                  <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
++                  <div>
++                    <span>{item.label}</span>
++                    <strong>{item.value}</strong>
++                  </div>
++                  <p>{item.body}</p>
++                </article>
++              );
++            })}
++          </div>
++        </section>
++
++        <section className="purchase-strip" aria-labelledby="purchase-title">
++          <div>
++            <h2 id="purchase-title">Ready for the desk that keeps changing?</h2>
++            <p>Order the current Arcwell kit or save a configured summary for your workspace team.</p>
++          </div>
++          <a className="button button-primary" href="#buy">
++            <ArrowRight aria-hidden="true" size={18} />
++            <span>Buy Arcwell</span>
++          </a>
++        </section>
++      </main>
++
++      <footer className="site-footer">
++        <div>
++          <strong>Arcwell</strong>
++          <span>Modular desk lighting for focused rooms.</span>
++        </div>
++        <nav aria-label="Footer navigation">
++          <a href="#details">Materials</a>
++          <a href="#configure">Configuration</a>
++          <a href="#specs">Warranty</a>
++        </nav>
++      </footer>
++    </div>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..e070a90 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,834 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: light dark;
++  --bg: #edf2f5;
++  --bg-soft: #e2e9ee;
++  --surface: #f7fafc;
++  --surface-strong: #d8e1e7;
++  --ink: #111820;
++  --ink-soft: #2b3440;
++  --muted: #61707c;
++  --line: rgba(17, 24, 32, 0.14);
++  --accent: #1fa8c4;
++  --accent-soft: rgba(31, 168, 196, 0.14);
++  --button: #111820;
++  --button-text: #f4f8fb;
++  --shadow: 0 24px 80px rgba(24, 37, 48, 0.16);
++  --radius-card: 8px;
++  --radius-pill: 999px;
++}
++
++@media (prefers-color-scheme: dark) {
++  :root {
++    --bg: #0e1419;
++    --bg-soft: #121a21;
++    --surface: #171f27;
++    --surface-strong: #202c35;
++    --ink: #eef4f7;
++    --ink-soft: #cbd6dc;
++    --muted: #99a7b1;
++    --line: rgba(238, 244, 247, 0.14);
++    --accent: #3fc4df;
++    --accent-soft: rgba(63, 196, 223, 0.15);
++    --button: #eef4f7;
++    --button-text: #10171d;
++    --shadow: 0 24px 90px rgba(2, 8, 12, 0.48);
++  }
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  overflow-x: hidden;
++  background:
++    radial-gradient(circle at 78% 4%, var(--accent-soft), transparent 28rem),
++    linear-gradient(180deg, var(--bg), var(--bg-soft));
++  color: var(--ink);
++  font-family:
++    "Avenir Next",
++    "Neue Haas Grotesk",
++    "Segoe UI",
++    system-ui,
++    -apple-system,
++    BlinkMacSystemFont,
++    sans-serif;
++  line-height: 1.5;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++button,
++a {
++  -webkit-tap-highlight-color: transparent;
++}
++
++button {
++  font: inherit;
++}
++
++.site-shell {
++  min-height: 100dvh;
++  overflow: hidden;
++}
++
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 10;
++  border-bottom: 1px solid var(--line);
++  background: color-mix(in srgb, var(--bg) 82%, transparent);
++  backdrop-filter: blur(18px);
++}
++
++.header-inner,
++.hero-section,
++.product-bar,
++.section,
++.purchase-strip,
++.site-footer {
++  width: min(1180px, calc(100% - 40px));
++  margin-inline: auto;
++}
++
++.header-inner {
++  display: grid;
++  grid-template-columns: 1fr auto 1fr;
++  align-items: center;
++  min-height: 72px;
++  gap: 24px;
++}
++
++.brand,
++.site-header nav,
++.site-footer nav {
++  display: inline-flex;
++  align-items: center;
++}
++
++.brand {
++  gap: 10px;
++  font-size: 1.03rem;
++  font-weight: 750;
++}
++
++.site-header nav {
++  justify-content: center;
++  gap: clamp(16px, 3vw, 34px);
++  color: var(--muted);
++  font-size: 0.95rem;
++  font-weight: 650;
++  white-space: nowrap;
++}
++
++.site-header nav a,
++.site-footer nav a {
++  transition:
++    color 180ms ease,
++    opacity 180ms ease;
++}
++
++.site-header nav a:hover,
++.site-footer nav a:hover {
++  color: var(--ink);
++}
++
++.site-header .button {
++  justify-self: end;
++}
++
++.button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  min-height: 48px;
++  gap: 10px;
++  border: 1px solid transparent;
++  border-radius: var(--radius-pill);
++  padding: 0 19px;
++  cursor: pointer;
++  font-weight: 750;
++  white-space: nowrap;
++  transition:
++    transform 180ms ease,
++    background 180ms ease,
++    border-color 180ms ease,
++    color 180ms ease;
++}
++
++.button-small {
++  min-height: 40px;
++  padding-inline: 16px;
++  font-size: 0.93rem;
++}
++
++.button-primary {
++  background: var(--button);
++  color: var(--button-text);
++  box-shadow: 0 16px 34px rgba(17, 24, 32, 0.18);
++}
++
++.button-secondary {
++  border-color: var(--line);
++  background: color-mix(in srgb, var(--surface) 82%, transparent);
++  color: var(--ink);
++}
++
++.button-wide {
++  width: 100%;
++}
++
++.button:hover {
++  transform: translateY(-2px);
++}
++
++.button:active {
++  transform: translateY(1px) scale(0.99);
++}
++
++.button:focus-visible,
++.site-header a:focus-visible,
++.site-footer a:focus-visible {
++  outline: 3px solid var(--accent);
++  outline-offset: 3px;
++}
++
++.hero-section {
++  display: grid;
++  grid-template-columns: minmax(0, 0.86fr) minmax(420px, 1.14fr);
++  align-items: center;
++  gap: clamp(28px, 5vw, 78px);
++  min-height: min(720px, calc(100dvh - 144px));
++  padding-block: clamp(34px, 7vw, 86px) clamp(24px, 4vw, 42px);
++}
++
++.hero-copy {
++  max-width: 540px;
++}
++
++.product-kicker {
++  margin: 0 0 18px;
++  color: var(--accent);
++  font-size: 1rem;
++  font-weight: 760;
++}
++
++h1,
++h2,
++h3,
++p {
++  margin-top: 0;
++}
++
++h1 {
++  margin-bottom: 22px;
++  color: var(--ink);
++  font-weight: 780;
++  line-height: 0.98;
++}
++
++h1 span {
++  display: block;
++}
++
++h1 span:first-child {
++  font-size: clamp(4.4rem, 9vw, 8.2rem);
++}
++
++h1 span:last-child {
++  color: var(--ink-soft);
++  font-size: clamp(2.15rem, 4.4vw, 4.2rem);
++}
++
++.hero-text {
++  max-width: 34rem;
++  margin-bottom: 28px;
++  color: var(--muted);
++  font-size: clamp(1.08rem, 1.7vw, 1.3rem);
++}
++
++.hero-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++}
++
++.hero-media,
++.components-media {
++  margin: 0;
++  overflow: hidden;
++  border: 1px solid var(--line);
++  border-radius: var(--radius-card);
++  background: var(--surface-strong);
++  box-shadow: var(--shadow);
++}
++
++.hero-media {
++  aspect-ratio: 1.42;
++}
++
++.hero-media img,
++.components-media img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++}
++
++.product-bar {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  border-top: 1px solid var(--line);
++  border-bottom: 1px solid var(--line);
++}
++
++.product-bar div {
++  min-width: 0;
++  padding: 20px clamp(14px, 3vw, 30px);
++}
++
++.product-bar div + div {
++  border-left: 1px solid var(--line);
++}
++
++.product-bar span {
++  display: block;
++  margin-bottom: 4px;
++  color: var(--muted);
++  font-size: 0.88rem;
++}
++
++.product-bar strong {
++  display: block;
++  color: var(--ink);
++  font-size: clamp(1rem, 2vw, 1.25rem);
++}
++
++.section {
++  padding-block: clamp(72px, 11vw, 132px);
++}
++
++.section-copy {
++  max-width: 720px;
++  margin-bottom: clamp(28px, 5vw, 52px);
++}
++
++.section-copy.compact {
++  max-width: 560px;
++}
++
++.section-copy h2,
++.purchase-strip h2 {
++  margin-bottom: 16px;
++  font-size: clamp(2.15rem, 5vw, 4.65rem);
++  font-weight: 780;
++  line-height: 1.02;
++}
++
++.section-copy p,
++.purchase-strip p,
++.detail-list p,
++.spec-tile p,
++.panel-note {
++  color: var(--muted);
++}
++
++.details-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
++  gap: clamp(24px, 5vw, 70px);
++  align-items: center;
++}
++
++.components-media {
++  aspect-ratio: 1.32;
++}
++
++.detail-list {
++  display: grid;
++  gap: 0;
++}
++
++.detail-list article {
++  display: grid;
++  grid-template-columns: 44px minmax(0, 1fr);
++  gap: 18px;
++  padding-block: 24px;
++  border-top: 1px solid var(--line);
++}
++
++.detail-list article:last-child {
++  border-bottom: 1px solid var(--line);
++}
++
++.detail-icon {
++  display: grid;
++  width: 44px;
++  height: 44px;
++  place-items: center;
++  border-radius: var(--radius-card);
++  background: var(--accent-soft);
++  color: var(--accent);
++}
++
++.detail-list h3,
++.order-panel h3 {
++  margin-bottom: 7px;
++  font-size: 1.2rem;
++}
++
++.configure-section {
++  border-block: 1px solid var(--line);
++}
++
++.configure-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) minmax(310px, 0.42fr);
++  gap: clamp(24px, 5vw, 56px);
++  align-items: start;
++}
++
++.configurator {
++  display: grid;
++  gap: 28px;
++}
++
++.option-group {
++  margin: 0;
++  padding: 0;
++  border: 0;
++}
++
++.option-group legend {
++  margin-bottom: 12px;
++  font-size: 1rem;
++  font-weight: 780;
++}
++
++.option-grid {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 12px;
++}
++
++.option-card {
++  position: relative;
++  min-width: 0;
++  min-height: 142px;
++  overflow: hidden;
++  border: 1px solid var(--line);
++  border-radius: var(--radius-card);
++  background: color-mix(in srgb, var(--surface) 88%, transparent);
++  cursor: pointer;
++  transition:
++    transform 180ms ease,
++    border-color 180ms ease,
++    background 180ms ease;
++}
++
++.option-card input {
++  position: absolute;
++  inset: 0;
++  cursor: pointer;
++  opacity: 0;
++}
++
++.option-inner {
++  position: relative;
++  display: grid;
++  min-height: 142px;
++  gap: 10px;
++  align-content: start;
++  padding: 16px;
++  pointer-events: none;
++}
++
++.option-topline {
++  display: flex;
++  min-width: 0;
++  align-items: center;
++  gap: 9px;
++  color: var(--ink);
++}
++
++.option-title {
++  min-width: 0;
++  overflow-wrap: anywhere;
++  font-weight: 760;
++}
++
++.option-detail {
++  color: var(--muted);
++  font-size: 0.94rem;
++}
++
++.option-meta {
++  align-self: end;
++  color: var(--accent);
++  font-size: 0.86rem;
++  font-weight: 750;
++}
++
++.swatch {
++  width: 18px;
++  height: 18px;
++  flex: 0 0 auto;
++  border: 1px solid var(--line);
++  border-radius: 50%;
++  box-shadow: inset 0 0 0 2px rgba(244, 248, 251, 0.26);
++}
++
++.option-card.is-selected {
++  border-color: var(--accent);
++  background: var(--accent-soft);
++}
++
++.option-card:has(input:focus-visible) {
++  outline: 3px solid var(--accent);
++  outline-offset: 3px;
++}
++
++.order-panel {
++  position: sticky;
++  top: 96px;
++  display: grid;
++  gap: 20px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius-card);
++  background: color-mix(in srgb, var(--surface) 88%, transparent);
++  padding: clamp(20px, 3vw, 28px);
++  box-shadow: var(--shadow);
++}
++
++.order-panel dl {
++  display: grid;
++  gap: 12px;
++  margin: 0;
++}
++
++.order-panel dl div,
++.total-row {
++  display: flex;
++  justify-content: space-between;
++  gap: 18px;
++}
++
++.order-panel dt,
++.total-row span {
++  color: var(--muted);
++}
++
++.order-panel dd {
++  margin: 0;
++  color: var(--ink);
++  font-weight: 760;
++  text-align: right;
++}
++
++.panel-note {
++  margin: 0;
++  border-top: 1px solid var(--line);
++  padding-top: 18px;
++  font-size: 0.95rem;
++}
++
++.total-row {
++  align-items: end;
++  border-top: 1px solid var(--line);
++  padding-top: 18px;
++}
++
++.total-row strong {
++  color: var(--ink);
++  font-size: clamp(2rem, 4vw, 3rem);
++  line-height: 1;
++}
++
++.spec-grid {
++  display: grid;
++  grid-template-columns: 1.15fr 0.85fr 0.85fr;
++  gap: 14px;
++}
++
++.spec-tile {
++  display: grid;
++  min-height: 176px;
++  align-content: space-between;
++  gap: 18px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius-card);
++  background: color-mix(in srgb, var(--surface) 86%, transparent);
++  padding: clamp(18px, 3vw, 26px);
++}
++
++.spec-tile.featured {
++  grid-row: span 2;
++  background:
++    linear-gradient(145deg, color-mix(in srgb, var(--ink) 92%, var(--accent)), var(--ink-soft));
++  color: var(--button-text);
++}
++
++.spec-tile.featured p,
++.spec-tile.featured span {
++  color: color-mix(in srgb, var(--button-text) 70%, transparent);
++}
++
++.spec-tile svg {
++  color: var(--accent);
++}
++
++.spec-tile span {
++  display: block;
++  margin-bottom: 6px;
++  color: var(--muted);
++  font-size: 0.9rem;
++  font-weight: 720;
++}
++
++.spec-tile strong {
++  display: block;
++  color: inherit;
++  font-size: clamp(1.65rem, 3vw, 2.55rem);
++  line-height: 1.05;
++}
++
++.spec-tile p {
++  margin-bottom: 0;
++}
++
++.purchase-strip {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto;
++  align-items: center;
++  gap: 26px;
++  border-top: 1px solid var(--line);
++  padding-block: clamp(44px, 7vw, 74px);
++}
++
++.purchase-strip h2 {
++  max-width: 740px;
++}
++
++.purchase-strip p {
++  max-width: 610px;
++  margin-bottom: 0;
++}
++
++.site-footer {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 24px;
++  border-top: 1px solid var(--line);
++  padding-block: 28px;
++  color: var(--muted);
++}
++
++.site-footer div {
++  display: grid;
++  gap: 3px;
++}
++
++.site-footer strong {
++  color: var(--ink);
++}
++
++.site-footer nav {
++  gap: 22px;
++  font-size: 0.94rem;
++}
++
++@media (prefers-reduced-motion: no-preference) {
++  .hero-copy,
++  .hero-media,
++  .product-bar {
++    animation: rise-in 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
++  }
++
++  .hero-media {
++    animation-delay: 90ms;
++  }
++
++  .product-bar {
++    animation-delay: 150ms;
++  }
++
++  .option-card:hover {
++    transform: translateY(-2px);
++  }
++}
++
++@keyframes rise-in {
++  from {
++    opacity: 0;
++    transform: translateY(18px);
++  }
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++
++@media (max-width: 940px) {
++  .header-inner {
++    grid-template-columns: auto 1fr auto;
++  }
++
++  .site-header nav {
++    display: none;
++  }
++
++  .hero-section,
++  .details-layout,
++  .configure-layout,
++  .purchase-strip {
++    grid-template-columns: 1fr;
++  }
++
++  .hero-section {
++    min-height: 0;
++  }
++
++  .hero-copy {
++    max-width: 680px;
++  }
++
++  .hero-media {
++    aspect-ratio: 1.25;
++  }
++
++  .order-panel {
++    position: static;
++  }
++
++  .spec-grid {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .spec-tile.featured {
++    grid-row: auto;
++    grid-column: 1 / -1;
++  }
++
++  .purchase-strip .button {
++    justify-self: start;
++  }
++}
++
++@media (max-width: 700px) {
++  .header-inner,
++  .hero-section,
++  .product-bar,
++  .section,
++  .purchase-strip,
++  .site-footer {
++    width: min(100% - 28px, 1180px);
++  }
++
++  .header-inner {
++    min-height: 66px;
++    gap: 12px;
++  }
++
++  .brand span {
++    font-size: 0.98rem;
++  }
++
++  .button {
++    min-height: 44px;
++    padding-inline: 15px;
++  }
++
++  .button-small {
++    min-height: 38px;
++  }
++
++  .hero-section {
++    padding-top: 28px;
++  }
++
++  h1 span:first-child {
++    font-size: clamp(3.8rem, 17vw, 5.6rem);
++  }
++
++  h1 span:last-child {
++    font-size: clamp(1.9rem, 8vw, 3rem);
++  }
++
++  .product-bar {
++    grid-template-columns: 1fr;
++  }
++
++  .product-bar div + div {
++    border-left: 0;
++    border-top: 1px solid var(--line);
++  }
++
++  .option-grid,
++  .spec-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .option-card,
++  .option-inner {
++    min-height: 124px;
++  }
++
++  .detail-list article {
++    grid-template-columns: 38px minmax(0, 1fr);
++    gap: 14px;
++  }
++
++  .detail-icon {
++    width: 38px;
++    height: 38px;
++  }
++
++  .site-footer {
++    align-items: flex-start;
++    flex-direction: column;
++  }
++
++  .site-footer nav {
++    flex-wrap: wrap;
++  }
++}
++
++@media (max-width: 430px) {
++  .site-header .button span {
++    display: none;
++  }
++
++  .hero-actions .button,
++  .purchase-strip .button {
++    width: 100%;
++  }
++
++  .hero-media {
++    aspect-ratio: 1;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    animation-duration: 0.001ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: 0.001ms !important;
++  }
++}

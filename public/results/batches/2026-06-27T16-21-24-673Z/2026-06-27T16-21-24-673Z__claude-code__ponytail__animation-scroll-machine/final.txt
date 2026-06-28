@@ -1,0 +1,1 @@
+That's the expected shutdown — exit 143 is SIGTERM from the `kill` I ran to stop the preview server after verification. No action needed; the work is complete and verified.

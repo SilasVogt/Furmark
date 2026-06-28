@@ -1,0 +1,14 @@
+Tests green (20 passing), typecheck clean. :3
+
+The fixture already had a correct `LruCache` in `src/lruCache.ts` that meets every success criterion (generic, deterministic LRU eviction, expired entries skipped and counted, accurate stats), so I left it untouched and focused on the test gap.
+
+**What changed** — expanded `tests/lruCache.test.ts` from 3 tests to 20 focused ones, grouped by the requested scenarios:
+- **capacity eviction**: LRU order, multi-evict determinism, `maxSize: 1`
+- **recency refresh**: `get` and update protect an entry; `has` does not
+- **ttl behavior**: pre-expiry hit, boundary expiry (`expiresAt <= now`), `has`/`size` pruning, per-entry TTL override, `null` = no expiry, update resets expiry
+- **updates**: in-place value replace without size growth
+- **deletes**: return value, post-delete miss, no spurious eviction stats
+- **stats and clear**: full counter accuracy, clear preserves stats, snapshot immutability
+- **validation**: bad `maxSize`/`ttlMs` throw
+
+**Verification**: `npx vitest run` (20 passed) and `npx tsc --noEmit` (clean).

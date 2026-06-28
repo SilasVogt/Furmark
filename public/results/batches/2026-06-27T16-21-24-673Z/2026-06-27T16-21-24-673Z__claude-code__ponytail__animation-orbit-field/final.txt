@@ -1,0 +1,11 @@
+Tests pass (3/3), `tsc --noEmit` is clean, and `vite build` succeeds.
+
+Built the orbit field with native Canvas 2D + `requestAnimationFrame` + `matchMedia` — no new dependencies. Three files:
+
+- **`src/field.ts`** — pure `orbitXY` + `repulse` helpers (render-time pointer offset, auto-relaxes; no spring state).
+- **`src/main.tsx`** — `OrbitField` component: 90 satellites orbit center; DPR-aware resize keeps it crisp; pointer parts the field; a real `<button>` (`aria-pressed`, keyboard-focusable) pauses/resumes by canceling the rAF loop. Reduced-motion stops the auto loop and holds orbits still, but the pointer still parts the field (user-driven, not automatic).
+- **`src/field.test.ts`** — covers the pointer-response logic (the one non-trivial branch).
+
+All five success criteria are covered. Verified with `npm test` and `npm run build`.
+
+skipped: keyboard-driven pointer interaction (field is decorative; the pause control is keyboard-accessible), add when the canvas needs to be a primary keyboard control.

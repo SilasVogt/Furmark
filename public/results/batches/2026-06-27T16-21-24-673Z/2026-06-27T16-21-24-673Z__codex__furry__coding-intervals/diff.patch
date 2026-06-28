@@ -1,0 +1,131 @@
+diff --git a/src/intervals.ts b/src/intervals.ts
+index 4d5e50e..81beeb4 100644
+--- a/src/intervals.ts
++++ b/src/intervals.ts
+@@ -9,7 +9,9 @@ export type CoalesceOptions = {
+ 
+ export function coalesceIntervals(intervals: readonly Interval[], options: CoalesceOptions = {}): Interval[] {
+   const mergeTouching = options.mergeTouching ?? true;
+-  const normalized = intervals.map(normalizeInterval).sort((a, b) => a.start - b.start || a.end - b.end);
++  const normalized = intervals
++    .map((interval, index) => normalizeInterval(interval, index))
++    .sort((a, b) => a.start - b.start || a.end - b.end);
+   const result: Interval[] = [];
+ 
+   for (const interval of normalized) {
+@@ -29,15 +31,16 @@ export function coalesceIntervals(intervals: readonly Interval[], options: Coale
+   return result;
+ }
+ 
+-function normalizeInterval(interval: Interval): Interval {
+-  assertFinite(interval.start, "start");
+-  assertFinite(interval.end, "end");
++function normalizeInterval(interval: Interval, index: number): Interval {
++  assertFiniteNumber(interval.start, index, "start");
++  assertFiniteNumber(interval.end, index, "end");
+   return interval.start <= interval.end
+     ? { start: interval.start, end: interval.end }
+     : { start: interval.end, end: interval.start };
+ }
+ 
+-function assertFinite(value: number, label: string): void {
+-  if (!Number.isFinite(value)) throw new Error(`Interval ${label} must be finite`);
++function assertFiniteNumber(value: number, intervalIndex: number, label: string): void {
++  if (!Number.isFinite(value)) {
++    throw new Error(`Interval ${intervalIndex} ${label} must be a finite number; received ${String(value)}`);
++  }
+ }
+-
+diff --git a/tests/intervals.test.ts b/tests/intervals.test.ts
+index 81c8bb9..9456d62 100644
+--- a/tests/intervals.test.ts
++++ b/tests/intervals.test.ts
+@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
+ import { coalesceIntervals } from "../src/intervals";
+ 
+ describe("coalesceIntervals", () => {
++  it("handles empty and single-item inputs", () => {
++    expect(coalesceIntervals([])).toEqual([]);
++    expect(coalesceIntervals([{ start: 3, end: 1 }])).toEqual([{ start: 1, end: 3 }]);
++  });
++
+   it("merges overlaps deterministically", () => {
+     expect(
+       coalesceIntervals([
+@@ -12,6 +17,51 @@ describe("coalesceIntervals", () => {
+     ).toEqual([{ start: 1, end: 8 }]);
+   });
+ 
++  it("returns the same sorted output regardless of input order", () => {
++    const expected = [
++      { start: -2, end: -1 },
++      { start: 1, end: 2 },
++      { start: 3, end: 4 },
++      { start: 8, end: 9 },
++    ];
++
++    expect(
++      coalesceIntervals([
++        { start: 8, end: 9 },
++        { start: 3, end: 4 },
++        { start: -2, end: -1 },
++        { start: 1, end: 2 },
++      ]),
++    ).toEqual(expected);
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 2 },
++        { start: -2, end: -1 },
++        { start: 8, end: 9 },
++        { start: 3, end: 4 },
++      ]),
++    ).toEqual(expected);
++  });
++
++  it("merges duplicate ranges", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 4 },
++        { start: 1, end: 4 },
++        { start: 2, end: 3 },
++      ]),
++    ).toEqual([{ start: 1, end: 4 }]);
++  });
++
++  it("merges touching intervals by default", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 2 },
++        { start: 2, end: 3 },
++      ]),
++    ).toEqual([{ start: 1, end: 3 }]);
++  });
++
+   it("can keep touching intervals separate", () => {
+     expect(
+       coalesceIntervals(
+@@ -31,13 +81,20 @@ describe("coalesceIntervals", () => {
+     expect(
+       coalesceIntervals([
+         { start: 4, end: -1 },
+-        { start: -3, end: -2 },
++        { start: -3, end: 0 },
+       ]),
+     ).toEqual([{ start: -3, end: 4 }]);
+   });
+ 
+-  it("rejects invalid endpoints", () => {
+-    expect(() => coalesceIntervals([{ start: 1, end: Number.NaN }])).toThrow(/finite/);
++  it("rejects invalid endpoints with useful errors", () => {
++    expect(() => coalesceIntervals([{ start: 1, end: Number.NaN }])).toThrow(
++      "Interval 0 end must be a finite number; received NaN",
++    );
++    expect(() =>
++      coalesceIntervals([
++        { start: 1, end: 2 },
++        { start: Number.POSITIVE_INFINITY, end: 3 },
++      ]),
++    ).toThrow("Interval 1 start must be a finite number; received Infinity");
+   });
+ });
+-

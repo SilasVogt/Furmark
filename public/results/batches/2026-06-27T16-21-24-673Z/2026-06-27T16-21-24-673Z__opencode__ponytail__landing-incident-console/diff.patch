@@ -1,0 +1,1035 @@
+diff --git a/index.html b/index.html
+index f6dacfc..54bb7c4 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Traceboard — incident timeline debugger for engineering teams. Reconstruct what happened, when, and why." /><title>Traceboard — Incident Timeline Debugger</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..d179600 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,404 @@
+ import React from "react";
+ import { createRoot } from "react-dom/client";
+ import "./style.css";
++import {
++  Activity,
++  AlertTriangle,
++  ArrowRight,
++  Bell,
++  Bug,
++  ChevronRight,
++  Clock,
++  Code2,
++  GitBranch,
++  GitCommit,
++  Github,
++  Layers,
++  Search,
++  ShieldCheck,
++  Twitter,
++  Zap,
++} from "lucide-react";
++
++const features = [
++  {
++    icon: Layers,
++    title: "Correlate across layers",
++    body: "Deploys, traces, logs, alerts, and metric anomalies on one timeline. Stop juggling tabs to find the blast radius.",
++  },
++  {
++    icon: GitBranch,
++    title: "Blame the commit, not the team",
++    body: "Every event links to the deploy, PR, and diff that introduced it. Root cause in minutes, not the standup.",
++  },
++  {
++    icon: Bug,
++    title: "Replay the incident",
++    body: "Scrub backwards through service state. See the exact span where latency spiked and who called it.",
++  },
++  {
++    icon: Bell,
++    title: "Noise-filtered signals",
++    body: "Traceboard dedupes flapping alerts and surfaces only the events that moved during the window.",
++  },
++  {
++    icon: ShieldCheck,
++    title: "Built for on-call",
++    body: "SSO, SCIM, audit logs, and read-only sharing for stakeholders. SOC 2 Type II.",
++  },
++  {
++    icon: Zap,
++    title: "Drop-in instrumentation",
++    body: "OpenTelemetry-native. Point Traceboard at your existing collector and timelines populate in minutes.",
++  },
++];
++
++const workflow = [
++  {
++    n: "01",
++    title: "Ingest",
++    body: "OTel, Datadog, PagerDuty, GitHub, and Slack events stream into a unified ledger.",
++  },
++  {
++    n: "02",
++    title: "Correlate",
++    body: "Traceboard aligns every signal to a shared clock and groups them by service, deploy, and trace.",
++  },
++  {
++    n: "03",
++    title: "Investigate",
++    body: "Filter, scrub, and pivot the timeline. Pin suspects, attach notes, and page the right owner.",
++  },
++  {
++    n: "04",
++    title: "Resolve",
++    body: "Ship a one-click postmortem with the causal chain, MTTR, and the linked fix already filled in.",
++  },
++];
++
++function Nav() {
++  const [open, setOpen] = React.useState(false);
++  return (
++    <header className="nav" role="banner">
++      <a className="brand" href="#top" aria-label="Traceboard home">
++        <span className="brand-mark" aria-hidden="true">
++          <Activity size={18} strokeWidth={2.5} />
++        </span>
++        <span className="brand-name">Traceboard</span>
++      </a>
++      <nav className="nav-links" aria-label="Primary">
++        <a href="#features">Features</a>
++        <a href="#workflow">Workflow</a>
++        <a href="#timeline">Live demo</a>
++        <a href="#pricing">Pricing</a>
++        <a href="#docs" className="ghost">Docs</a>
++      </nav>
++      <div className="nav-cta">
++        <a className="link-login" href="#login">Sign in</a>
++        <a className="btn btn-primary btn-sm" href="#start">
++          Start free
++          <ArrowRight size={15} />
++        </a>
++        <button
++          className="nav-toggle"
++          aria-label="Toggle menu"
++          aria-expanded={open}
++          onClick={() => setOpen((v) => !v)}
++        >
++          <span /> <span /> <span />
++        </button>
++      </div>
++      {open && (
++        <div className="nav-mobile" role="menu">
++          <a href="#features" onClick={() => setOpen(false)}>Features</a>
++          <a href="#workflow" onClick={() => setOpen(false)}>Workflow</a>
++          <a href="#timeline" onClick={() => setOpen(false)}>Live demo</a>
++          <a href="#pricing" onClick={() => setOpen(false)}>Pricing</a>
++          <a href="#login" onClick={() => setOpen(false)}>Sign in</a>
++        </div>
++      )}
++    </header>
++  );
++}
++
++function TimelineEvent({
++  time,
++  kind,
++  icon: Icon,
++  title,
++  meta,
++  tone,
++}: {
++  time: string;
++  kind: string;
++  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
++  title: string;
++  meta: string;
++  tone: "deploy" | "error" | "warn" | "ok" | "trace";
++}) {
++  return (
++    <li className={`tl-row tl-${tone}`}>
++      <span className="tl-time">{time}</span>
++      <span className="tl-dot" aria-hidden="true">
++        <Icon size={11} strokeWidth={3} />
++      </span>
++      <span className="tl-kind">{kind}</span>
++      <span className="tl-title">{title}</span>
++      <span className="tl-meta">{meta}</span>
++    </li>
++  );
++}
++
++function ConsoleMock() {
++  return (
++    <div className="console" role="img" aria-label="Traceboard incident timeline console showing correlated deploys, errors, traces, and recovery events">
++      <div className="console-bar">
++        <span className="dot red" />
++        <span className="dot amber" />
++        <span className="dot green" />
++        <span className="console-title">traceboard · incident #INC-2041 · checkout-api</span>
++        <span className="console-status">RESOLVED · MTTR 18m</span>
++      </div>
++      <div className="console-body">
++        <aside className="console-side">
++          <div className="side-search">
++            <Search size={13} />
++            <span>filter timeline</span>
++          </div>
++          <ul className="side-filters">
++            <li className="active">All signals <span>47</span></li>
++            <li>Deploys <span>3</span></li>
++            <li>Errors <span>12</span></li>
++            <li>Traces <span>19</span></li>
++            <li>Alerts <span>8</span></li>
++            <li>Metrics <span>5</span></li>
++          </ul>
++          <div className="side-graph" aria-hidden="true">
++            <svg viewBox="0 0 120 48" preserveAspectRatio="none">
++              <polyline
++                points="0,40 10,38 20,39 30,36 40,30 50,10 55,4 60,8 70,18 80,26 90,30 100,33 110,35 120,36"
++                fill="none"
++                stroke="var(--accent)"
++                strokeWidth="1.5"
++              />
++              <line x1="55" y1="0" x2="55" y2="48" stroke="var(--danger)" strokeDasharray="2 2" strokeWidth="0.6" />
++            </svg>
++            <span className="graph-label">p99 latency · spike 55s</span>
++          </div>
++        </aside>
++
++        <section className="console-main">
++          <div className="console-meta">
++            <span className="chip chip-red"><AlertTriangle size={11} /> SEV-2</span>
++            <span className="chip">checkout-api</span>
++            <span className="chip">us-east-1</span>
++            <span className="chip chip-mono">commit a3f9c2</span>
++            <span className="chip-time"><Clock size={11} /> 14:02 → 14:20 UTC</span>
++          </div>
++
++          <ul className="timeline" aria-label="Incident timeline events">
++            <TimelineEvent time="14:01:52" kind="deploy" icon={GitCommit} title="release checkout-api@2.14.0" meta="a3f9c2 · @maya" tone="deploy" />
++            <TimelineEvent time="14:02:18" kind="trace" icon={Activity} title="POST /charge · 8.2s (p99)" meta="span #7af3" tone="trace" />
++            <TimelineEvent time="14:02:31" kind="error" icon={Bug} title="500 · ConnectionTimeout → pg-primary" meta="×412" tone="error" />
++            <TimelineEvent time="14:02:44" kind="alert" icon={Bell} title="pagerduty · checkout-errors &gt; 1%" meta="routed to @oncall" tone="warn" />
++            <TimelineEvent time="14:06:09" kind="trace" icon={Activity} title="pool exhausted · checkout-api" meta="conn=100/100" tone="trace" />
++            <TimelineEvent time="14:11:27" kind="deploy" icon={GitCommit} title="rollback → checkout-api@2.13.9" meta="reverted #1842" tone="deploy" />
++            <TimelineEvent time="14:14:02" kind="metric" icon={Zap} title="p99 falling · 8.2s → 1.1s" meta="recovering" tone="ok" />
++            <TimelineEvent time="14:19:40" kind="resolve" icon={ShieldCheck} title="incident auto-resolved" meta="SLO green" tone="ok" />
++          </ul>
++
++          <div className="console-foot">
++            <span><GitBranch size={12} /> root cause: #1842 removed pool cap guard</span>
++            <span className="foot-link">open postmortem <ChevronRight size={12} /></span>
++          </div>
++        </section>
++      </div>
++    </div>
++  );
++}
++
++function Hero() {
++  return (
++    <section className="hero" id="top">
++      <div className="hero-copy">
++        <span className="eyebrow"><span className="pulse" /> Built for on-call engineers</span>
++        <h1>
++          See the whole incident,<br />
++          <span className="grad">on one timeline.</span>
++        </h1>
++        <p className="lede">
++          Traceboard reconstructs an incident from deploys, traces, logs, and alerts —
++          aligned to one clock, linked to the commit that caused it. Stop correlating
++          timestamps by hand at 3am.
++        </p>
++        <div className="hero-cta">
++          <a className="btn btn-primary" href="#start">
++            Start free
++            <ArrowRight size={16} />
++          </a>
++          <a className="btn btn-ghost" href="#timeline">View a live incident</a>
++        </div>
++        <ul className="hero-stats">
++          <li><strong>18m</strong><span>median MTTR</span></li>
++          <li><strong>OTel</strong><span>native ingest</span></li>
++          <li><strong>SOC 2</strong><span>Type II</span></li>
++        </ul>
++      </div>
++      <div className="hero-visual" id="timeline">
++        <ConsoleMock />
++      </div>
++    </section>
++  );
++}
++
++function LogoStrip() {
++  return (
++    <section className="logos" aria-label="Used by engineering teams at">
++      <span>Trusted by on-call teams shipping at</span>
++      <div className="logo-row" aria-hidden="true">
++        <span>NORTHWIND</span>
++        <span>·</span>
++        <span>helix</span>
++        <span>·</span>
++        <span>ORBITLABS</span>
++        <span>·</span>
++        <span>Quanta</span>
++        <span>·</span>
++        <span>FERRO</span>
++      </div>
++    </section>
++  );
++}
++
++function Features() {
++  return (
++    <section className="section features" id="features">
++      <header className="section-head">
++        <span className="kicker">Features</span>
++        <h2>Everything that moved, in one place.</h2>
++        <p>Traceboard is the connective tissue between your observability stack and your source control.</p>
++      </header>
++      <div className="feature-grid">
++        {features.map((f) => (
++          <article key={f.title} className="feature">
++            <span className="feature-icon" aria-hidden="true"><f.icon size={18} /></span>
++            <h3>{f.title}</h3>
++            <p>{f.body}</p>
++          </article>
++        ))}
++      </div>
++    </section>
++  );
++}
++
++function Workflow() {
++  return (
++    <section className="section workflow" id="workflow">
++      <header className="section-head">
++        <span className="kicker">Workflow</span>
++        <h2>From pager to postmortem in four steps.</h2>
++        <p>The same timeline you investigate on becomes the artifact you ship.</p>
++      </header>
++      <ol className="workflow-grid">
++        {workflow.map((s, i) => (
++          <li key={s.n} className="step">
++            <span className="step-n">{s.n}</span>
++            <div className="step-body">
++              <h3>{s.title}</h3>
++              <p>{s.body}</p>
++            </div>
++            {i < workflow.length - 1 && <ChevronRight className="step-arrow" size={16} aria-hidden="true" />}
++          </li>
++        ))}
++      </ol>
++    </section>
++  );
++}
++
++function CTA() {
++  return (
++    <section className="section cta" id="start">
++      <div className="cta-card">
++        <div>
++          <h2>Stop reading timestamps. Start reading incidents.</h2>
++          <p>Connect your collector. Your first timeline is live in under ten minutes.</p>
++        </div>
++        <div className="cta-actions">
++          <a className="btn btn-primary" href="#signup">
++            Start free <ArrowRight size={16} />
++          </a>
++          <a className="btn btn-ghost" href="#sales">Talk to engineering</a>
++        </div>
++      </div>
++    </section>
++  );
++}
++
++function Footer() {
++  return (
++    <footer className="footer" id="docs">
++      <div className="footer-grid">
++        <div className="footer-brand">
++          <span className="brand">
++            <span className="brand-mark"><Activity size={18} strokeWidth={2.5} /></span>
++            <span className="brand-name">Traceboard</span>
++          </span>
++          <p>The incident timeline debugger for engineering teams.</p>
++          <div className="social" aria-label="Social links">
++            <a href="#gh" aria-label="GitHub"><Github size={16} /></a>
++            <a href="#tw" aria-label="Twitter"><Twitter size={16} /></a>
++            <a href="#code" aria-label="Changelog"><Code2 size={16} /></a>
++          </div>
++        </div>
++        <div>
++          <h4>Product</h4>
++          <a href="#features">Features</a>
++          <a href="#workflow">Workflow</a>
++          <a href="#pricing">Pricing</a>
++          <a href="#changelog">Changelog</a>
++        </div>
++        <div>
++          <h4>Developers</h4>
++          <a href="#docs">Docs</a>
++          <a href="#api">API</a>
++          <a href="#otel">OpenTelemetry</a>
++          <a href="#status">Status</a>
++        </div>
++        <div>
++          <h4>Company</h4>
++          <a href="#about">About</a>
++          <a href="#security">Security</a>
++          <a href="#careers">Careers</a>
++          <a href="#contact">Contact</a>
++        </div>
++      </div>
++      <div className="footer-bottom">
++        <span>© 2026 Traceboard, Inc.</span>
++        <span className="footer-legal">
++          <a href="#privacy">Privacy</a>
++          <a href="#terms">Terms</a>
++          <a href="#dpa">DPA</a>
++        </span>
++      </div>
++    </footer>
++  );
++}
+ 
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <a className="skip-link" href="#features">Skip to content</a>
++      <Nav />
++      <main>
++        <Hero />
++        <LogoStrip />
++        <Features />
++        <Workflow />
++        <CTA />
++      </main>
++      <Footer />
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..0984a2b 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,612 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #07090f;
++  --bg-2: #0b0f1a;
++  --panel: #0f1421;
++  --panel-2: #131a2b;
++  --line: #1e2740;
++  --line-2: #283350;
++  --text: #e7ecf5;
++  --muted: #93a0bd;
++  --muted-2: #5d6987;
++  --accent: #5cf2c4;
++  --accent-2: #4ea2ff;
++  --danger: #ff6b6b;
++  --warn: #ffb454;
++  --ok: #5cf2c4;
++  --radius: 12px;
++  --maxw: 1180px;
++  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
++  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
++}
++
++* { box-sizing: border-box; }
++
++html { scroll-behavior: smooth; }
++
++body {
++  margin: 0;
++  font-family: var(--sans);
++  background: var(--bg);
++  color: var(--text);
++  line-height: 1.55;
++  -webkit-font-smoothing: antialiased;
++  overflow-x: hidden;
++}
++
++a { color: inherit; text-decoration: none; }
++
++::selection { background: rgba(92, 242, 196, 0.25); }
++
++:focus-visible {
++  outline: 2px solid var(--accent);
++  outline-offset: 2px;
++  border-radius: 4px;
++}
++
++.skip-link {
++  position: absolute;
++  left: 12px;
++  top: -60px;
++  background: var(--accent);
++  color: #04130d;
++  padding: 8px 14px;
++  border-radius: 8px;
++  font-weight: 600;
++  z-index: 100;
++  transition: top 0.15s;
++}
++.skip-link:focus { top: 12px; }
++
++/* ---------- Buttons ---------- */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  padding: 12px 18px;
++  border-radius: 10px;
++  font-weight: 600;
++  font-size: 15px;
++  border: 1px solid transparent;
++  cursor: pointer;
++  transition: transform 0.08s ease, background 0.15s, border-color 0.15s;
++  white-space: nowrap;
++}
++.btn:active { transform: translateY(1px); }
++.btn-primary {
++  background: var(--accent);
++  color: #04130d;
++  box-shadow: 0 6px 24px -8px rgba(92, 242, 196, 0.5);
++}
++.btn-primary:hover { background: #6ffad0; }
++.btn-ghost {
++  background: transparent;
++  color: var(--text);
++  border-color: var(--line-2);
++}
++.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
++.btn-sm { padding: 8px 14px; font-size: 14px; }
++
++/* ---------- Nav ---------- */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  display: flex;
++  align-items: center;
++  gap: 24px;
++  padding: 14px 28px;
++  background: rgba(7, 9, 15, 0.82);
++  backdrop-filter: blur(14px);
++  -webkit-backdrop-filter: blur(14px);
++  border-bottom: 1px solid var(--line);
++}
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 9px;
++  font-weight: 700;
++  letter-spacing: -0.01em;
++}
++.brand-mark {
++  display: grid;
++  place-items: center;
++  width: 28px;
++  height: 28px;
++  border-radius: 8px;
++  background: linear-gradient(135deg, var(--accent), var(--accent-2));
++  color: #04130d;
++}
++.brand-name { font-size: 17px; }
++
++.nav-links {
++  display: flex;
++  gap: 22px;
++  margin-left: 8px;
++}
++.nav-links a {
++  color: var(--muted);
++  font-size: 14px;
++  font-weight: 500;
++  transition: color 0.12s;
++}
++.nav-links a:hover { color: var(--text); }
++.nav-links a.ghost { color: var(--muted-2); }
++
++.nav-cta {
++  margin-left: auto;
++  display: flex;
++  align-items: center;
++  gap: 14px;
++}
++.link-login {
++  color: var(--muted);
++  font-size: 14px;
++  font-weight: 500;
++}
++.link-login:hover { color: var(--text); }
++
++.nav-toggle {
++  display: none;
++  flex-direction: column;
++  gap: 4px;
++  background: none;
++  border: 1px solid var(--line-2);
++  border-radius: 8px;
++  padding: 9px;
++  cursor: pointer;
++}
++.nav-toggle span {
++  display: block;
++  width: 18px;
++  height: 2px;
++  background: var(--text);
++  border-radius: 2px;
++}
++
++.nav-mobile {
++  display: none;
++  flex-direction: column;
++  gap: 6px;
++  padding: 14px 28px 18px;
++  border-bottom: 1px solid var(--line);
++  background: var(--bg);
++}
++.nav-mobile a {
++  padding: 10px 0;
++  color: var(--text);
++  border-bottom: 1px solid var(--line);
++  font-size: 15px;
++}
++
++/* ---------- Layout ---------- */
++main {
++  max-width: var(--maxw);
++  margin: 0 auto;
++  padding: 0 28px;
++}
++
++.section { padding: 96px 0; border-top: 1px solid var(--line); }
++.section-head { max-width: 640px; margin-bottom: 48px; }
++.kicker {
++  display: inline-block;
++  font-family: var(--mono);
++  font-size: 12px;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--accent);
++  margin-bottom: 14px;
++}
++.section-head h2 {
++  font-size: clamp(26px, 4vw, 38px);
++  line-height: 1.12;
++  letter-spacing: -0.02em;
++  margin: 0 0 14px;
++}
++.section-head p { color: var(--muted); font-size: 17px; margin: 0; }
++
++/* ---------- Hero ---------- */
++.hero {
++  display: grid;
++  grid-template-columns: 1fr 1.15fr;
++  gap: 56px;
++  align-items: center;
++  padding: 72px 0 64px;
++}
++.eyebrow {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--muted);
++  border: 1px solid var(--line-2);
++  padding: 5px 11px;
++  border-radius: 999px;
++  margin-bottom: 22px;
++}
++.pulse {
++  width: 7px; height: 7px; border-radius: 50%;
++  background: var(--accent);
++  box-shadow: 0 0 0 0 rgba(92, 242, 196, 0.6);
++  animation: pulse 2s infinite;
++}
++@keyframes pulse {
++  0% { box-shadow: 0 0 0 0 rgba(92, 242, 196, 0.55); }
++  70% { box-shadow: 0 0 0 8px rgba(92, 242, 196, 0); }
++  100% { box-shadow: 0 0 0 0 rgba(92, 242, 196, 0); }
++}
++
++.hero h1 {
++  font-size: clamp(36px, 5.4vw, 60px);
++  line-height: 1.04;
++  letter-spacing: -0.03em;
++  margin: 0 0 22px;
++  font-weight: 700;
++}
++.grad {
++  background: linear-gradient(120deg, var(--accent) 10%, var(--accent-2) 70%);
++  -webkit-background-clip: text;
++  background-clip: text;
++  -webkit-text-fill-color: transparent;
++}
++.lede {
++  font-size: 18px;
++  color: var(--muted);
++  max-width: 540px;
++  margin: 0 0 30px;
++}
++.hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 38px; }
++
++.hero-stats {
++  display: flex;
++  gap: 36px;
++  list-style: none;
++  margin: 0; padding: 24px 0 0;
++  border-top: 1px solid var(--line);
++}
++.hero-stats li { display: flex; flex-direction: column; }
++.hero-stats strong {
++  font-size: 22px;
++  font-family: var(--mono);
++  color: var(--text);
++}
++.hero-stats span { font-size: 13px; color: var(--muted-2); }
++
++/* ---------- Console mock ---------- */
++.hero-visual { position: relative; }
++.console {
++  background: var(--panel);
++  border: 1px solid var(--line-2);
++  border-radius: 14px;
++  overflow: hidden;
++  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(92, 242, 196, 0.04);
++  font-size: 13px;
++}
++.console-bar {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 11px 14px;
++  background: var(--bg-2);
++  border-bottom: 1px solid var(--line);
++}
++.dot { width: 11px; height: 11px; border-radius: 50%; }
++.dot.red { background: #ff5f57; }
++.dot.amber { background: #febc2e; }
++.dot.green { background: #28c840; }
++.console-title {
++  margin-left: 10px;
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--muted);
++}
++.console-status {
++  margin-left: auto;
++  font-family: var(--mono);
++  font-size: 11px;
++  color: var(--ok);
++  letter-spacing: 0.04em;
++}
++
++.console-body { display: grid; grid-template-columns: 168px 1fr; }
++
++.console-side {
++  border-right: 1px solid var(--line);
++  padding: 14px;
++  background: var(--bg-2);
++}
++.side-search {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  color: var(--muted-2);
++  font-size: 12px;
++  padding: 7px 9px;
++  border: 1px solid var(--line);
++  border-radius: 7px;
++  margin-bottom: 14px;
++}
++.side-filters { list-style: none; margin: 0 0 18px; padding: 0; }
++.side-filters li {
++  display: flex;
++  justify-content: space-between;
++  padding: 6px 8px;
++  font-size: 12.5px;
++  color: var(--muted);
++  border-radius: 6px;
++  cursor: default;
++}
++.side-filters li.active { background: var(--panel-2); color: var(--text); }
++.side-filters li span { font-family: var(--mono); color: var(--muted-2); }
++.side-filters li.active span { color: var(--accent); }
++
++.side-graph {
++  border-top: 1px solid var(--line);
++  padding-top: 14px;
++}
++.side-graph svg { width: 100%; height: 48px; display: block; }
++.graph-label {
++  display: block;
++  font-family: var(--mono);
++  font-size: 10.5px;
++  color: var(--muted-2);
++  margin-top: 6px;
++}
++
++.console-main { padding: 14px; min-width: 0; }
++.console-meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++  margin-bottom: 14px;
++}
++.chip {
++  display: inline-flex;
++  align-items: center;
++  gap: 5px;
++  font-size: 11px;
++  padding: 4px 9px;
++  border-radius: 6px;
++  background: var(--panel-2);
++  color: var(--muted);
++  border: 1px solid var(--line);
++}
++.chip-red { color: var(--danger); border-color: rgba(255, 107, 107, 0.3); background: rgba(255, 107, 107, 0.08); }
++.chip-mono { font-family: var(--mono); }
++.chip-time { font-family: var(--mono); color: var(--muted-2); border: none; background: none; }
++
++.timeline { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
++.tl-row {
++  display: grid;
++  grid-template-columns: 62px 18px 56px 1fr auto;
++  align-items: center;
++  gap: 10px;
++  padding: 9px 4px;
++  border-bottom: 1px dashed var(--line);
++  font-size: 12.5px;
++}
++.tl-time { font-family: var(--mono); color: var(--muted-2); font-size: 11px; }
++.tl-dot {
++  display: grid;
++  place-items: center;
++  width: 18px; height: 18px;
++  border-radius: 50%;
++  background: var(--panel-2);
++  color: var(--muted);
++}
++.tl-kind {
++  font-family: var(--mono);
++  font-size: 10.5px;
++  text-transform: uppercase;
++  letter-spacing: 0.05em;
++  color: var(--muted-2);
++}
++.tl-title { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.tl-meta { font-family: var(--mono); font-size: 11px; color: var(--muted-2); }
++
++.tl-deploy .tl-dot { background: rgba(78, 162, 255, 0.15); color: var(--accent-2); }
++.tl-deploy .tl-kind { color: var(--accent-2); }
++.tl-error .tl-dot { background: rgba(255, 107, 107, 0.15); color: var(--danger); }
++.tl-error .tl-kind { color: var(--danger); }
++.tl-error .tl-meta { color: var(--danger); }
++.tl-warn .tl-dot { background: rgba(255, 180, 84, 0.15); color: var(--warn); }
++.tl-warn .tl-kind { color: var(--warn); }
++.tl-trace .tl-dot { background: rgba(92, 242, 196, 0.1); color: var(--accent); }
++.tl-trace .tl-kind { color: var(--accent); }
++.tl-ok .tl-dot { background: rgba(92, 242, 196, 0.15); color: var(--ok); }
++.tl-ok .tl-kind { color: var(--ok); }
++
++.console-foot {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  gap: 10px;
++  margin-top: 12px;
++  padding-top: 12px;
++  border-top: 1px solid var(--line);
++  font-size: 12px;
++  color: var(--muted);
++}
++.console-foot span { display: inline-flex; align-items: center; gap: 6px; }
++.foot-link { color: var(--accent); font-weight: 600; }
++
++/* ---------- Logos ---------- */
++.logos {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 14px;
++  padding: 40px 0;
++  border-top: 1px solid var(--line);
++  text-align: center;
++}
++.logos > span { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-2); }
++.logo-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 18px; color: var(--muted); font-weight: 600; letter-spacing: 0.02em; }
++
++/* ---------- Features ---------- */
++.feature-grid {
++  display: grid;
++  grid-template-columns: repeat(3, 1fr);
++  gap: 1px;
++  background: var(--line);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  overflow: hidden;
++}
++.feature {
++  background: var(--bg);
++  padding: 28px 26px;
++  transition: background 0.15s;
++}
++.feature:hover { background: var(--panel); }
++.feature-icon {
++  display: inline-grid;
++  place-items: center;
++  width: 38px; height: 38px;
++  border-radius: 9px;
++  background: linear-gradient(135deg, rgba(92, 242, 196, 0.14), rgba(78, 162, 255, 0.14));
++  color: var(--accent);
++  margin-bottom: 16px;
++}
++.feature h3 { font-size: 17px; margin: 0 0 8px; letter-spacing: -0.01em; }
++.feature p { margin: 0; color: var(--muted); font-size: 14.5px; }
++
++/* ---------- Workflow ---------- */
++.workflow-grid {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 16px;
++}
++.step {
++  position: relative;
++  background: var(--panel);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  padding: 24px;
++}
++.step-n {
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--accent);
++  letter-spacing: 0.05em;
++}
++.step-body h3 { font-size: 17px; margin: 10px 0 8px; }
++.step-body p { margin: 0; color: var(--muted); font-size: 14px; }
++.step-arrow {
++  position: absolute;
++  right: -14px;
++  top: 50%;
++  transform: translateY(-50%);
++  color: var(--line-2);
++  z-index: 2;
++  background: var(--bg);
++  border-radius: 50%;
++}
++
++/* ---------- CTA ---------- */
++.cta { border-top: 1px solid var(--line); }
++.cta-card {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  gap: 28px;
++  background: linear-gradient(135deg, rgba(92, 242, 196, 0.08), rgba(78, 162, 255, 0.06));
++  border: 1px solid var(--line-2);
++  border-radius: 18px;
++  padding: 40px 44px;
++}
++.cta-card h2 { font-size: clamp(22px, 3vw, 30px); margin: 0 0 8px; letter-spacing: -0.02em; }
++.cta-card p { margin: 0; color: var(--muted); }
++.cta-actions { display: flex; gap: 10px; flex-shrink: 0; }
++
++/* ---------- Footer ---------- */
++.footer {
++  border-top: 1px solid var(--line);
++  background: var(--bg-2);
++  padding: 56px 28px 28px;
++  color: var(--muted);
++}
++.footer-grid {
++  max-width: var(--maxw);
++  margin: 0 auto;
++  display: grid;
++  grid-template-columns: 1.6fr repeat(3, 1fr);
++  gap: 36px;
++}
++.footer-brand p { margin: 14px 0 18px; font-size: 14px; max-width: 280px; }
++.social { display: flex; gap: 10px; }
++.social a {
++  display: grid; place-items: center;
++  width: 32px; height: 32px;
++  border: 1px solid var(--line-2);
++  border-radius: 8px;
++  color: var(--muted);
++}
++.social a:hover { color: var(--accent); border-color: var(--accent); }
++.footer h4 { font-size: 13px; color: var(--text); margin: 0 0 14px; letter-spacing: 0.02em; }
++.footer-grid a { display: block; padding: 5px 0; font-size: 14px; color: var(--muted); }
++.footer-grid a:hover { color: var(--text); }
++.footer-bottom {
++  max-width: var(--maxw);
++  margin: 40px auto 0;
++  padding-top: 22px;
++  border-top: 1px solid var(--line);
++  display: flex;
++  justify-content: space-between;
++  flex-wrap: wrap;
++  gap: 12px;
++  font-size: 13px;
++  color: var(--muted-2);
++}
++.footer-legal { display: flex; gap: 18px; }
++
++/* ---------- Responsive ---------- */
++@media (max-width: 960px) {
++  .hero { grid-template-columns: 1fr; gap: 40px; padding: 48px 0; }
++  .feature-grid { grid-template-columns: repeat(2, 1fr); }
++  .workflow-grid { grid-template-columns: repeat(2, 1fr); }
++  .step-arrow { display: none; }
++  .footer-grid { grid-template-columns: 1fr 1fr; }
++}
++
++@media (max-width: 760px) {
++  .nav-links { display: none; }
++  .link-login { display: none; }
++  .nav-cta .btn-sm { display: none; }
++  .nav-toggle { display: flex; }
++  .nav { padding: 12px 18px; }
++  .nav-mobile { display: flex; }
++  main { padding: 0 18px; }
++  .section { padding: 64px 0; }
++  .console-body { grid-template-columns: 1fr; }
++  .console-side { display: none; }
++  .cta-card { flex-direction: column; align-items: flex-start; padding: 30px 26px; }
++}
++
++@media (max-width: 560px) {
++  .feature-grid { grid-template-columns: 1fr; }
++  .workflow-grid { grid-template-columns: 1fr; }
++  .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
++  .hero-stats { gap: 22px; }
++  .hero-stats strong { font-size: 18px; }
++  .tl-row { grid-template-columns: 50px 16px 1fr; }
++  .tl-row .tl-kind { display: none; }
++  .tl-row .tl-meta { display: none; }
++  .console-meta { gap: 5px; }
++  .chip-time { display: none; }
++  .console-title { font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
++  .console-bar { min-width: 0; }
++  .console-status { font-size: 10px; }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *, *::before, *::after {
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: 0.01ms !important;
++    scroll-behavior: auto !important;
++  }
++}

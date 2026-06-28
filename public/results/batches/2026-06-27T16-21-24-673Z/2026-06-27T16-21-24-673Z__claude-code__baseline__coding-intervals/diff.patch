@@ -1,0 +1,90 @@
+diff --git a/src/intervals.ts b/src/intervals.ts
+index 4d5e50e..51b03db 100644
+--- a/src/intervals.ts
++++ b/src/intervals.ts
+@@ -4,22 +4,46 @@ export type Interval = {
+ };
+ 
+ export type CoalesceOptions = {
++  /**
++   * When true (the default), intervals that touch are merged. Intervals are
++   * treated as inclusive integer ranges, so "touching" covers both a shared
++   * endpoint (e.g. [1, 2] and [2, 3]) and adjacency with no integer in
++   * between (e.g. [1, 2] and [3, 4]).
++   *
++   * When false, only intervals that strictly overlap are merged; touching and
++   * adjacent intervals are kept separate.
++   */
+   mergeTouching?: boolean;
+ };
+ 
+-export function coalesceIntervals(intervals: readonly Interval[], options: CoalesceOptions = {}): Interval[] {
++/**
++ * Coalesce a list of intervals into the minimal set of intervals covering the
++ * same points.
++ *
++ * - Reversed endpoints are normalized so that `start <= end`.
++ * - Non-finite endpoints (NaN, ±Infinity) are rejected with a useful error.
++ * - The result is deterministic and independent of input order.
++ * - Input intervals are never mutated.
++ */
++export function coalesceIntervals(
++  intervals: readonly Interval[],
++  options: CoalesceOptions = {},
++): Interval[] {
+   const mergeTouching = options.mergeTouching ?? true;
+-  const normalized = intervals.map(normalizeInterval).sort((a, b) => a.start - b.start || a.end - b.end);
++
++  const normalized = intervals
++    .map(normalizeInterval)
++    .sort((a, b) => a.start - b.start || a.end - b.end);
++
+   const result: Interval[] = [];
+ 
+   for (const interval of normalized) {
+     const last = result.at(-1);
+-    if (!last) {
+-      result.push({ ...interval });
+-      continue;
+-    }
+-    const overlaps = mergeTouching ? interval.start <= last.end : interval.start < last.end;
+-    if (overlaps) {
++
++    // `last` is undefined only for the very first interval.
++    if (last && shouldMerge(last, interval, mergeTouching)) {
++      // Extend the current run. `last` is a private copy, so the caller's
++      // intervals are left untouched.
+       last.end = Math.max(last.end, interval.end);
+     } else {
+       result.push({ ...interval });
+@@ -29,6 +53,20 @@ export function coalesceIntervals(intervals: readonly Interval[], options: Coale
+   return result;
+ }
+ 
++/**
++ * Decide whether `next` should be folded into the preceding `current` run.
++ * The list is sorted, so `next.start >= current.start` always holds and
++ * `current.end` is the running maximum end of the run so far.
++ */
++function shouldMerge(current: Interval, next: Interval, mergeTouching: boolean): boolean {
++  if (mergeTouching) {
++    // Overlapping, sharing an endpoint, or adjacent with no integer between.
++    return next.start <= current.end + 1;
++  }
++  // Only strict overlaps; touching and adjacent intervals stay separate.
++  return next.start < current.end;
++}
++
+ function normalizeInterval(interval: Interval): Interval {
+   assertFinite(interval.start, "start");
+   assertFinite(interval.end, "end");
+@@ -38,6 +76,7 @@ function normalizeInterval(interval: Interval): Interval {
+ }
+ 
+ function assertFinite(value: number, label: string): void {
+-  if (!Number.isFinite(value)) throw new Error(`Interval ${label} must be finite`);
++  if (!Number.isFinite(value)) {
++    throw new Error(`Interval ${label} must be a finite number, received ${value}`);
++  }
+ }
+-

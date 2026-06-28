@@ -1,0 +1,1128 @@
+diff --git a/index.html b/index.html
+index f6dacfc..516c245 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,16 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta
++      name="description"
++      content="Traceboard is an incident timeline debugger for engineering teams that correlates alerts, logs, deploys, ownership, and evidence."
++    />
++    <title>Traceboard - Incident Timeline Debugger</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..6d115fd 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,330 @@
+-import React from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  ArrowRight,
++  BellRing,
++  CheckCircle2,
++  Clock3,
++  Code2,
++  GitCommitVertical,
++  LockKeyhole,
++  Network,
++  Play,
++  SearchCheck,
++  ShieldCheck,
++  TimerReset,
++  type LucideIcon,
++} from "lucide-react";
+ import "./style.css";
+ 
++const consoleImage = new URL(
++  "./assets/traceboard-incident-console.png",
++  import.meta.url,
++).href;
++
++type Feature = {
++  icon: LucideIcon;
++  title: string;
++  copy: string;
++  detail: string;
++};
++
++const features: Feature[] = [
++  {
++    icon: GitCommitVertical,
++    title: "Sequence every signal",
++    copy: "Deploys, alerts, logs, traces, and ownership land on one time axis before the room starts guessing.",
++    detail: "Deploy marker pinned to auth-service at 09:34",
++  },
++  {
++    icon: SearchCheck,
++    title: "Pin durable evidence",
++    copy: "Save query results, log lines, and trace spans into the incident record with source links intact.",
++    detail: "Evidence linked to root cause note",
++  },
++  {
++    icon: Network,
++    title: "Compare service lanes",
++    copy: "Follow latency, errors, and dependencies across teams without swapping tools during the bridge call.",
++    detail: "Auth, edge, database, and cache aligned",
++  },
++  {
++    icon: TimerReset,
++    title: "Replay the review",
++    copy: "Turn the incident timeline into a postmortem narrative your next responder can audit.",
++    detail: "Exported replay with timestamps and owners",
++  },
++];
++
++type WorkflowItem = {
++  icon: LucideIcon;
++  title: string;
++  copy: string;
++};
++
++const workflow: WorkflowItem[] = [
++  {
++    icon: BellRing,
++    title: "Capture signals",
++    copy: "Stream alerts, deploys, telemetry, and chat markers into one normalized incident record.",
++  },
++  {
++    icon: Clock3,
++    title: "Align the clock",
++    copy: "Traceboard groups related events and exposes the first service that drifted from baseline.",
++  },
++  {
++    icon: Code2,
++    title: "Test the hypothesis",
++    copy: "Engineers compare lanes, pin proof, and reject false leads without losing context.",
++  },
++  {
++    icon: Play,
++    title: "Share the replay",
++    copy: "Postmortems ship with source links, owners, and the exact event order reviewers need.",
++  },
++];
++
++const safeguards = [
++  "Read-only connectors by default",
++  "Source links retained for every event",
++  "SSO, SCIM, and audit trails",
++  "Data retention controls for incident records",
++];
++
++function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
++  const Icon = feature.icon;
++
++  return (
++    <article className={`feature-card feature-card-${index + 1}`}>
++      <div className="icon-box">
++        <Icon aria-hidden="true" size={22} strokeWidth={1.8} />
++      </div>
++      <div>
++        <h3>{feature.title}</h3>
++        <p>{feature.copy}</p>
++      </div>
++      <span>{feature.detail}</span>
++    </article>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <a className="skip-link" href="#main">
++        Skip to content
++      </a>
++
++      <header className="site-header">
++        <nav className="nav-shell" aria-label="Primary navigation">
++          <a className="brand" href="#main" aria-label="Traceboard home">
++            <span className="brand-mark" aria-hidden="true">
++              T
++            </span>
++            <span>Traceboard</span>
++          </a>
++
++          <div className="nav-links">
++            <a href="#product">Product</a>
++            <a href="#workflow">Workflow</a>
++            <a href="#security">Security</a>
++            <a href="#teams">Teams</a>
++          </div>
++
++          <a className="nav-cta" href="#demo">
++            Request demo
++          </a>
++        </nav>
++      </header>
++
++      <main id="main">
++        <section className="hero section-shell" aria-labelledby="hero-title">
++          <div className="hero-copy">
++            <p className="eyebrow">Incident timeline debugger</p>
++            <h1 id="hero-title">
++              Reconstruct incidents from deploy to root cause.
++            </h1>
++            <p className="hero-text">
++              Correlate alerts, logs, deploys, and ownership in one timeline
++              engineers can trust during review.
++            </p>
++            <div className="hero-actions" aria-label="Traceboard calls to action">
++              <a className="button button-primary" href="#demo">
++                Request demo
++                <ArrowRight aria-hidden="true" size={18} strokeWidth={1.8} />
++              </a>
++              <a className="button button-secondary" href="#workflow">
++                View workflow
++              </a>
++            </div>
++          </div>
++
++          <div className="hero-visual" aria-label="Traceboard application preview">
++            <figure className="product-frame">
++              <img
++                src={consoleImage}
++                alt="Traceboard incident timeline showing service lanes, deploy markers, alerts, logs, and root cause evidence."
++                decoding="async"
++                loading="eager"
++              />
++            </figure>
++          </div>
++        </section>
++
++        <section className="signal-band" aria-label="Traceboard summary">
++          <div className="section-shell signal-grid">
++            <div>
++              <strong>For on-call engineering teams</strong>
++              <span>Debug incidents as a sequence, not a pile of tabs.</span>
++            </div>
++            <div>
++              <strong>Built around evidence</strong>
++              <span>Every conclusion links back to the source event.</span>
++            </div>
++            <div>
++              <strong>Useful after the page</strong>
++              <span>Replay the same timeline during postmortem review.</span>
++            </div>
++          </div>
++        </section>
++
++        <section
++          className="features section-shell"
++          id="product"
++          aria-labelledby="features-title"
++        >
++          <div className="section-intro">
++            <h2 id="features-title">One timeline for the incident room.</h2>
++            <p>
++              Traceboard keeps the investigation centered on order, ownership,
++              and proof while each specialist works from their own tools.
++            </p>
++          </div>
++
++          <div className="feature-grid">
++            {features.map((feature, index) => (
++              <FeatureCard
++                feature={feature}
++                index={index}
++                key={feature.title}
++              />
++            ))}
++          </div>
++        </section>
++
++        <section
++          className="workflow-band"
++          id="workflow"
++          aria-labelledby="workflow-title"
++        >
++          <div className="section-shell">
++            <div className="section-intro compact">
++              <h2 id="workflow-title">From alert to replay.</h2>
++              <p>
++                The workflow is designed for the pressure of a live incident and
++                the scrutiny of the review afterward.
++              </p>
++            </div>
++
++            <div className="workflow-grid">
++              {workflow.map((item) => {
++                const Icon = item.icon;
++
++                return (
++                  <article className="workflow-card" key={item.title}>
++                    <Icon aria-hidden="true" size={22} strokeWidth={1.8} />
++                    <h3>{item.title}</h3>
++                    <p>{item.copy}</p>
++                  </article>
++                );
++              })}
++            </div>
++          </div>
++        </section>
++
++        <section
++          className="security section-shell"
++          id="security"
++          aria-labelledby="security-title"
++        >
++          <div className="security-copy">
++            <div className="icon-box">
++              <ShieldCheck aria-hidden="true" size={24} strokeWidth={1.8} />
++            </div>
++            <h2 id="security-title">Ready for regulated incident rooms.</h2>
++            <p>
++              Give responders the data they need without turning the timeline
++              into a new control plane.
++            </p>
++          </div>
++
++          <div className="security-panel" aria-label="Security safeguards">
++            {safeguards.map((item) => (
++              <div className="safeguard" key={item}>
++                <CheckCircle2 aria-hidden="true" size={19} strokeWidth={1.8} />
++                <span>{item}</span>
++              </div>
++            ))}
++          </div>
++        </section>
++
++        <section
++          className="teams section-shell"
++          id="teams"
++          aria-labelledby="teams-title"
++        >
++          <div className="section-intro compact">
++            <h2 id="teams-title">Built for the bridge call.</h2>
++            <p>
++              Each role sees the same event order, with the evidence they need
++              to make the next decision.
++            </p>
++          </div>
++
++          <div className="team-layout">
++            <article>
++              <LockKeyhole aria-hidden="true" size={22} strokeWidth={1.8} />
++              <h3>SRE lead</h3>
++              <p>Track incident state, coordinate owners, and keep review notes tied to proof.</p>
++            </article>
++            <article>
++              <Network aria-hidden="true" size={22} strokeWidth={1.8} />
++              <h3>Service owner</h3>
++              <p>Filter to the affected lane and compare deploys against traffic and traces.</p>
++            </article>
++            <article>
++              <SearchCheck aria-hidden="true" size={22} strokeWidth={1.8} />
++              <h3>Engineering manager</h3>
++              <p>Review the replay later without reconstructing the bridge call from memory.</p>
++            </article>
++          </div>
++        </section>
++
++        <section className="closing" id="demo" aria-labelledby="demo-title">
++          <div className="section-shell closing-inner">
++            <div>
++              <h2 id="demo-title">Debug the next incident in order.</h2>
++              <p>
++                Bring your alerting, deploy, telemetry, and log sources into a
++                single incident timeline.
++              </p>
++            </div>
++            <a className="button button-primary" href="mailto:demo@traceboard.dev">
++              Request demo
++              <ArrowRight aria-hidden="true" size={18} strokeWidth={1.8} />
++            </a>
++          </div>
++        </section>
++      </main>
++
++      <footer className="site-footer">
++        <div className="section-shell footer-inner">
++          <span>Traceboard</span>
++          <a href="#main">Back to top</a>
++        </div>
++      </footer>
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..26af4ad 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,763 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: light;
++  font-family:
++    "Aptos", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
++  --bg: #f2f6f4;
++  --surface: #fbfdfb;
++  --surface-strong: #ffffff;
++  --surface-muted: #e5eeea;
++  --ink: #13211e;
++  --ink-soft: #31433e;
++  --muted: #5d6e68;
++  --line: #cbd9d4;
++  --accent: #157c7f;
++  --accent-strong: #0d5557;
++  --accent-soft: #d7efee;
++  --warning: #b36d17;
++  --danger: #b84a4a;
++  --panel: #111a18;
++  --panel-soft: #1b2825;
++  --radius: 8px;
++  --shadow: 0 22px 70px rgb(45 72 65 / 0.18);
++}
++
++@media (prefers-color-scheme: dark) {
++  :root {
++    color-scheme: dark;
++    --bg: #101815;
++    --surface: #15201d;
++    --surface-strong: #1b2824;
++    --surface-muted: #22322e;
++    --ink: #edf6f1;
++    --ink-soft: #c6d4ce;
++    --muted: #98aaa3;
++    --line: #31453f;
++    --accent: #55bfc0;
++    --accent-strong: #8ad8d7;
++    --accent-soft: #143a39;
++    --warning: #d69a42;
++    --danger: #e06e6e;
++    --panel: #0f1715;
++    --panel-soft: #17231f;
++    --shadow: 0 24px 80px rgb(0 0 0 / 0.36);
++  }
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  min-width: 320px;
++  margin: 0;
++  overflow-x: clip;
++  background:
++    linear-gradient(135deg, rgb(21 124 127 / 0.08), transparent 32rem),
++    linear-gradient(180deg, var(--bg), var(--surface-muted));
++  color: var(--ink);
++  font-size: 16px;
++  line-height: 1.5;
++  text-rendering: optimizeLegibility;
++}
++
++body::before {
++  position: fixed;
++  inset: 0;
++  z-index: -1;
++  pointer-events: none;
++  content: "";
++  background-image:
++    linear-gradient(rgb(19 33 30 / 0.04) 1px, transparent 1px),
++    linear-gradient(90deg, rgb(19 33 30 / 0.04) 1px, transparent 1px);
++  background-size: 72px 72px;
++  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.75), transparent 62%);
++}
++
++button,
++a {
++  font: inherit;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++:focus-visible {
++  outline: 3px solid var(--accent);
++  outline-offset: 4px;
++}
++
++.skip-link {
++  position: fixed;
++  left: 1rem;
++  top: 1rem;
++  z-index: 30;
++  transform: translateY(-150%);
++  border-radius: var(--radius);
++  background: var(--ink);
++  color: var(--bg);
++  padding: 0.7rem 1rem;
++  transition: transform 180ms ease;
++}
++
++.skip-link:focus {
++  transform: translateY(0);
++}
++
++.section-shell {
++  width: min(1120px, calc(100% - 40px));
++  margin-inline: auto;
++}
++
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 20;
++  border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 18%);
++  background: color-mix(in srgb, var(--bg), transparent 8%);
++  backdrop-filter: blur(18px);
++}
++
++.nav-shell {
++  display: flex;
++  width: min(1120px, calc(100% - 40px));
++  min-height: 70px;
++  margin-inline: auto;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++}
++
++.brand,
++.nav-links,
++.hero-actions,
++.button,
++.nav-cta,
++.safeguard,
++.footer-inner {
++  display: flex;
++  align-items: center;
++}
++
++.brand {
++  min-width: 0;
++  gap: 0.65rem;
++  font-weight: 760;
++  color: var(--ink);
++}
++
++.brand-mark {
++  display: grid;
++  width: 2rem;
++  height: 2rem;
++  flex: 0 0 auto;
++  place-items: center;
++  border: 1px solid color-mix(in srgb, var(--accent), white 28%);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(145deg, var(--accent), var(--accent-strong)),
++    var(--accent);
++  color: #f8fffc;
++  font-size: 0.9rem;
++  font-weight: 800;
++}
++
++.nav-links {
++  gap: 0.25rem;
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  background: color-mix(in srgb, var(--surface-strong), transparent 18%);
++  padding: 0.25rem;
++}
++
++.nav-links a {
++  border-radius: 999px;
++  color: var(--muted);
++  font-size: 0.92rem;
++  padding: 0.48rem 0.85rem;
++}
++
++.nav-links a:hover {
++  background: var(--accent-soft);
++  color: var(--accent-strong);
++}
++
++.nav-cta,
++.button {
++  min-height: 2.75rem;
++  justify-content: center;
++  gap: 0.45rem;
++  border-radius: 999px;
++  font-weight: 760;
++  white-space: nowrap;
++}
++
++.nav-cta {
++  border: 1px solid var(--line);
++  background: var(--surface-strong);
++  color: var(--ink);
++  padding: 0.58rem 0.95rem;
++}
++
++.button {
++  border: 1px solid transparent;
++  padding: 0.72rem 1.05rem;
++  transition:
++    transform 180ms ease,
++    background-color 180ms ease,
++    border-color 180ms ease;
++}
++
++.button:active {
++  transform: translateY(1px);
++}
++
++.button-primary {
++  background: var(--accent-strong);
++  color: #f7fffc;
++  box-shadow: 0 14px 28px rgb(13 85 87 / 0.22);
++}
++
++.button-primary:hover {
++  background: color-mix(in srgb, var(--accent-strong), black 10%);
++}
++
++.button-secondary {
++  border-color: var(--line);
++  background: var(--surface-strong);
++  color: var(--ink);
++}
++
++.button-secondary:hover,
++.nav-cta:hover {
++  border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
++}
++
++.hero {
++  display: grid;
++  min-height: calc(100dvh - 70px);
++  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
++  align-items: center;
++  gap: 4rem;
++  padding-block: 4.4rem 3rem;
++}
++
++.hero-copy {
++  min-width: 0;
++}
++
++.eyebrow {
++  width: fit-content;
++  margin: 0 0 1rem;
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  background: var(--surface-strong);
++  color: var(--accent-strong);
++  font-size: 0.9rem;
++  font-weight: 760;
++  padding: 0.42rem 0.68rem;
++}
++
++h1,
++h2,
++h3,
++p {
++  margin-top: 0;
++}
++
++h1 {
++  max-width: 12ch;
++  margin-bottom: 1.25rem;
++  color: var(--ink);
++  font-size: 4.35rem;
++  font-weight: 790;
++  letter-spacing: 0;
++  line-height: 1;
++}
++
++.hero-text {
++  max-width: 36rem;
++  margin-bottom: 1.6rem;
++  color: var(--ink-soft);
++  font-size: 1.08rem;
++}
++
++.hero-actions {
++  flex-wrap: wrap;
++  gap: 0.75rem;
++}
++
++.hero-visual {
++  min-width: 0;
++}
++
++.product-frame {
++  position: relative;
++  margin: 0;
++  overflow: hidden;
++  border: 1px solid color-mix(in srgb, var(--line), transparent 12%);
++  border-radius: var(--radius);
++  background: var(--panel);
++  box-shadow: var(--shadow);
++}
++
++.product-frame img {
++  width: 100%;
++  aspect-ratio: 1568 / 1003;
++  object-fit: cover;
++}
++
++.signal-band {
++  border-block: 1px solid var(--line);
++  background: color-mix(in srgb, var(--surface-strong), transparent 10%);
++}
++
++.signal-grid {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 0;
++}
++
++.signal-grid div {
++  padding: 1.3rem 1.4rem;
++}
++
++.signal-grid div + div {
++  border-left: 1px solid var(--line);
++}
++
++.signal-grid strong,
++.signal-grid span {
++  display: block;
++}
++
++.signal-grid strong {
++  margin-bottom: 0.2rem;
++  color: var(--ink);
++  font-size: 0.98rem;
++}
++
++.signal-grid span {
++  color: var(--muted);
++  font-size: 0.9rem;
++}
++
++.features,
++.teams,
++.security {
++  padding-block: 6rem;
++}
++
++.section-intro {
++  max-width: 43rem;
++  margin-bottom: 2.1rem;
++}
++
++.section-intro.compact {
++  max-width: 38rem;
++}
++
++h2 {
++  margin-bottom: 0.85rem;
++  color: var(--ink);
++  font-size: 2.55rem;
++  font-weight: 780;
++  letter-spacing: 0;
++  line-height: 1.08;
++}
++
++.section-intro p,
++.security-copy p,
++.closing p {
++  margin-bottom: 0;
++  color: var(--muted);
++  font-size: 1.02rem;
++}
++
++.feature-grid {
++  display: grid;
++  grid-template-columns: 1.1fr 0.9fr;
++  gap: 1rem;
++}
++
++.feature-card {
++  display: grid;
++  min-width: 0;
++  grid-template-columns: auto minmax(0, 1fr);
++  gap: 1rem;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: var(--surface-strong);
++  padding: 1.2rem;
++}
++
++.feature-card-1 {
++  grid-row: span 2;
++  align-content: start;
++  background:
++    linear-gradient(145deg, color-mix(in srgb, var(--panel), var(--accent) 12%), var(--panel)),
++    var(--panel);
++  color: #ecf8f3;
++}
++
++.feature-card-4 {
++  background: var(--accent-soft);
++}
++
++.feature-card h3,
++.workflow-card h3,
++.team-layout h3 {
++  margin-bottom: 0.45rem;
++  color: inherit;
++  font-size: 1.08rem;
++  line-height: 1.2;
++}
++
++.feature-card p,
++.workflow-card p,
++.team-layout p {
++  margin-bottom: 0;
++  color: var(--muted);
++}
++
++.feature-card-1 p {
++  color: #bfd0ca;
++}
++
++.feature-card span {
++  grid-column: 1 / -1;
++  width: fit-content;
++  max-width: 100%;
++  border-radius: 999px;
++  background: color-mix(in srgb, var(--surface-muted), transparent 12%);
++  color: var(--ink-soft);
++  font-size: 0.86rem;
++  padding: 0.42rem 0.62rem;
++}
++
++.feature-card-1 span {
++  background: rgb(85 191 192 / 0.14);
++  color: #9fe6e4;
++}
++
++.icon-box {
++  display: grid;
++  width: 2.7rem;
++  height: 2.7rem;
++  flex: 0 0 auto;
++  place-items: center;
++  border: 1px solid color-mix(in srgb, var(--accent), transparent 50%);
++  border-radius: var(--radius);
++  background: var(--accent-soft);
++  color: var(--accent-strong);
++}
++
++.feature-card-1 .icon-box {
++  background: rgb(85 191 192 / 0.12);
++  color: #8ad8d7;
++}
++
++.workflow-band {
++  padding-block: 5.5rem;
++  border-block: 1px solid var(--line);
++  background:
++    linear-gradient(90deg, color-mix(in srgb, var(--accent-soft), transparent 38%), transparent),
++    var(--surface);
++}
++
++.workflow-grid {
++  display: grid;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++  gap: 1px;
++  overflow: hidden;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: var(--line);
++}
++
++.workflow-card {
++  min-width: 0;
++  background: var(--surface-strong);
++  padding: 1.25rem;
++}
++
++.workflow-card svg {
++  margin-bottom: 1.25rem;
++  color: var(--accent-strong);
++}
++
++.security {
++  display: grid;
++  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
++  align-items: center;
++  gap: 3rem;
++}
++
++.security-copy .icon-box {
++  margin-bottom: 1rem;
++}
++
++.security-panel {
++  display: grid;
++  gap: 0.75rem;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: var(--surface-strong);
++  padding: 1rem;
++}
++
++.safeguard {
++  gap: 0.7rem;
++  border-radius: var(--radius);
++  background: var(--surface-muted);
++  color: var(--ink-soft);
++  padding: 0.9rem;
++}
++
++.safeguard svg {
++  flex: 0 0 auto;
++  color: var(--accent-strong);
++}
++
++.team-layout {
++  display: grid;
++  grid-template-columns: 1.15fr 0.95fr 0.9fr;
++  gap: 1rem;
++}
++
++.team-layout article {
++  min-width: 0;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: var(--surface-strong);
++  padding: 1.25rem;
++}
++
++.team-layout svg {
++  margin-bottom: 1.1rem;
++  color: var(--accent-strong);
++}
++
++.closing {
++  padding-block: 4.5rem;
++  background: var(--panel);
++  color: #edf6f1;
++}
++
++.closing-inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 2rem;
++}
++
++.closing h2 {
++  color: #edf6f1;
++}
++
++.closing p {
++  max-width: 36rem;
++  color: #b7c8c1;
++}
++
++.site-footer {
++  background: var(--panel);
++  color: #b7c8c1;
++}
++
++.footer-inner {
++  justify-content: space-between;
++  border-top: 1px solid rgb(255 255 255 / 0.1);
++  padding-block: 1.3rem;
++}
++
++.footer-inner span {
++  color: #edf6f1;
++  font-weight: 760;
++}
++
++.footer-inner a:hover {
++  color: #edf6f1;
++}
++
++@media (prefers-reduced-motion: no-preference) {
++  .hero-copy,
++  .product-frame,
++  .signal-grid,
++  .feature-card,
++  .workflow-card,
++  .security,
++  .team-layout article {
++    animation: rise-in 560ms ease both;
++  }
++
++  .product-frame {
++    animation-delay: 90ms;
++  }
++
++  .feature-card:nth-child(2),
++  .workflow-card:nth-child(2),
++  .team-layout article:nth-child(2) {
++    animation-delay: 70ms;
++  }
++
++  .feature-card:nth-child(3),
++  .workflow-card:nth-child(3),
++  .team-layout article:nth-child(3) {
++    animation-delay: 120ms;
++  }
++
++  .feature-card:nth-child(4),
++  .workflow-card:nth-child(4) {
++    animation-delay: 170ms;
++  }
++}
++
++@keyframes rise-in {
++  from {
++    opacity: 0;
++    transform: translateY(16px);
++  }
++
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++
++@media (max-width: 980px) {
++  .hero {
++    grid-template-columns: 1fr;
++    gap: 2rem;
++    padding-block: 3.2rem;
++  }
++
++  h1 {
++    max-width: 13ch;
++    font-size: 3.4rem;
++  }
++
++  .hero-text {
++    max-width: 40rem;
++  }
++
++  .feature-grid,
++  .security,
++  .team-layout {
++    grid-template-columns: 1fr;
++  }
++
++  .feature-card-1 {
++    grid-row: auto;
++  }
++
++  .workflow-grid {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++}
++
++@media (max-width: 760px) {
++  .section-shell,
++  .nav-shell {
++    width: min(100% - 32px, 1120px);
++  }
++
++  .nav-shell {
++    min-height: 64px;
++  }
++
++  .nav-links {
++    display: none;
++  }
++
++  .brand {
++    font-size: 0.98rem;
++  }
++
++  .nav-cta {
++    min-height: 2.45rem;
++    padding-inline: 0.78rem;
++  }
++
++  .hero {
++    min-height: calc(100dvh - 64px);
++    padding-block: 2.4rem 2rem;
++  }
++
++  h1 {
++    max-width: 12ch;
++    font-size: 2.7rem;
++  }
++
++  h2 {
++    font-size: 2.05rem;
++  }
++
++  .hero-text {
++    font-size: 1rem;
++  }
++
++  .signal-grid,
++  .workflow-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .signal-grid div {
++    padding-inline: 0;
++  }
++
++  .signal-grid div + div {
++    border-left: 0;
++    border-top: 1px solid var(--line);
++  }
++
++  .features,
++  .teams,
++  .security,
++  .workflow-band {
++    padding-block: 4.2rem;
++  }
++
++  .feature-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .feature-card {
++    grid-template-columns: 1fr;
++  }
++
++  .closing-inner {
++    align-items: flex-start;
++    flex-direction: column;
++  }
++}
++
++@media (max-width: 460px) {
++  .hero-actions,
++  .hero-actions .button,
++  .closing .button {
++    width: 100%;
++  }
++
++  .button {
++    padding-inline: 0.9rem;
++  }
++
++  h1 {
++    font-size: 2.35rem;
++  }
++
++  .product-frame {
++    margin-inline: -0.25rem;
++  }
++}

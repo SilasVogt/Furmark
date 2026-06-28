@@ -1,0 +1,449 @@
+diff --git a/index.html b/index.html
+index f6dacfc..f8bbcfa 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Civic Slot — Book an appointment with your local government office</title><meta name="description" content="Civic Slot lets residents reserve appointments at participating city and county offices. Choose a service, pick a location, and select an available time." /></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..ac735cf 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,230 @@
+-import React from "react";
++import React, { useState } from "react";
+ import { createRoot } from "react-dom/client";
+ import "./style.css";
+ 
++const SERVICES = [
++  "Driver's license or state ID",
++  "Permit or inspection",
++  "Records or certificate",
++  "Property or taxes",
++  "Benefits or assistance",
++  "Other",
++];
++
++const CATEGORIES = [
++  ["Driver's licenses & state IDs", "New, renewed, or replacement licenses and identification cards."],
++  ["Permits & inspections", "Building, business, and home improvement permits and related inspections."],
++  ["Records & certificates", "Birth, marriage, and death certificates and other official records."],
++  ["Property & taxes", "Property assessments, tax payments, and related questions."],
++  ["Benefits & assistance", "Applications and appointments for local assistance programs."],
++  ["Voter & election services", "Registration, ballot questions, and accessible voting information."],
++];
++
++const today = new Date().toISOString().slice(0, 10);
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const [summary, setSummary] = useState("");
++
++  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
++    e.preventDefault();
++    const data = new FormData(e.currentTarget);
++    const service = String(data.get("service") || "");
++    const location = String(data.get("location") || "").trim();
++    const date = String(data.get("date") || "");
++    if (!service || !location || !date) {
++      setSummary("Please choose a service, enter a city or ZIP code, and pick a date.");
++      return;
++    }
++    setSummary(
++      `Searching for ${service.toLowerCase()} appointments near ${location} on or after ${date}. ` +
++        "This demonstration page does not reserve a real appointment.",
++    );
++  }
++
++  return (
++    <>
++      <a className="skip-link" href="#main">
++        Skip to main content
++      </a>
++
++      <header id="top">
++        <div className="container header-inner">
++          <a className="brand" href="#top">
++            Civic Slot
++          </a>
++          <nav aria-label="Primary">
++            <ul>
++              <li><a href="#services">Services</a></li>
++              <li><a href="#availability">Availability</a></li>
++              <li><a href="#accessibility">Accessibility</a></li>
++              <li><a href="#support">Support</a></li>
++            </ul>
++          </nav>
++        </div>
++      </header>
++
++      <main id="main">
++        <section className="hero" aria-labelledby="hero-heading">
++          <div className="container hero-grid">
++            <div className="hero-copy">
++              <h1 id="hero-heading">Book an appointment with your local government office</h1>
++              <p>
++                Civic Slot lets residents reserve a time at participating city and county offices.
++                Choose a service, pick a location, and select a time that works for you. No account
++                is required to view available times.
++              </p>
++              <ul className="checklist">
++                <li>See real openings, updated as appointments are booked.</li>
++                <li>Reschedule or cancel online up to 24 hours before your visit.</li>
++                <li>Works in your browser on a phone, tablet, or computer.</li>
++              </ul>
++            </div>
++
++            <form className="card booking" aria-labelledby="booking-heading" onSubmit={onSubmit} noValidate>
++              <h2 id="booking-heading">Start a booking</h2>
++
++              <div className="field">
++                <label htmlFor="service">Service</label>
++                <p className="help" id="service-help">Choose the type of appointment you need.</p>
++                <select id="service" name="service" defaultValue="" aria-describedby="service-help" required>
++                  <option value="" disabled>
++                    Select a service
++                  </option>
++                  {SERVICES.map((s) => (
++                    <option key={s} value={s}>
++                      {s}
++                    </option>
++                  ))}
++                </select>
++              </div>
++
++              <div className="field">
++                <label htmlFor="location">City or ZIP code</label>
++                <p className="help" id="location-help">Enter where you would like to be seen.</p>
++                <input
++                  id="location"
++                  name="location"
++                  type="text"
++                  inputMode="text"
++                  autoComplete="postal-code"
++                  aria-describedby="location-help"
++                  required
++                />
++              </div>
++
++              <div className="field">
++                <label htmlFor="date">Preferred date</label>
++                <p className="help" id="date-help">We show the closest available times on or after this date.</p>
++                <input id="date" name="date" type="date" min={today} aria-describedby="date-help" required />
++              </div>
++
++              <button className="btn" type="submit">
++                Find available times
++              </button>
++              <p className="note">
++                This is a demonstration page. Submitting shows a summary only; no appointment is reserved.
++              </p>
++              <p className="summary" role="status" aria-live="polite">
++                {summary}
++              </p>
++            </form>
++          </div>
++        </section>
++
++        <section id="services" className="band" aria-labelledby="services-heading">
++          <div className="container">
++            <h2 id="services-heading">Services you can book</h2>
++            <p className="lead">
++              Civic Slot supports common in-person services across participating offices. If you do
++              not see what you need, contact your office using the support section below.
++            </p>
++            <ul className="cards" role="list">
++              {CATEGORIES.map(([title, desc]) => (
++                <li key={title} className="card category">
++                  <h3>{title}</h3>
++                  <p>{desc}</p>
++                </li>
++              ))}
++            </ul>
++          </div>
++        </section>
++
++        <section id="availability" aria-labelledby="availability-heading">
++          <div className="container narrow">
++            <h2 id="availability-heading">How availability works</h2>
++            <p className="lead">
++              Available times come directly from each office&rsquo;s schedule and update as
++              appointments are booked.
++            </p>
++            <ul className="checklist">
++              <li>Times shown are real openings for the service and location you choose.</li>
++              <li>A selected time is held for 10 minutes while you confirm your details.</li>
++              <li>You can reschedule or cancel online up to 24 hours before your appointment.</li>
++              <li>If no times are open, you can join a notification list for the next opening.</li>
++            </ul>
++          </div>
++        </section>
++
++        <section id="accessibility" className="band" aria-labelledby="accessibility-heading">
++          <div className="container narrow">
++            <h2 id="accessibility-heading">Our accessibility commitments</h2>
++            <p className="lead">We want every resident to be able to book a time without barriers.</p>
++            <ul className="checklist">
++              <li>We aim to meet WCAG 2.1 AA standards across the site.</li>
++              <li>Every page works with a keyboard and with screen readers.</li>
++              <li>Forms use clear labels, helper text, and visible focus indicators.</li>
++              <li>We use plain language and avoid jargon wherever we can.</li>
++              <li>Need another format or help booking? Call us and a person can book for you.</li>
++              <li>Request an accommodation for your visit when you book or by phone.</li>
++            </ul>
++          </div>
++        </section>
++
++        <section id="support" aria-labelledby="support-heading">
++          <div className="container narrow">
++            <h2 id="support-heading">Contact and support</h2>
++            <p className="lead">
++              Reach us if you have a question, need help booking, or want to request an accommodation.
++            </p>
++            <dl className="contact">
++              <div>
++                <dt>Phone</dt>
++                <dd>
++                  <a href="tel:+15551234567">(555) 123-4567</a> — Monday to Friday, 8:00 a.m. to 5:00 p.m.
++                </dd>
++              </div>
++              <div>
++                <dt>TTY / Relay</dt>
++                <dd>Dial 711 to use Telecommunications Relay Services.</dd>
++              </div>
++              <div>
++                <dt>Email</dt>
++                <dd>
++                  <a href="mailto:support@civicslot.example.gov">support@civicslot.example.gov</a> — we reply
++                  within two business days.
++                </dd>
++              </div>
++              <div>
++                <dt>In person</dt>
++                <dd>Visit any participating office during posted public hours.</dd>
++              </div>
++            </dl>
++          </div>
++        </section>
++      </main>
++
++      <footer>
++        <div className="container footer-inner">
++          <p>
++            Civic Slot is a demonstration project and is not affiliated with any government agency.
++          </p>
++          <p>
++            <a href="#top">Back to top</a>
++          </p>
++        </div>
++      </footer>
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..d89967f 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,199 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --ink: #1f2937;        /* body text on white: ~12.6:1 */
++  --muted: #475569;      /* helper text on white: ~7.4:1 */
++  --brand: #1d4ed8;      /* links / primary: white text ~5.2:1 */
++  --brand-dark: #1e40af; /* hover */
++  --line: #94a3b8;
++  --band: #f1f5f9;
++  --hero: #eff6ff;
++  --footer: #0f2540;
++}
++
++* { box-sizing: border-box; }
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
++  color: var(--ink);
++  line-height: 1.55;
++  background: #fff;
++}
++
++h1, h2, h3 { line-height: 1.2; color: var(--ink); }
++h1 { font-size: clamp(1.7rem, 4vw, 2.5rem); }
++h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); }
++
++p { margin: 0.5rem 0; }
++a { color: var(--brand); }
++a:hover { color: var(--brand-dark); }
++
++/* Visible focus everywhere, on light and dark backgrounds. */
++:focus-visible {
++  outline: 3px solid var(--brand);
++  outline-offset: 2px;
++  border-radius: 4px;
++}
++
++.container { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 1.25rem; }
++.narrow { max-width: 760px; }
++
++/* Skip link */
++.skip-link {
++  position: absolute;
++  left: 0.75rem;
++  top: -3rem;
++  z-index: 100;
++  background: var(--brand);
++  color: #fff;
++  padding: 0.6rem 1rem;
++  border-radius: 0 0 6px 6px;
++  text-decoration: none;
++  transition: top 0.15s ease;
++}
++.skip-link:focus { top: 0; }
++
++/* Header */
++header {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  background: #fff;
++  border-bottom: 1px solid #e2e8f0;
++}
++.header-inner {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.5rem 1rem;
++  padding-top: 0.75rem;
++  padding-bottom: 0.75rem;
++}
++.brand { font-size: 1.25rem; font-weight: 700; color: var(--ink); text-decoration: none; }
++header nav ul {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.25rem 1.25rem;
++  list-style: none;
++  margin: 0;
++  padding: 0;
++}
++header nav a { text-decoration: none; padding: 0.25rem 0; }
++header nav a:hover { text-decoration: underline; }
++
++/* Sections */
++section { padding: 2.75rem 0; }
++.band { background: var(--band); }
++.hero { background: var(--hero); }
++.lead { color: var(--muted); max-width: 65ch; }
++
++/* Hero layout */
++.hero-grid { display: grid; gap: 2rem; }
++.hero-copy p { max-width: 60ch; }
++
++/* Lists with clear markers */
++.checklist { list-style: none; margin: 1rem 0 0; padding: 0; }
++.checklist li {
++  position: relative;
++  padding-left: 1.9rem;
++  margin: 0.6rem 0;
++  max-width: 62ch;
++}
++.checklist li::before {
++  content: "";
++  position: absolute;
++  left: 0;
++  top: 0.45em;
++  width: 0.7rem;
++  height: 0.4rem;
++  border-left: 3px solid var(--brand);
++  border-bottom: 3px solid var(--brand);
++  transform: rotate(-45deg);
++}
++
++/* Cards / categories */
++.card {
++  background: #fff;
++  border: 1px solid #cbd5e1;
++  border-radius: 10px;
++  padding: 1.25rem;
++}
++.cards {
++  list-style: none;
++  margin: 1.5rem 0 0;
++  padding: 0;
++  display: grid;
++  gap: 1rem;
++  grid-template-columns: 1fr;
++}
++.category h3 { margin: 0 0 0.35rem; font-size: 1.1rem; }
++.category p { margin: 0; color: var(--muted); }
++
++/* Booking form */
++.booking { box-shadow: 0 1px 3px rgba(15, 37, 64, 0.12); }
++.booking h2 { margin-top: 0; }
++.field { margin: 1.1rem 0; }
++.field label { display: block; font-weight: 600; margin-bottom: 0.15rem; }
++.help { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.9rem; }
++.field input,
++.field select {
++  width: 100%;
++  padding: 0.6rem 0.7rem;
++  font-size: 1rem;
++  color: var(--ink);
++  background: #fff;
++  border: 1px solid var(--line);
++  border-radius: 6px;
++}
++.field input:focus-visible,
++.field select:focus-visible { border-color: var(--brand); }
++
++.btn {
++  display: inline-block;
++  width: 100%;
++  margin-top: 0.5rem;
++  padding: 0.7rem 1.2rem;
++  font-size: 1rem;
++  font-weight: 600;
++  color: #fff;
++  background: var(--brand);
++  border: 1px solid var(--brand);
++  border-radius: 6px;
++  cursor: pointer;
++}
++.btn:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
++
++.note { color: var(--muted); font-size: 0.85rem; margin-top: 0.75rem; }
++.summary:not(:empty) {
++  margin-top: 0.75rem;
++  padding: 0.75rem;
++  background: #ecfdf5;
++  border: 1px solid #047857;
++  border-radius: 6px;
++  color: #064e3b;
++}
++
++/* Contact list */
++.contact { margin: 1.5rem 0 0; padding: 0; display: grid; gap: 1rem; }
++.contact dt { font-weight: 700; }
++.contact dd { margin: 0.15rem 0 0; color: var(--ink); }
++
++/* Footer */
++footer { background: var(--footer); color: #e6eef7; padding: 2rem 0; }
++.footer-inner p { margin: 0.35rem 0; max-width: 65ch; }
++footer a { color: #cfe2ff; }
++footer a:hover { color: #fff; }
++footer :focus-visible { outline-color: #fff; }
++
++/* Responsive */
++@media (min-width: 640px) {
++  .cards { grid-template-columns: repeat(2, 1fr); }
++}
++@media (min-width: 880px) {
++  .hero-grid { grid-template-columns: 1.1fr 0.9fr; align-items: start; }
++  .cards { grid-template-columns: repeat(3, 1fr); }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  * { transition: none !important; }
++}

@@ -1,0 +1,3 @@
+Reading prompt from stdin...
+2026-06-27T21:26:16.142133Z ERROR codex_core::tools::router: error=exec_command failed for `/usr/bin/bash -lc 'rm -rf dist'`: CreateProcess { message: "Rejected(\"`/usr/bin/bash -lc 'rm -rf dist'` rejected: blocked by policy\")" }
+2026-06-27T21:27:11.577720Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to read /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__ponytail__landing-incident-console/workspace/dist/assets/traceboard-incident-console-BCwv0Z6a.png: invalid utf-8 sequence of 1 bytes from index 0

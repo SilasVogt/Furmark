@@ -1,0 +1,19 @@
+Done. mrrp, the data rain is flowing.
+
+## What changed
+- **`src/simulation.ts`** — pure physics core. Each metric event becomes a `Bar` that falls down its metric's column under gravity and stacks on what landed before it. One bar falls per column at a time (queued with backpressure) so stacking stays collision-free, and a column that fills up clears and restarts so the rain keeps going. `tick()` returns whether anything moved.
+- **`src/DataRain.tsx`** — canvas renderer + controls. A simulated feed emits a metric every ~300ms, driven by a `requestAnimationFrame` loop. Pause/Resume gates the feed and physics; Clear resets; a Reduced-motion toggle (defaulting to `prefers-reduced-motion`) lands bars in place with zero continuous motion. A live status line and an `aria-live` region update over time.
+- **`src/main.tsx` / `src/style.css`** — mount the component, dark themed layout.
+- **`src/simulation.test.ts`** — 6 tests, one per success criterion.
+
+## How the criteria are met
+- **Falling/colliding bars**: metrics fall and stack per column.
+- **Frames differ while running**: positions advance each tick (test asserts `y` increases); canvas + status redraw continuously.
+- **Pause/resume**: button gates feed + `tick`.
+- **Reduced motion**: bars land instantly, `tick` returns `false`, position stays fixed (tested).
+- **Not color alone**: each metric carries a distinct shape (circle/square/triangle/diamond/hexagon), value text, axis labels, and an SVG legend with units.
+
+## Verification
+- `npm test` → 6/6 passing
+- `npm run build` → `tsc --noEmit` + `vite build` clean
+- dev server boots and all three modules transform (HTTP 200)

@@ -1,0 +1,14 @@
+Done. Paws off the keyboard. :3
+
+## What changed
+- `src/orbitField.ts` — pure orbit math: deterministic particle seeding, `orbitPosition` (circular motion over time), and `pointerDisplacement` (smooth falloff push away from the cursor). Kept framework-free so it's unit-testable.
+- `src/OrbitField.tsx` — the canvas engine. DPR-aware sizing via `ResizeObserver` for crisp rendering at any viewport, a single rAF loop that only advances time while playing, additive-blended glowing satellites, a pointer halo, and an accessible Pause/Play button (`aria-pressed`, `aria-label`, focus ring, live status region). Reads the live `prefers-reduced-motion` media query and stops automatic orbiting when it's set, while keeping pointer interaction.
+- `src/orbitField.test.ts` — 10 vitest cases over the math.
+- `src/main.tsx`, `src/style.css` — render the component and style the field/controls.
+- `verify.mjs` — a Playwright check that drives the running page.
+
+## Verification
+- `tsc --noEmit` clean, `vitest run` 10/10 passing, `vite build` succeeds.
+- `node verify.mjs` against the preview build confirmed all five criteria in headless Chromium: non-blank pixels, frames differ over time with motion on, pointer movement changes the field, Pause freezes and Resume restarts motion, and reduced-motion stays static (non-blank but unchanging over time).
+
+One note: `verify.mjs` relies on the locally available `playwright`; it isn't wired into `package.json` scripts, so the committed runnable check is `npm test`.

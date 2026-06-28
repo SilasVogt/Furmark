@@ -1,0 +1,349 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..cb65a83 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,5 @@
+-import React from "react";
+ import { createRoot } from "react-dom/client";
++import App from "./App";
+ import "./style.css";
+ 
+-function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
+-}
+-
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..3d10852 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,328 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #060a12;
++  --panel: #0e1626;
++  --panel-2: #111c30;
++  --border: #1e2a40;
++  --text: #e5edff;
++  --muted: #93a3bd;
++  --accent: #38bdf8;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
++  background: var(--bg);
++  color: var(--text);
++}
++
++.app {
++  max-width: 1200px;
++  margin: 0 auto;
++  padding: 20px 18px 28px;
++  display: flex;
++  flex-direction: column;
++  gap: 16px;
++}
++
++/* top bar ---------------------------------------------------------------- */
++.topbar {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: space-between;
++  gap: 14px;
++}
++
++.brand {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  color: var(--accent);
++}
++
++.brand h1 {
++  margin: 0;
++  font-size: 19px;
++  letter-spacing: 0.2px;
++  color: var(--text);
++}
++
++.brand p {
++  margin: 2px 0 0;
++  font-size: 12.5px;
++  color: var(--muted);
++}
++
++.controls {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 8px;
++}
++
++.btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  padding: 8px 12px;
++  font-size: 13px;
++  font-weight: 600;
++  color: var(--text);
++  background: var(--panel-2);
++  border: 1px solid var(--border);
++  border-radius: 8px;
++  cursor: pointer;
++  transition: background 0.12s, border-color 0.12s, transform 0.05s;
++}
++
++.btn:hover {
++  background: #16243c;
++  border-color: #2b3c5a;
++}
++
++.btn:active {
++  transform: translateY(1px);
++}
++
++.btn.primary {
++  background: #1d4ed8;
++  border-color: #2563eb;
++}
++
++.btn.primary:hover {
++  background: #2563eb;
++}
++
++.btn:focus-visible,
++.toggle input:focus-visible,
++.seg select:focus-visible {
++  outline: 2px solid var(--accent);
++  outline-offset: 2px;
++}
++
++.seg {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  font-size: 12px;
++  color: var(--muted);
++  background: var(--panel-2);
++  border: 1px solid var(--border);
++  border-radius: 8px;
++  padding: 4px 8px;
++}
++
++.seg select {
++  background: transparent;
++  color: var(--text);
++  border: none;
++  font-size: 13px;
++  font-weight: 600;
++  cursor: pointer;
++}
++
++.seg select option {
++  color: #000;
++}
++
++.toggle {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  font-size: 13px;
++  font-weight: 600;
++  color: var(--text);
++  background: var(--panel-2);
++  border: 1px solid var(--border);
++  border-radius: 8px;
++  padding: 7px 11px;
++  cursor: pointer;
++}
++
++.toggle input {
++  width: 15px;
++  height: 15px;
++  accent-color: var(--accent);
++  cursor: pointer;
++}
++
++/* stage ------------------------------------------------------------------ */
++.stage {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) 250px;
++  gap: 16px;
++  align-items: stretch;
++}
++
++.canvas-wrap {
++  position: relative;
++  height: 460px;
++  border: 1px solid var(--border);
++  border-radius: 12px;
++  overflow: hidden;
++  background: #070b14;
++  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
++}
++
++.canvas-wrap canvas {
++  display: block;
++  width: 100%;
++  height: 100%;
++}
++
++/* sidebar ---------------------------------------------------------------- */
++.sidebar {
++  background: var(--panel);
++  border: 1px solid var(--border);
++  border-radius: 12px;
++  padding: 14px;
++  display: flex;
++  flex-direction: column;
++  gap: 10px;
++}
++
++.sidebar h2 {
++  margin: 0;
++  font-size: 13px;
++  text-transform: uppercase;
++  letter-spacing: 0.8px;
++  color: var(--muted);
++}
++
++.feed {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: flex;
++  flex-direction: column;
++  gap: 5px;
++  min-height: 0;
++  flex: 1;
++}
++
++.feed li {
++  display: grid;
++  grid-template-columns: 12px 38px 1fr auto;
++  align-items: center;
++  gap: 8px;
++  font-size: 12.5px;
++  padding: 6px 8px;
++  background: var(--panel-2);
++  border: 1px solid var(--border);
++  border-radius: 7px;
++  animation: pop 0.18s ease-out;
++}
++
++.feed li.empty {
++  display: block;
++  color: var(--muted);
++  font-style: italic;
++  text-align: center;
++}
++
++@keyframes pop {
++  from {
++    opacity: 0;
++    transform: translateY(-4px);
++  }
++  to {
++    opacity: 1;
++    transform: none;
++  }
++}
++
++.feed .dot {
++  width: 10px;
++  height: 10px;
++  border-radius: 2px;
++  border: 1px solid rgba(255, 255, 255, 0.4);
++}
++
++.feed .code {
++  font-family: ui-monospace, monospace;
++  font-weight: 700;
++  color: var(--text);
++}
++
++.feed .name {
++  color: var(--muted);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.feed .val {
++  font-family: ui-monospace, monospace;
++  font-weight: 700;
++}
++
++.counters {
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 8px;
++  margin: 0;
++}
++
++.counters div {
++  background: var(--panel-2);
++  border: 1px solid var(--border);
++  border-radius: 8px;
++  padding: 8px 10px;
++}
++
++.counters dt {
++  font-size: 10.5px;
++  text-transform: uppercase;
++  letter-spacing: 0.6px;
++  color: var(--muted);
++}
++
++.counters dd {
++  margin: 2px 0 0;
++  font-size: 18px;
++  font-weight: 700;
++  font-family: ui-monospace, monospace;
++}
++
++.hint {
++  margin: 0;
++  font-size: 11.5px;
++  color: var(--muted);
++  line-height: 1.5;
++}
++
++.hint strong {
++  color: var(--accent);
++}
++
++@media (max-width: 760px) {
++  .stage {
++    grid-template-columns: 1fr;
++  }
++  .canvas-wrap {
++    height: 380px;
++  }
++}
++
++/* Suppress all incidental motion whenever reduced motion is active — either
++   because the app toggle is on (.app.reduced) or the OS prefers reduced motion.
++   This keeps the "no continuous motion" guarantee true across the whole UI, not
++   just the canvas. */
++.app.reduced .feed li,
++.app.reduced .btn:active {
++  animation: none;
++  transform: none;
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .feed li {
++    animation: none;
++  }
++  .btn:active {
++    transform: none;
++  }
++}

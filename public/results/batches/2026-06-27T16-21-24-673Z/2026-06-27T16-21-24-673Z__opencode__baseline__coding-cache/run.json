@@ -1,0 +1,43 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T06:51:44.038Z",
+  "repoCommit": "ccee22e",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "coding-cache",
+  "category": "pure-coding",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/workspace",
+  "exitCode": 0,
+  "durationMs": 195897,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 96.3
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__coding-cache/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

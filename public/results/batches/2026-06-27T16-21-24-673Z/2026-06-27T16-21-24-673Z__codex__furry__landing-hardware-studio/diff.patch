@@ -1,0 +1,1175 @@
+diff --git a/index.html b/index.html
+index f6dacfc..c0119d0 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Arcwell Modular Desk Lamp</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..97b3b76 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,306 @@
+-import React from "react";
++import React, { useMemo, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  ArrowRight,
++  Check,
++  CircleDotDashed,
++  Layers3,
++  MoveDiagonal2,
++  ShieldCheck,
++} from "lucide-react";
++import arcwellHero from "./assets/arcwell-hero.png";
+ import "./style.css";
+ 
+-function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++type Choice = {
++  id: string;
++  label: string;
++  detail: string;
++  price: number;
++  tone?: string;
++};
++
++const arms: Choice[] = [
++  { id: "solo", label: "Solo arm", detail: "Compact 410 mm reach", price: 0 },
++  { id: "duo", label: "Duo arm", detail: "Balanced 680 mm reach", price: 70 },
++  { id: "bridge", label: "Bridge arm", detail: "Wide drafting span", price: 120 },
++];
++
++const lenses: Choice[] = [
++  { id: "focus", label: "Focus lens", detail: "Narrow beam for reading", price: 0 },
++  { id: "studio", label: "Studio lens", detail: "Soft field for calls", price: 45 },
++  { id: "inspect", label: "Inspect lens", detail: "High contrast detail", price: 60 },
++];
++
++const bases: Choice[] = [
++  {
++    id: "graphite",
++    label: "Graphite",
++    detail: "Low-glare powder coat",
++    price: 0,
++    tone: "#2d3232",
++  },
++  {
++    id: "chrome",
++    label: "Satin chrome",
++    detail: "Brushed aluminum shell",
++    price: 55,
++    tone: "#c9d1d3",
++  },
++  {
++    id: "ice",
++    label: "Ice glass",
++    detail: "Frosted mineral finish",
++    price: 85,
++    tone: "#dcebed",
++  },
++];
++
++const specs = [
++  ["Reach", "680 mm", "Duo arm span with counterbalanced hinge travel."],
++  ["Beam", "28-110 cm", "Magnetic lenses shift from inspection to ambient wash."],
++  ["Color", "2700-5000 K", "Tuned white range with 95 CRI output."],
++  ["Power", "USB-C PD", "Dock, dimmer, and cable route through the base."],
++];
++
++function getChoice(list: Choice[], id: string) {
++  return list.find((choice) => choice.id === id) ?? list[0];
++}
++
++function ChoiceGroup({
++  title,
++  name,
++  choices,
++  selected,
++  onSelect,
++}: {
++  title: string;
++  name: string;
++  choices: Choice[];
++  selected: string;
++  onSelect: (id: string) => void;
++}) {
++  return (
++    <fieldset className="choice-group">
++      <legend>{title}</legend>
++      <div className="choice-row">
++        {choices.map((choice) => {
++          const isSelected = choice.id === selected;
++
++          return (
++            <label className={`choice ${isSelected ? "is-selected" : ""}`} key={choice.id}>
++              <input
++                checked={isSelected}
++                name={name}
++                onChange={() => onSelect(choice.id)}
++                type="radio"
++                value={choice.id}
++              />
++              {choice.tone ? (
++                <span
++                  aria-hidden="true"
++                  className="finish-swatch"
++                  style={{ background: choice.tone }}
++                />
++              ) : (
++                <span aria-hidden="true" className="choice-icon">
++                  {isSelected ? <Check size={15} /> : <CircleDotDashed size={15} />}
++                </span>
++              )}
++              <span>
++                <strong>{choice.label}</strong>
++                <small>{choice.detail}</small>
++              </span>
++            </label>
++          );
++        })}
++      </div>
++    </fieldset>
++  );
++}
++
++export function App() {
++  const [armId, setArmId] = useState("duo");
++  const [lensId, setLensId] = useState("studio");
++  const [baseId, setBaseId] = useState("chrome");
++
++  const selected = useMemo(
++    () => ({
++      arm: getChoice(arms, armId),
++      lens: getChoice(lenses, lensId),
++      base: getChoice(bases, baseId),
++    }),
++    [armId, lensId, baseId],
++  );
++
++  const total = 420 + selected.arm.price + selected.lens.price + selected.base.price;
++  const summary = `${selected.arm.label}, ${selected.lens.label}, ${selected.base.label}`;
++
++  return (
++    <main
++      className="site-shell"
++      style={{ "--finish-color": selected.base.tone } as React.CSSProperties}
++    >
++      <header className="topbar">
++        <a aria-label="Arcwell home" className="brand" href="#">
++          <span className="brand-mark" aria-hidden="true" />
++          Arcwell
++        </a>
++        <nav aria-label="Primary navigation">
++          <a href="#system">System</a>
++          <a href="#configure">Configure</a>
++          <a href="#specs">Specs</a>
++        </nav>
++        <a className="nav-cta" href="#reserve">
++          Reserve <ArrowRight size={16} />
++        </a>
++      </header>
++
++      <section aria-labelledby="hero-title" className="hero">
++        <div className="hero-copy">
++          <p className="product-line">Arcwell modular desk lamp</p>
++          <h1 id="hero-title">Rebuild light around every task.</h1>
++          <p className="hero-text">
++            Swap arms, lenses, and bases without tools for drafting, video, or late reading.
++          </p>
++          <div className="hero-actions">
++            <a className="button primary" href="#configure">
++              Build yours <ArrowRight size={18} />
++            </a>
++            <a className="button secondary" href="#specs">
++              View specs
++            </a>
++          </div>
++        </div>
++
++        <figure className="hero-visual">
++          <img
++            alt="Arcwell modular desk lamp with articulated arms, magnetic lenses, and swappable bases"
++            src={arcwellHero}
++          />
++        </figure>
++      </section>
++
++      <section aria-label="Arcwell modular system" className="system-strip" id="system">
++        <div className="system-part">
++          <MoveDiagonal2 size={22} />
++          <span>Arms</span>
++          <strong>3 reaches</strong>
++        </div>
++        <div className="system-part">
++          <CircleDotDashed size={22} />
++          <span>Lenses</span>
++          <strong>Magnetic optics</strong>
++        </div>
++        <div className="system-part">
++          <Layers3 size={22} />
++          <span>Bases</span>
++          <strong>3 finishes</strong>
++        </div>
++        <div className="system-part">
++          <ShieldCheck size={22} />
++          <span>Warranty</span>
++          <strong>10 years</strong>
++        </div>
++      </section>
++
++      <section aria-labelledby="configure-title" className="config-section" id="configure">
++        <div className="section-copy">
++          <h2 id="configure-title">Choose the build that fits your desk.</h2>
++          <p>
++            Each module locks through a machined collar, so the lamp can change jobs without
++            changing its footprint.
++          </p>
++        </div>
++
++        <div className="config-layout">
++          <div className="config-preview" aria-label={`Selected build: ${summary}`}>
++            <div className="preview-orbit" aria-hidden="true">
++              <span className="preview-base" />
++              <span className="preview-arm one" />
++              <span className="preview-arm two" />
++              <span className="preview-lens" />
++            </div>
++            <div className="preview-copy">
++              <span>Selected build</span>
++              <strong>{summary}</strong>
++            </div>
++          </div>
++
++          <form className="configurator" aria-label="Configure Arcwell">
++            <ChoiceGroup
++              choices={arms}
++              name="arm"
++              onSelect={setArmId}
++              selected={armId}
++              title="Arm"
++            />
++            <ChoiceGroup
++              choices={lenses}
++              name="lens"
++              onSelect={setLensId}
++              selected={lensId}
++              title="Lens"
++            />
++            <ChoiceGroup
++              choices={bases}
++              name="base"
++              onSelect={setBaseId}
++              selected={baseId}
++              title="Base finish"
++            />
++
++            <div className="order-panel">
++              <div>
++                <span>Configured from</span>
++                <strong>${total}</strong>
++              </div>
++              <a className="button primary dark" href="#reserve">
++                Reserve build <ArrowRight size={18} />
++              </a>
++            </div>
++          </form>
++        </div>
++      </section>
++
++      <section aria-labelledby="specs-title" className="specs-section" id="specs">
++        <div className="section-copy compact">
++          <h2 id="specs-title">Concise hardware specs.</h2>
++          <p>Measured around everyday desk reach, camera framing, and glare control.</p>
++        </div>
++        <div className="spec-grid">
++          {specs.map(([name, value, detail]) => (
++            <article className="spec-tile" key={name}>
++              <span>{name}</span>
++              <strong>{value}</strong>
++              <p>{detail}</p>
++            </article>
++          ))}
++        </div>
++      </section>
++
++      <section aria-labelledby="reserve-title" className="reserve-section" id="reserve">
++        <div>
++          <h2 id="reserve-title">Reserve Arcwell Studio Kit.</h2>
++          <p>
++            Includes Duo arm, Focus and Studio lenses, satin chrome base, graphite base shell,
++            USB-C dock, and service tools.
++          </p>
++        </div>
++        <div className="reserve-buy">
++          <span>From $420</span>
++          <a className="button primary" href="mailto:orders@arcwell.example">
++            Reserve for $20 <ArrowRight size={18} />
++          </a>
++        </div>
++      </section>
++    </main>
++  );
+ }
+ 
+-createRoot(document.getElementById("root")!).render(<App />);
++if (typeof document !== "undefined") {
++  const rootElement = document.getElementById("root");
++
++  if (rootElement) {
++    createRoot(rootElement).render(<App />);
++  }
++}
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..034c8dd 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,834 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: dark;
++  --bg: #050606;
++  --bg-soft: #111514;
++  --ink: #f7fafa;
++  --muted: #a7b0ae;
++  --paper: #edf1f0;
++  --paper-2: #dfe6e4;
++  --paper-ink: #101313;
++  --line: rgba(255, 255, 255, 0.16);
++  --line-dark: rgba(7, 12, 12, 0.14);
++  --accent: #44e3ee;
++  --finish-color: #c9d1d3;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  background: var(--bg);
++  color: var(--ink);
++  font-family:
++    Aptos, Geist, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
++  letter-spacing: 0;
++  min-width: 320px;
++}
++
++body,
++button,
++input {
++  font: inherit;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++.site-shell {
++  min-height: 100vh;
++  overflow-x: hidden;
++  background:
++    radial-gradient(circle at 78% 12%, rgba(68, 227, 238, 0.16), transparent 25rem),
++    linear-gradient(180deg, #050606 0%, #0c1110 48rem, var(--paper) 48rem);
++}
++
++.topbar {
++  align-items: center;
++  display: flex;
++  gap: 28px;
++  height: 72px;
++  justify-content: space-between;
++  margin: 0 auto;
++  max-width: 1440px;
++  padding: 0 64px;
++  position: relative;
++  z-index: 4;
++}
++
++.brand,
++.nav-cta {
++  align-items: center;
++  display: inline-flex;
++}
++
++.brand {
++  font-size: 1.05rem;
++  font-weight: 760;
++  gap: 10px;
++}
++
++.brand-mark {
++  background:
++    linear-gradient(135deg, #f9ffff 0 45%, var(--accent) 45% 55%, #242b2a 55%),
++    #d9e1e0;
++  border: 1px solid rgba(255, 255, 255, 0.4);
++  border-radius: 50%;
++  height: 26px;
++  width: 26px;
++}
++
++.topbar nav {
++  align-items: center;
++  color: #c9d1cf;
++  display: flex;
++  font-size: 0.94rem;
++  gap: 28px;
++}
++
++.topbar nav a,
++.nav-cta {
++  transition:
++    color 180ms ease,
++    transform 180ms ease,
++    border-color 180ms ease;
++}
++
++.topbar nav a:hover {
++  color: #ffffff;
++}
++
++.nav-cta {
++  border: 1px solid rgba(255, 255, 255, 0.22);
++  border-radius: 999px;
++  color: #ffffff;
++  font-weight: 700;
++  gap: 8px;
++  min-height: 40px;
++  padding: 0 16px;
++  white-space: nowrap;
++}
++
++.nav-cta:hover,
++.button:hover {
++  transform: translateY(-1px);
++}
++
++.nav-cta:active,
++.button:active {
++  transform: translateY(1px);
++}
++
++.hero {
++  align-items: center;
++  display: grid;
++  gap: 48px;
++  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr);
++  margin: 0 auto;
++  max-width: 1440px;
++  min-height: calc(100dvh - 128px);
++  padding: 28px 64px 40px;
++}
++
++.hero-copy,
++.hero-visual,
++.config-layout > *,
++.section-copy,
++.spec-tile,
++.reserve-section > * {
++  min-width: 0;
++}
++
++.product-line {
++  color: var(--accent);
++  font-size: 0.98rem;
++  font-weight: 700;
++  margin: 0 0 18px;
++}
++
++h1,
++h2,
++p {
++  margin-top: 0;
++}
++
++h1 {
++  color: #ffffff;
++  font-size: 5.4rem;
++  line-height: 0.94;
++  margin-bottom: 22px;
++  max-width: 11ch;
++  text-wrap: balance;
++}
++
++h2 {
++  font-size: 3.25rem;
++  line-height: 1;
++  margin-bottom: 18px;
++  text-wrap: balance;
++}
++
++.hero-text {
++  color: #c1c9c7;
++  font-size: 1.12rem;
++  line-height: 1.55;
++  margin-bottom: 30px;
++  max-width: 38rem;
++}
++
++.hero-actions,
++.reserve-buy {
++  align-items: center;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++}
++
++.button {
++  align-items: center;
++  border: 1px solid transparent;
++  border-radius: 999px;
++  display: inline-flex;
++  font-weight: 760;
++  gap: 10px;
++  justify-content: center;
++  min-height: 50px;
++  padding: 0 20px;
++  transition:
++    background 180ms ease,
++    border-color 180ms ease,
++    color 180ms ease,
++    transform 180ms ease;
++  white-space: nowrap;
++}
++
++.button.primary {
++  background: #f6fbfb;
++  color: #080a0a;
++}
++
++.button.primary:hover {
++  background: #dff9fb;
++}
++
++.button.primary.dark {
++  background: #070a0a;
++  color: #ffffff;
++}
++
++.button.primary.dark:hover {
++  background: #132222;
++}
++
++.button.secondary {
++  border-color: rgba(255, 255, 255, 0.22);
++  color: #ffffff;
++}
++
++.button.secondary:hover {
++  border-color: rgba(68, 227, 238, 0.7);
++  color: #dffcff;
++}
++
++.hero-visual {
++  aspect-ratio: 16 / 10;
++  border: 1px solid rgba(255, 255, 255, 0.18);
++  border-radius: 8px;
++  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.36);
++  margin: 0;
++  overflow: hidden;
++  position: relative;
++}
++
++.hero-visual::after {
++  background: linear-gradient(90deg, rgba(5, 6, 6, 0.18), transparent 32%);
++  content: "";
++  inset: 0;
++  pointer-events: none;
++  position: absolute;
++}
++
++.hero-visual img {
++  height: 100%;
++  object-fit: cover;
++  width: 100%;
++}
++
++.system-strip {
++  background: var(--paper);
++  border-bottom: 1px solid var(--line-dark);
++  border-top: 1px solid var(--line-dark);
++  color: var(--paper-ink);
++  display: grid;
++  gap: 0;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++  padding: 0 64px;
++}
++
++.system-part {
++  align-items: center;
++  border-left: 1px solid var(--line-dark);
++  display: grid;
++  gap: 4px 14px;
++  grid-template-columns: auto minmax(0, 1fr);
++  min-height: 92px;
++  padding: 18px 24px;
++}
++
++.system-part:last-child {
++  border-right: 1px solid var(--line-dark);
++}
++
++.system-part svg {
++  color: #0e5e64;
++  grid-row: span 2;
++}
++
++.system-part span {
++  color: #52605e;
++  font-size: 0.92rem;
++}
++
++.system-part strong {
++  font-size: 1.06rem;
++}
++
++.config-section,
++.specs-section {
++  background: var(--paper);
++  color: var(--paper-ink);
++  padding: 92px 64px;
++}
++
++.section-copy,
++.config-layout,
++.spec-grid,
++.reserve-section {
++  margin: 0 auto;
++  max-width: 1312px;
++}
++
++.section-copy {
++  margin-bottom: 34px;
++}
++
++.section-copy p {
++  color: #53605f;
++  font-size: 1.08rem;
++  line-height: 1.58;
++  margin-bottom: 0;
++  max-width: 58ch;
++}
++
++.section-copy.compact {
++  max-width: 1312px;
++}
++
++.config-layout {
++  display: grid;
++  gap: 28px;
++  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
++}
++
++.config-preview,
++.configurator,
++.spec-tile {
++  background: #f8fbfa;
++  border: 1px solid rgba(7, 12, 12, 0.1);
++  border-radius: 8px;
++}
++
++.config-preview {
++  align-content: space-between;
++  display: grid;
++  min-height: 560px;
++  overflow: hidden;
++  padding: 28px;
++}
++
++.preview-orbit {
++  aspect-ratio: 1 / 1;
++  background:
++    radial-gradient(circle at 50% 76%, rgba(68, 227, 238, 0.24), transparent 18%),
++    radial-gradient(circle at 50% 50%, #ffffff 0, #eef4f3 48%, #dae3e1 100%);
++  border: 1px solid rgba(7, 12, 12, 0.08);
++  border-radius: 50%;
++  position: relative;
++}
++
++.preview-base,
++.preview-arm,
++.preview-lens {
++  position: absolute;
++}
++
++.preview-base {
++  background:
++    linear-gradient(180deg, rgba(255, 255, 255, 0.62), transparent 40%),
++    var(--finish-color);
++  border: 1px solid rgba(7, 12, 12, 0.22);
++  border-radius: 50%;
++  bottom: 18%;
++  box-shadow: 0 18px 34px rgba(7, 12, 12, 0.16);
++  height: 13%;
++  left: 26%;
++  width: 48%;
++}
++
++.preview-arm {
++  background: linear-gradient(90deg, #202625, #f8ffff 48%, #687170);
++  border: 1px solid rgba(7, 12, 12, 0.25);
++  border-radius: 999px;
++  height: 4.5%;
++  transform-origin: left center;
++}
++
++.preview-arm.one {
++  bottom: 30%;
++  left: 48%;
++  transform: rotate(-68deg);
++  width: 32%;
++}
++
++.preview-arm.two {
++  left: 59%;
++  top: 32%;
++  transform: rotate(-20deg);
++  width: 25%;
++}
++
++.preview-lens {
++  background:
++    radial-gradient(circle at 52% 52%, #ffffff 0 16%, rgba(68, 227, 238, 0.5) 17% 22%, #252d2d 23%),
++    #1f2525;
++  border: 2px solid #aab6b6;
++  border-radius: 50%;
++  box-shadow: 0 10px 26px rgba(68, 227, 238, 0.18);
++  height: 18%;
++  right: 12%;
++  top: 23%;
++  width: 18%;
++}
++
++.preview-copy {
++  border-top: 1px solid var(--line-dark);
++  display: grid;
++  gap: 8px;
++  padding-top: 20px;
++}
++
++.preview-copy span,
++.order-panel span,
++.spec-tile span,
++.reserve-buy span {
++  color: #53605f;
++  font-size: 0.94rem;
++}
++
++.preview-copy strong {
++  font-size: 1.35rem;
++  line-height: 1.2;
++}
++
++.configurator {
++  display: grid;
++  gap: 22px;
++  padding: 28px;
++}
++
++.choice-group {
++  border: 0;
++  margin: 0;
++  padding: 0;
++}
++
++.choice-group legend {
++  font-size: 1rem;
++  font-weight: 780;
++  margin-bottom: 12px;
++  padding: 0;
++}
++
++.choice-row {
++  display: grid;
++  gap: 10px;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++}
++
++.choice {
++  align-items: center;
++  background: #edf2f1;
++  border: 1px solid rgba(7, 12, 12, 0.1);
++  border-radius: 8px;
++  cursor: pointer;
++  display: grid;
++  gap: 12px;
++  grid-template-columns: auto minmax(0, 1fr);
++  min-height: 88px;
++  padding: 14px;
++  position: relative;
++  transition:
++    background 160ms ease,
++    border-color 160ms ease,
++    transform 160ms ease;
++}
++
++.choice:hover {
++  background: #f8fbfa;
++  border-color: rgba(7, 12, 12, 0.2);
++}
++
++.choice:active {
++  transform: translateY(1px);
++}
++
++.choice:focus-within {
++  outline: 3px solid rgba(68, 227, 238, 0.5);
++  outline-offset: 2px;
++}
++
++.choice.is-selected {
++  background: #ffffff;
++  border-color: #0a1010;
++}
++
++.choice input {
++  inset: 0;
++  opacity: 0;
++  position: absolute;
++}
++
++.choice-icon,
++.finish-swatch {
++  align-items: center;
++  border-radius: 50%;
++  display: inline-flex;
++  flex: 0 0 auto;
++  height: 28px;
++  justify-content: center;
++  width: 28px;
++}
++
++.choice-icon {
++  background: #dfe7e5;
++  color: #0e5e64;
++}
++
++.choice.is-selected .choice-icon {
++  background: #081010;
++  color: #ffffff;
++}
++
++.finish-swatch {
++  border: 1px solid rgba(7, 12, 12, 0.25);
++  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
++}
++
++.choice.is-selected .finish-swatch {
++  outline: 3px solid rgba(68, 227, 238, 0.62);
++  outline-offset: 2px;
++}
++
++.choice strong,
++.choice small {
++  display: block;
++}
++
++.choice strong {
++  font-size: 0.98rem;
++  line-height: 1.2;
++}
++
++.choice small {
++  color: #586462;
++  font-size: 0.85rem;
++  line-height: 1.35;
++  margin-top: 5px;
++}
++
++.order-panel {
++  align-items: center;
++  border-top: 1px solid var(--line-dark);
++  display: flex;
++  gap: 18px;
++  justify-content: space-between;
++  margin-top: 6px;
++  padding-top: 22px;
++}
++
++.order-panel div {
++  display: grid;
++  gap: 3px;
++}
++
++.order-panel strong {
++  font-size: 2.3rem;
++  line-height: 1;
++}
++
++.specs-section {
++  background: var(--paper-2);
++  padding-top: 18px;
++}
++
++.spec-grid {
++  display: grid;
++  gap: 14px;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++}
++
++.spec-tile {
++  min-height: 222px;
++  padding: 24px;
++}
++
++.spec-tile strong {
++  display: block;
++  font-size: 2.35rem;
++  line-height: 1;
++  margin: 20px 0 18px;
++}
++
++.spec-tile p {
++  color: #53605f;
++  line-height: 1.52;
++  margin: 0;
++}
++
++.reserve-section {
++  align-items: center;
++  background:
++    linear-gradient(100deg, rgba(68, 227, 238, 0.2), transparent 30%),
++    #070909;
++  color: #f7fafa;
++  display: grid;
++  gap: 32px;
++  grid-template-columns: minmax(0, 1fr) auto;
++  padding: 72px 64px;
++}
++
++.reserve-section h2 {
++  font-size: 3rem;
++}
++
++.reserve-section p {
++  color: #b8c2c0;
++  line-height: 1.58;
++  margin-bottom: 0;
++  max-width: 62ch;
++}
++
++.reserve-buy {
++  justify-content: flex-end;
++}
++
++.reserve-buy span {
++  color: #d4dddd;
++  font-weight: 740;
++}
++
++@media (max-width: 1180px) {
++  .topbar,
++  .hero,
++  .system-strip,
++  .config-section,
++  .specs-section {
++    padding-left: 36px;
++    padding-right: 36px;
++  }
++
++  h1 {
++    font-size: 4.6rem;
++  }
++
++  h2 {
++    font-size: 2.8rem;
++  }
++
++  .choice-row,
++  .spec-grid {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++}
++
++@media (max-width: 920px) {
++  .hero {
++    gap: 30px;
++    grid-template-columns: 1fr;
++    min-height: auto;
++    padding-bottom: 48px;
++  }
++
++  .hero-copy {
++    max-width: 720px;
++  }
++
++  h1 {
++    font-size: 4rem;
++    max-width: 12ch;
++  }
++
++  .hero-visual {
++    aspect-ratio: 16 / 9;
++  }
++
++  .system-strip,
++  .config-layout {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .config-preview {
++    min-height: 460px;
++  }
++
++  .reserve-section {
++    grid-template-columns: 1fr;
++  }
++
++  .reserve-buy {
++    justify-content: flex-start;
++  }
++}
++
++@media (max-width: 720px) {
++  .topbar {
++    gap: 16px;
++    height: 64px;
++    padding-left: 20px;
++    padding-right: 20px;
++  }
++
++  .topbar nav {
++    display: none;
++  }
++
++  .hero,
++  .config-section,
++  .specs-section {
++    padding-left: 20px;
++    padding-right: 20px;
++  }
++
++  .hero {
++    padding-top: 18px;
++  }
++
++  h1 {
++    font-size: 3.15rem;
++    line-height: 0.98;
++    max-width: 10ch;
++  }
++
++  h2,
++  .reserve-section h2 {
++    font-size: 2.25rem;
++    line-height: 1.04;
++  }
++
++  .hero-text {
++    font-size: 1rem;
++  }
++
++  .system-strip,
++  .config-layout,
++  .choice-row,
++  .spec-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .system-strip {
++    padding: 0 20px;
++  }
++
++  .system-part {
++    border-left: 0;
++    border-top: 1px solid var(--line-dark);
++  }
++
++  .system-part:first-child {
++    border-top: 0;
++  }
++
++  .system-part:last-child {
++    border-right: 0;
++  }
++
++  .config-section,
++  .specs-section {
++    padding-bottom: 64px;
++    padding-top: 64px;
++  }
++
++  .config-preview,
++  .configurator {
++    padding: 20px;
++  }
++
++  .config-preview {
++    min-height: 390px;
++  }
++
++  .order-panel {
++    align-items: stretch;
++    flex-direction: column;
++  }
++
++  .order-panel .button {
++    width: 100%;
++  }
++
++  .reserve-section {
++    margin: 0;
++    padding: 56px 20px;
++  }
++}
++
++@media (max-width: 460px) {
++  .hero-actions,
++  .reserve-buy {
++    align-items: stretch;
++    flex-direction: column;
++  }
++
++  .hero-actions .button,
++  .reserve-buy .button,
++  .nav-cta {
++    width: 100%;
++  }
++
++  .topbar {
++    align-items: stretch;
++    height: auto;
++    padding-bottom: 14px;
++    padding-top: 14px;
++  }
++
++  .brand {
++    flex: 1;
++  }
++
++  h1 {
++    font-size: 2.65rem;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    transition-duration: 0.01ms !important;
++  }
++}
+diff --git a/vite.config.ts b/vite.config.ts
+index 8086301..c6dcaa6 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -1,4 +1,7 @@
+ import react from "@vitejs/plugin-react";
+ import { defineConfig } from "vite";
+ 
+-export default defineConfig({ plugins: [react()] });
++export default defineConfig({
++  base: "./",
++  plugins: [react()],
++});

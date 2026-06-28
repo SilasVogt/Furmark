@@ -1,0 +1,27 @@
+diff --git a/tests/lruCache.test.ts b/tests/lruCache.test.ts
+index ff3e352..2d7c28b 100644
+--- a/tests/lruCache.test.ts
++++ b/tests/lruCache.test.ts
+@@ -32,5 +32,22 @@ describe("LruCache", () => {
+     expect(cache.size).toBe(0);
+     expect(cache.stats.hits).toBe(1);
+   });
++
++  it("deletes entries and reports presence without touching stats", () => {
++    const cache = new LruCache<string, number>({ maxSize: 2 });
++    cache.set("a", 1);
++    cache.set("b", 2);
++    expect(cache.delete("a")).toBe(true);
++    expect(cache.delete("a")).toBe(false);
++    expect(cache.has("a")).toBe(false);
++    expect(cache.get("a")).toBeUndefined();
++    expect(cache.size).toBe(1);
++    expect(cache.stats).toEqual({
++      hits: 0,
++      misses: 1,
++      evictions: 0,
++      expired: 0,
++    });
++  });
+ });
+ 

@@ -1,0 +1,15 @@
+{
+  "testPassRate": 0,
+  "typecheck": true,
+  "setup": {
+    "verification": [
+      "pnpm install --ignore-scripts exited 0"
+    ]
+  },
+  "nonblankPixels": true,
+  "responsiveRender": true,
+  "consoleErrors": 0,
+  "frameDifference": 0,
+  "pauseBehavior": true,
+  "reducedMotion": true
+}

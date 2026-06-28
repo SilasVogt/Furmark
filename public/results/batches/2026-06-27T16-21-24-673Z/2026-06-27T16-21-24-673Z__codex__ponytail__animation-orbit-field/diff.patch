@@ -1,0 +1,325 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..6e99684 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,212 @@
+-import React from "react";
++import React, { useEffect, useMemo, useRef, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import { Pause, Play } from "lucide-react";
+ import "./style.css";
+ 
++const isReducedMotion = () =>
++  typeof window !== "undefined" &&
++  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const canvasRef = useRef<HTMLCanvasElement>(null);
++  const pointerRef = useRef({ x: 0, y: 0, active: false });
++  const pausedRef = useRef(false);
++  const reducedRef = useRef(false);
++  const [prefersReduced, setPrefersReduced] = useState(isReducedMotion);
++  const [paused, setPaused] = useState(isReducedMotion);
++
++  const satellites = useMemo(
++    () =>
++      Array.from({ length: 72 }, (_, i) => ({
++        radius: 0.08 + ((i * 7) % 31) / 72,
++        angle: i * 2.399963,
++        speed: (0.18 + (i % 9) * 0.028) * (i % 2 ? -1 : 1),
++        size: 1.4 + (i % 5) * 0.42,
++        wobble: 0.004 + (i % 6) * 0.0018,
++        phase: i * 0.73,
++        color: ["#7ee7ff", "#f8d56b", "#fb7185", "#a7f3d0", "#c4b5fd"][
++          i % 5
++        ],
++      })),
++    [],
++  );
++
++  useEffect(() => {
++    pausedRef.current = paused;
++  }, [paused]);
++
++  useEffect(() => {
++    reducedRef.current = prefersReduced;
++  }, [prefersReduced]);
++
++  useEffect(() => {
++    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
++    const syncPreference = () => {
++      setPrefersReduced(media.matches);
++      if (media.matches) setPaused(true);
++    };
++
++    syncPreference();
++    media.addEventListener("change", syncPreference);
++    return () => media.removeEventListener("change", syncPreference);
++  }, []);
++
++  useEffect(() => {
++    const canvas = canvasRef.current;
++    const context = canvas?.getContext("2d");
++    if (!canvas || !context) return;
++
++    let width = 0;
++    let height = 0;
++    let time = 0;
++    let last = performance.now();
++    let frame = 0;
++
++    const draw = (now: number) => {
++      const dt = Math.min(32, now - last) / 1000;
++      last = now;
++      if (!pausedRef.current) {
++        time += dt * (reducedRef.current ? 0.08 : 1);
++      }
++
++      const cx = width / 2;
++      const cy = height / 2;
++      const minSide = Math.max(1, Math.min(width, height));
++      const pointer = pointerRef.current;
++      const anchorX = pointer.active ? cx + (pointer.x - cx) * 0.2 : cx;
++      const anchorY = pointer.active ? cy + (pointer.y - cy) * 0.2 : cy;
++
++      context.clearRect(0, 0, width, height);
++
++      const sky = context.createLinearGradient(0, 0, width, height);
++      sky.addColorStop(0, "#041014");
++      sky.addColorStop(0.48, "#101827");
++      sky.addColorStop(1, "#130f1f");
++      context.fillStyle = sky;
++      context.fillRect(0, 0, width, height);
++
++      context.save();
++      context.translate(anchorX, anchorY);
++      for (let i = 0; i < 7; i += 1) {
++        const radius = minSide * (0.13 + i * 0.064);
++        context.beginPath();
++        context.ellipse(0, 0, radius, radius * (0.5 + i * 0.025), 0, 0, Math.PI * 2);
++        context.strokeStyle = `rgba(255, 255, 255, ${0.13 - i * 0.011})`;
++        context.lineWidth = 1;
++        context.stroke();
++      }
++      context.restore();
++
++      for (const [i, body] of satellites.entries()) {
++        const orbit = body.radius * minSide;
++        const angle = body.angle + time * body.speed;
++        const pulse = Math.sin(time * 1.4 + body.phase) * body.wobble * minSide;
++        const layer = i % 4;
++        let x = anchorX + Math.cos(angle) * (orbit + pulse);
++        let y =
++          anchorY +
++          Math.sin(angle * 0.88 + body.phase) *
++            (orbit * (0.52 + layer * 0.07) + pulse);
++
++        if (pointer.active) {
++          const dx = pointer.x - x;
++          const dy = pointer.y - y;
++          const distance = Math.hypot(dx, dy) || 1;
++          const pull = Math.max(0, 1 - distance / (minSide * 0.44));
++          x += dx * pull * 0.28;
++          y += dy * pull * 0.28;
++
++          if (pull > 0.08) {
++            context.beginPath();
++            context.moveTo(x, y);
++            context.lineTo(pointer.x, pointer.y);
++            context.strokeStyle = `rgba(126, 231, 255, ${pull * 0.22})`;
++            context.lineWidth = 1;
++            context.stroke();
++          }
++        }
++
++        context.beginPath();
++        context.arc(x, y, body.size, 0, Math.PI * 2);
++        context.fillStyle = body.color;
++        context.shadowBlur = 14;
++        context.shadowColor = body.color;
++        context.fill();
++      }
++
++      context.shadowBlur = 0;
++      context.beginPath();
++      context.arc(anchorX, anchorY, minSide * 0.018, 0, Math.PI * 2);
++      context.fillStyle = "#ffffff";
++      context.fill();
++    };
++
++    const resize = () => {
++      const rect = canvas.getBoundingClientRect();
++      const ratio = Math.min(window.devicePixelRatio || 1, 2);
++      width = Math.max(1, rect.width);
++      height = Math.max(1, rect.height);
++      canvas.width = Math.round(width * ratio);
++      canvas.height = Math.round(height * ratio);
++      context.setTransform(ratio, 0, 0, ratio, 0, 0);
++      draw(performance.now());
++    };
++
++    const updatePointer = (event: PointerEvent) => {
++      const rect = canvas.getBoundingClientRect();
++      pointerRef.current = {
++        x: event.clientX - rect.left,
++        y: event.clientY - rect.top,
++        active: true,
++      };
++      if (pausedRef.current) draw(performance.now());
++    };
++
++    const clearPointer = () => {
++      pointerRef.current.active = false;
++      if (pausedRef.current) draw(performance.now());
++    };
++
++    const tick = (now: number) => {
++      draw(now);
++      frame = requestAnimationFrame(tick);
++    };
++
++    const observer = new ResizeObserver(resize);
++    observer.observe(canvas);
++    canvas.addEventListener("pointermove", updatePointer);
++    canvas.addEventListener("pointerleave", clearPointer);
++    resize();
++    frame = requestAnimationFrame(tick);
++
++    return () => {
++      cancelAnimationFrame(frame);
++      observer.disconnect();
++      canvas.removeEventListener("pointermove", updatePointer);
++      canvas.removeEventListener("pointerleave", clearPointer);
++    };
++  }, [satellites]);
++
++  return (
++    <main className="orbit-field">
++      <canvas
++        ref={canvasRef}
++        aria-label="Interactive orbit field. Satellites react to pointer movement."
++      />
++      <div className="controls">
++        <button
++          type="button"
++          className="motion-button"
++          aria-label={paused ? "Resume orbit animation" : "Pause orbit animation"}
++          onClick={() => setPaused((current) => !current)}
++        >
++          {paused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
++          <span>{paused ? "Resume" : "Pause"}</span>
++        </button>
++        {prefersReduced && <span className="motion-note">Reduced motion</span>}
++      </div>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..830e29b 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,100 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++* {
++  box-sizing: border-box;
++}
++
++html,
++body,
++#root {
++  min-height: 100%;
++}
++
++body {
++  margin: 0;
++  font-family:
++    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
++    sans-serif;
++  background: #041014;
++  color: #f8fafc;
++}
++
++button {
++  font: inherit;
++}
++
++.orbit-field {
++  position: relative;
++  min-height: 100svh;
++  overflow: hidden;
++  background: #041014;
++}
++
++.orbit-field canvas {
++  display: block;
++  width: 100vw;
++  height: 100svh;
++  touch-action: none;
++}
++
++.controls {
++  position: absolute;
++  top: clamp(12px, 2vw, 22px);
++  right: clamp(12px, 2vw, 22px);
++  display: flex;
++  align-items: center;
++  gap: 10px;
++}
++
++.motion-button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  min-width: 112px;
++  min-height: 44px;
++  gap: 8px;
++  padding: 10px 16px;
++  border: 1px solid rgba(255, 255, 255, 0.3);
++  border-radius: 8px;
++  background: rgba(4, 16, 20, 0.74);
++  color: #f8fafc;
++  cursor: pointer;
++  backdrop-filter: blur(14px);
++}
++
++.motion-button:hover {
++  background: rgba(20, 33, 44, 0.9);
++}
++
++.motion-button:focus-visible {
++  outline: 3px solid #7ee7ff;
++  outline-offset: 3px;
++}
++
++.motion-note {
++  padding: 8px 10px;
++  border: 1px solid rgba(255, 255, 255, 0.22);
++  border-radius: 8px;
++  background: rgba(4, 16, 20, 0.65);
++  color: #d7f7ff;
++  font-size: 0.875rem;
++  white-space: nowrap;
++  backdrop-filter: blur(14px);
++}
++
++@media (max-width: 520px) {
++  .controls {
++    left: 12px;
++    right: 12px;
++    justify-content: space-between;
++  }
++
++  .motion-button {
++    min-width: 104px;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .motion-button,
++  .motion-note {
++    transition: none;
++  }
++}

@@ -1,0 +1,16 @@
+Done. Built a scroll-driven assembly line in `src/`.
+
+**What it does**
+- A pinned stage (sticky element inside a tall track) where scroll progress 0→1 drives the whole scene: a unit rides the conveyor through 5 stations (Intake, Press, Weld, Paint, Pack) and is built up step by step — raw chassis, body, welded head with a lit core, orange paint coat, then crated with a QC stamp. Belt texture scrolls, rollers spin, and each station's tool dips and glows as the part arrives. Progress drives real state, not just section reveals: HUD shows the active station, step number, and percent.
+- Scroll handling uses a passive listener + `requestAnimationFrame` that writes CSS variables and `textContent` through refs. No React state changes per frame, so there's no scroll-linked render loop.
+- Reduced-motion mode (OS setting or the in-page toggle) renders a plain vertical list of the same 5 steps, each showing the unit at that stage. No sticky pinning, no scroll track, no continuous animation. A toggle flips between modes either way.
+- Mobile: HUD stacks, station panels collapse to icons, no horizontal overflow.
+
+**Files**: `src/machine.ts` (pure scroll→state math), `src/machine.test.ts`, `src/App.tsx`, `src/style.css`, plus `src/main.tsx` and an inline favicon in `index.html` (kills a stray 404).
+
+**Verification**
+- `npm run build` (tsc --noEmit + vite build): passed.
+- `vitest run`: 15/15 passed.
+- Headless Chromium drive-through: scroll 0/50/100% maps to p≈0/0.5/1, station Intake→Weld→Pack, percent 0→100; reduced-motion shows the static 5-step view with no pinned stage; mobile has no horizontal overflow; zero console errors and no React update-depth warnings. All 13 checks passed.
+
+One note: I tested against the production build via `vite preview`; the dev server runs the same source. Build output (`dist/`) was removed since it's regenerable.

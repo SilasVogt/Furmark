@@ -1,0 +1,87 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..c8fc4f4 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -50,10 +50,50 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   }
+ 
+   if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
++    const cycle = findCycle(nodes, graph);
+     throw new DependencyCycleError(cycle);
+   }
+ 
+   return batches;
+ }
+ 
++// ponytail: iterative DFS over sorted neighbors so the reported cycle is
++// deterministic; only nodes actually on a cycle are returned, not the whole
++// stuck set (a dependent of a cyclic node is blocked but not on a cycle).
++function findCycle(nodes: Set<string>, graph: DependencyGraph): string[] {
++  const WHITE = 0, GRAY = 1, BLACK = 2;
++  const color = new Map<string, number>();
++  for (const n of nodes) color.set(n, WHITE);
++  const stack: string[] = [];
++
++  for (const root of [...nodes].sort()) {
++    if (color.get(root) !== WHITE) continue;
++    const work: [string, number][] = [[root, 0]];
++    color.set(root, GRAY);
++    stack.push(root);
++    while (work.length > 0) {
++      const [u, i] = work[work.length - 1];
++      const neighbors = (graph[u] ?? []).slice().sort();
++      if (i >= neighbors.length) {
++        color.set(u, BLACK);
++        stack.pop();
++        work.pop();
++        continue;
++      }
++      work[work.length - 1][1] = i + 1;
++      const v = neighbors[i];
++      const vc = color.get(v);
++      if (vc === GRAY) {
++        const idx = stack.indexOf(v);
++        return stack.slice(idx);
++      }
++      if (vc === WHITE) {
++        color.set(v, GRAY);
++        stack.push(v);
++        work.push([v, 0]);
++      }
++    }
++  }
++  return [...nodes].filter((n) => !color.get(n)).sort();
++}
++
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..3fd993c 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -30,5 +30,26 @@ describe("dependencyBatches", () => {
+       expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
+     }
+   });
++
++  it("names only nodes on the cycle, not blocked dependents", () => {
++    try {
++      dependencyBatches({ a: ["b"], b: ["a"], c: ["a"] });
++      throw new Error("expected cycle error");
++    } catch (error) {
++      expect(error).toBeInstanceOf(DependencyCycleError);
++      const cycle = (error as DependencyCycleError).cycle;
++      expect(cycle).toEqual(["a", "b"]);
++      expect(cycle).not.toContain("c");
++    }
++  });
++
++  it("reports a longer cycle in order", () => {
++    try {
++      dependencyBatches({ a: ["b"], b: ["c"], c: ["a"] });
++    } catch (error) {
++      expect(error).toBeInstanceOf(DependencyCycleError);
++      expect((error as DependencyCycleError).cycle).toEqual(["a", "b", "c"]);
++    }
++  });
+ });
+ 

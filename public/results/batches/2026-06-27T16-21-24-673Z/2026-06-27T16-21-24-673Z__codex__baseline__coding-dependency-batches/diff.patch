@@ -1,0 +1,86 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..768b3a3 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -50,10 +50,60 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   }
+ 
+   if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
++    const cycle = findCycleMembers(remainingDeps, processed);
+     throw new DependencyCycleError(cycle);
+   }
+ 
+   return batches;
+ }
+ 
++function findCycleMembers(remainingDeps: Map<string, Set<string>>, processed: Set<string>): string[] {
++  const unresolved = new Set([...remainingDeps.keys()].filter((node) => !processed.has(node)));
++  const indexByNode = new Map<string, number>();
++  const lowlinkByNode = new Map<string, number>();
++  const stack: string[] = [];
++  const onStack = new Set<string>();
++  const cycleMembers = new Set<string>();
++  let index = 0;
++
++  const visit = (node: string) => {
++    indexByNode.set(node, index);
++    lowlinkByNode.set(node, index);
++    index += 1;
++    stack.push(node);
++    onStack.add(node);
++
++    const unresolvedDependencies = [...(remainingDeps.get(node) ?? [])]
++      .filter((candidate) => unresolved.has(candidate))
++      .sort();
++
++    for (const dependency of unresolvedDependencies) {
++      if (!indexByNode.has(dependency)) {
++        visit(dependency);
++        lowlinkByNode.set(node, Math.min(lowlinkByNode.get(node)!, lowlinkByNode.get(dependency)!));
++      } else if (onStack.has(dependency)) {
++        lowlinkByNode.set(node, Math.min(lowlinkByNode.get(node)!, indexByNode.get(dependency)!));
++      }
++    }
++
++    if (lowlinkByNode.get(node) !== indexByNode.get(node)) return;
++
++    const component: string[] = [];
++    let member: string;
++    do {
++      member = stack.pop()!;
++      onStack.delete(member);
++      component.push(member);
++    } while (member !== node);
++
++    if (component.length > 1 || remainingDeps.get(node)?.has(node)) {
++      for (const cycleMember of component) cycleMembers.add(cycleMember);
++    }
++  };
++
++  for (const node of [...unresolved].sort()) {
++    if (!indexByNode.has(node)) visit(node);
++  }
++
++  return [...cycleMembers].sort();
++}
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..689ee43 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -30,5 +30,14 @@ describe("dependencyBatches", () => {
+       expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
+     }
+   });
+-});
+ 
++  it("reports only actual cycle members", () => {
++    expect(() => dependencyBatches({ a: ["b"], b: ["a"], blocked: ["a"] })).toThrow(DependencyCycleError);
++    try {
++      dependencyBatches({ a: ["b"], b: ["a"], blocked: ["a"] });
++    } catch (error) {
++      expect(error).toBeInstanceOf(DependencyCycleError);
++      expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
++    }
++  });
++});

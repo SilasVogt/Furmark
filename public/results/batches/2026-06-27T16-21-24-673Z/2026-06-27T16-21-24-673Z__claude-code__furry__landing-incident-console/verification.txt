@@ -1,0 +1,36 @@
+$ pnpm test
+
+> @ test /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/workspace
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90m/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/workspace[39m
+
+ [32m✓[39m src/App.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 07:44:13
+[2m   Duration [22m 327ms[2m (transform 80ms, setup 0ms, import 207ms, tests 3ms, environment 0ms)[22m
+
+
+
+exit 0
+
+$ pnpm build
+
+> @ build /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/workspace
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1701 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   1.14 kB │ gzip:  0.64 kB
+dist/assets/index-DMSaOdGH.css   15.96 kB │ gzip:  4.14 kB
+dist/assets/index-C2UjrPt-.js   211.06 kB │ gzip: 67.45 kB
+✓ built in 1.53s
+
+
+exit 0

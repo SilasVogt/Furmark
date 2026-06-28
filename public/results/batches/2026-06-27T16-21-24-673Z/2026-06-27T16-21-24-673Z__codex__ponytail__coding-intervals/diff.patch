@@ -1,0 +1,117 @@
+diff --git a/src/intervals.ts b/src/intervals.ts
+index 4d5e50e..ec681fd 100644
+--- a/src/intervals.ts
++++ b/src/intervals.ts
+@@ -9,7 +9,9 @@ export type CoalesceOptions = {
+ 
+ export function coalesceIntervals(intervals: readonly Interval[], options: CoalesceOptions = {}): Interval[] {
+   const mergeTouching = options.mergeTouching ?? true;
+-  const normalized = intervals.map(normalizeInterval).sort((a, b) => a.start - b.start || a.end - b.end);
++  const normalized = intervals
++    .map((interval, index) => normalizeInterval(interval, index))
++    .sort((a, b) => a.start - b.start || a.end - b.end);
+   const result: Interval[] = [];
+ 
+   for (const interval of normalized) {
+@@ -29,15 +31,15 @@ export function coalesceIntervals(intervals: readonly Interval[], options: Coale
+   return result;
+ }
+ 
+-function normalizeInterval(interval: Interval): Interval {
+-  assertFinite(interval.start, "start");
+-  assertFinite(interval.end, "end");
+-  return interval.start <= interval.end
+-    ? { start: interval.start, end: interval.end }
+-    : { start: interval.end, end: interval.start };
++function normalizeInterval(interval: Interval, index: number): Interval {
++  const { start, end } = interval;
++  assertFinite(start, `Interval ${index} start`);
++  assertFinite(end, `Interval ${index} end`);
++  return start <= end ? { start, end } : { start: end, end: start };
+ }
+ 
+-function assertFinite(value: number, label: string): void {
+-  if (!Number.isFinite(value)) throw new Error(`Interval ${label} must be finite`);
++function assertFinite(value: unknown, label: string): asserts value is number {
++  if (typeof value !== "number" || !Number.isFinite(value)) {
++    throw new Error(`${label} must be a finite number`);
++  }
+ }
+-
+diff --git a/tests/intervals.test.ts b/tests/intervals.test.ts
+index 81c8bb9..1058982 100644
+--- a/tests/intervals.test.ts
++++ b/tests/intervals.test.ts
+@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
+ import { coalesceIntervals } from "../src/intervals";
+ 
+ describe("coalesceIntervals", () => {
++  it("handles empty and single-item inputs", () => {
++    expect(coalesceIntervals([])).toEqual([]);
++    expect(coalesceIntervals([{ start: 3, end: 1 }])).toEqual([{ start: 1, end: 3 }]);
++  });
++
+   it("merges overlaps deterministically", () => {
+     expect(
+       coalesceIntervals([
+@@ -12,6 +17,39 @@ describe("coalesceIntervals", () => {
+     ).toEqual([{ start: 1, end: 8 }]);
+   });
+ 
++  it("merges duplicate intervals", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 3 },
++        { start: 1, end: 3 },
++        { start: 2, end: 3 },
++      ]),
++    ).toEqual([{ start: 1, end: 3 }]);
++  });
++
++  it("orders disjoint intervals deterministically", () => {
++    expect(
++      coalesceIntervals([
++        { start: 8, end: 9 },
++        { start: 1, end: 2 },
++        { start: 5, end: 6 },
++      ]),
++    ).toEqual([
++      { start: 1, end: 2 },
++      { start: 5, end: 6 },
++      { start: 8, end: 9 },
++    ]);
++  });
++
++  it("merges touching intervals by default", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 2 },
++        { start: 2, end: 3 },
++      ]),
++    ).toEqual([{ start: 1, end: 3 }]);
++  });
++
+   it("can keep touching intervals separate", () => {
+     expect(
+       coalesceIntervals(
+@@ -31,13 +69,17 @@ describe("coalesceIntervals", () => {
+     expect(
+       coalesceIntervals([
+         { start: 4, end: -1 },
+-        { start: -3, end: -2 },
++        { start: -3, end: 0 },
+       ]),
+     ).toEqual([{ start: -3, end: 4 }]);
+   });
+ 
+   it("rejects invalid endpoints", () => {
+-    expect(() => coalesceIntervals([{ start: 1, end: Number.NaN }])).toThrow(/finite/);
++    expect(() => coalesceIntervals([{ start: 1, end: Number.NaN }])).toThrow(
++      "Interval 0 end must be a finite number",
++    );
++    expect(() => coalesceIntervals([{ start: Number.POSITIVE_INFINITY, end: 1 }])).toThrow(
++      "Interval 0 start must be a finite number",
++    );
+   });
+ });
+-

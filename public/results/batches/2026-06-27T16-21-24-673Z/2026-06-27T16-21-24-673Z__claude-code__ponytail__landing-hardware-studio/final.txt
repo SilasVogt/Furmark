@@ -1,0 +1,18 @@
+Rendering is identical after the refactor — everything intact. Done.
+
+## Summary
+
+Built the Arcwell landing page on the existing Vite + React stack — **no new dependencies, no external image assets** (the product visual is a generated SVG, so it's robust offline).
+
+**What's there:**
+- **`src/main.tsx`** — the page. Centerpiece is a live configurator in the first viewport: a hand-built SVG lamp (arm path, finish-tinted metal gradient, glowing lens, projected light cone + desk pool) that re-renders from the Arm / Lens / Finish selection. Controls are native `<input type="radio">` in `fieldset`/`role="radiogroup"` with `aria-label`s and `:focus-visible` rings — keyboard + screen-reader accessible for free. Then a measured spec sheet (stat grid + hairline spec rows, not feature cards), a "system" section showing the three swappable layers (the arm thumbnails reuse the same path data), a closing CTA, and footer.
+- **`src/config.ts`** — pure data + `priceFor()`, shared by the view so price and visual stay in one source of truth.
+- **`src/style.css`** — near-black studio palette with an electric-indigo accent, tabular numerics, fluid `clamp()` type. Deliberately no beige/brass. Overflow guarded with `box-sizing`, `min-width:0` grids, and an `overflow-x:hidden` backstop.
+- **`src/config.test.ts`** — three asserts on the price math (the one non-trivial/money path).
+
+**Verification:**
+- `pnpm build` → `tsc --noEmit` + `vite build` pass.
+- `pnpm test` → 3 passed (was failing with "no test files").
+- Chromium screenshots at 1440 / 1000 / 390 / 360 px — no overlap or horizontal overflow; verified an alternate config (Boom + Spot + Oxide) renders correct geometry/colors and a live price (Flood default → $255).
+
+skipped: real cart/checkout, product catalog, web-font dependency — add when there's an actual backend or brand typeface to wire in.

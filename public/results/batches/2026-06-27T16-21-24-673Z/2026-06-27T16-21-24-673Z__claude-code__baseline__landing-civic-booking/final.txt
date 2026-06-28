@@ -1,0 +1,24 @@
+Done. I built an accessible public-service landing page for **Civic Slot** on the existing Vite + React 19 + TypeScript scaffold.
+
+## What changed
+- **`index.html`** — real `<title>`, meta description, `lang`, and `theme-color`.
+- **`src/main.tsx`** — mounts the new `App`.
+- **`src/App.tsx`** — skip link + semantic `<main>`, composing the sections.
+- **`src/components/`** (new) — `Header`, `Hero`, `Services`, `Availability`, `Commitments`, `Support`, `Footer`.
+- **`src/style.css`** — a full design system: WCAG-AA color tokens, visible `:focus-visible` rings (dark on light surfaces, gold on dark ones), responsive grids, and reduced-motion support.
+
+## How it meets the brief
+- **Semantic landmarks + focus**: sticky `<header>`/`<nav>`, `<main>`, five `<section>`s each tied to a heading via `aria-labelledby`, `<footer>`, a skip link, and a visible focus outline on every interactive element.
+- **Booking-oriented hero**: a "Find a time" form (service, office, optional date) that reveals example time slots → a confirmation panel, with focus moved to each new heading and an honest "this is a demonstration, nothing is booked" note.
+- **Service categories, availability explanation, accessibility commitments, contact/support** — all present, with a labeled support form and an emergency-services disclaimer.
+- **Plain language**: no marketing exaggeration ("Free to use", "No account required", example times clearly labeled as examples).
+- **Form controls**: all 7 controls have `<label>` + helper text (`aria-describedby`), 2px borders meeting non-text contrast, and 44px+ targets.
+
+## Verification run
+- `tsc --noEmit` and `vite build` — both pass with no errors.
+- **Playwright runtime check** against both the production preview *and* the dev server (dev surfaces React nesting/key/controlled-input warnings): **0 console errors, 0 warnings, 0 page errors**; landmarks correct; **7/7 controls labelled and described**; booking flow works end-to-end; **no horizontal overflow at 360px**.
+- Screenshots confirmed clean desktop and mobile rendering.
+
+During verification I caught and fixed one real bug: the base `.callout` used `display:flex`, which forced the info callout's long email address to overflow the mobile viewport by ~43px — I scoped the flex layout to the warning variant and added `overflow-wrap: break-word`, after which mobile content width equals the viewport (360 = 360).
+
+Servers stopped and the temporary build artifact/scripts removed; the workspace contains only source changes.

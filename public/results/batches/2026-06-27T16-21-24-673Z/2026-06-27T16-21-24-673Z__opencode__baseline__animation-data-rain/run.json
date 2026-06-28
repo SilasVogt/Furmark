@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T06:51:44.038Z",
+  "repoCommit": "ccee22e",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "animation-data-rain",
+  "category": "browser-animation",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/workspace",
+  "exitCode": 0,
+  "durationMs": 135064,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "passed",
+  "scores": {
+    "correctness": 0,
+    "visual": 100,
+    "animation": 60,
+    "codeQuality": 74.8,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 50.2
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-data-rain/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

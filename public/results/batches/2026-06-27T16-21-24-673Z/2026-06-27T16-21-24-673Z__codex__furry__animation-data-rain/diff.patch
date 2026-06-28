@@ -1,0 +1,1033 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..527d151 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,450 @@
+-import React from "react";
++import { useCallback, useEffect, useMemo, useRef, useState } from "react";
++import type { CSSProperties } from "react";
+ import { createRoot } from "react-dom/client";
++import { Activity, Gauge, Pause, Play, Radio } from "lucide-react";
+ import "./style.css";
+ 
++const LANE_COUNT = 5;
++const GRAVITY = 760;
++const MAX_SPEED = 620;
++const STACK_GAP = 4;
++
++type MetricKind = "cpu" | "memory" | "latency" | "errors" | "network";
++
++type MetricDefinition = {
++  kind: MetricKind;
++  name: string;
++  short: string;
++  min: number;
++  max: number;
++  format: (value: number) => string;
++};
++
++type MetricBar = {
++  id: string;
++  kind: MetricKind;
++  name: string;
++  short: string;
++  valueText: string;
++  lane: number;
++  height: number;
++  y: number;
++  velocity: number;
++  settled: boolean;
++  createdAt: number;
++  settledAt: number;
++};
++
++type StageSize = {
++  width: number;
++  height: number;
++};
++
++const METRICS: MetricDefinition[] = [
++  {
++    kind: "cpu",
++    name: "CPU load",
++    short: "CPU",
++    min: 22,
++    max: 99,
++    format: (value) => `${Math.round(value)}%`,
++  },
++  {
++    kind: "memory",
++    name: "Memory use",
++    short: "MEM",
++    min: 3.2,
++    max: 15.8,
++    format: (value) => `${value.toFixed(1)} GB`,
++  },
++  {
++    kind: "latency",
++    name: "API latency",
++    short: "API",
++    min: 80,
++    max: 940,
++    format: (value) => `${Math.round(value)} ms`,
++  },
++  {
++    kind: "errors",
++    name: "Error rate",
++    short: "ERR",
++    min: 0,
++    max: 48,
++    format: (value) => `${Math.round(value)} err/min`,
++  },
++  {
++    kind: "network",
++    name: "Network in",
++    short: "NET",
++    min: 12,
++    max: 980,
++    format: (value) => `${Math.round(value)} MB/s`,
++  },
++];
++
++function initialReducedMotion() {
++  return (
++    typeof window !== "undefined" &&
++    window.matchMedia("(prefers-reduced-motion: reduce)").matches
++  );
++}
++
++function createMetricBar(sequence: number, now: number): MetricBar {
++  const metric = METRICS[Math.floor(Math.random() * METRICS.length)];
++  const intensity = Math.random();
++  const value = metric.min + (metric.max - metric.min) * intensity;
++  const height = Math.round(54 + intensity * 102);
++
++  return {
++    id: `${Math.round(now)}-${sequence}`,
++    kind: metric.kind,
++    name: metric.name,
++    short: metric.short,
++    valueText: metric.format(value),
++    lane: Math.floor(Math.random() * LANE_COUNT),
++    height,
++    y: -height - 12,
++    velocity: 90 + Math.random() * 70,
++    settled: false,
++    createdAt: now,
++    settledAt: 0,
++  };
++}
++
++function compactSettledBars(bars: MetricBar[], stageHeight: number) {
++  const maxStackHeight = Math.max(180, stageHeight - 32);
++  const settledByLane = new Map<number, MetricBar[]>();
++
++  for (const bar of bars) {
++    if (!bar.settled) continue;
++    const laneBars = settledByLane.get(bar.lane) ?? [];
++    laneBars.push(bar);
++    settledByLane.set(bar.lane, laneBars);
++  }
++
++  const adjusted = new Map<string, MetricBar>();
++
++  for (let lane = 0; lane < LANE_COUNT; lane += 1) {
++    const laneBars = (settledByLane.get(lane) ?? []).sort(
++      (a, b) => b.settledAt - a.settledAt,
++    );
++    const keptNewest: MetricBar[] = [];
++    let usedHeight = 0;
++
++    for (const bar of laneBars) {
++      const gap = keptNewest.length === 0 ? 0 : STACK_GAP;
++      const nextHeight = usedHeight + gap + bar.height;
++      if (nextHeight > maxStackHeight && keptNewest.length > 0) break;
++      keptNewest.push(bar);
++      usedHeight = nextHeight;
++    }
++
++    let stackHeight = 0;
++    for (const bar of keptNewest.reverse()) {
++      const y = Math.max(8, stageHeight - stackHeight - bar.height);
++      adjusted.set(bar.id, { ...bar, y });
++      stackHeight += bar.height + STACK_GAP;
++    }
++  }
++
++  return bars
++    .filter((bar) => !bar.settled || adjusted.has(bar.id))
++    .map((bar) => adjusted.get(bar.id) ?? bar);
++}
++
++function getLaneStacks(bars: MetricBar[]) {
++  const stacks = Array.from({ length: LANE_COUNT }, () => 0);
++
++  for (const bar of bars) {
++    if (bar.settled) {
++      stacks[bar.lane] += bar.height + STACK_GAP;
++    }
++  }
++
++  return stacks;
++}
++
++function advanceBars(
++  bars: MetricBar[],
++  deltaSeconds: number,
++  stageHeight: number,
++  now: number,
++) {
++  const compacted = compactSettledBars(bars, stageHeight);
++  const laneStacks = getLaneStacks(compacted);
++
++  return compacted.map((bar) => {
++    if (bar.settled) return bar;
++
++    const velocity = Math.min(bar.velocity + GRAVITY * deltaSeconds, MAX_SPEED);
++    const y = bar.y + velocity * deltaSeconds;
++    const targetY = Math.max(8, stageHeight - laneStacks[bar.lane] - bar.height);
++
++    if (y >= targetY) {
++      laneStacks[bar.lane] += bar.height + STACK_GAP;
++      return {
++        ...bar,
++        y: targetY,
++        velocity: 0,
++        settled: true,
++        settledAt: now,
++      };
++    }
++
++    return { ...bar, y, velocity };
++  });
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const stageRef = useRef<HTMLDivElement | null>(null);
++  const sequenceRef = useRef(0);
++  const [running, setRunning] = useState(true);
++  const [reducedMotion, setReducedMotion] = useState(initialReducedMotion);
++  const [bars, setBars] = useState<MetricBar[]>([]);
++  const [feed, setFeed] = useState<MetricBar[]>([]);
++  const [stageSize, setStageSize] = useState<StageSize>({ width: 0, height: 0 });
++
++  useEffect(() => {
++    const stage = stageRef.current;
++    if (!stage) return;
++
++    const updateSize = () => {
++      setStageSize({
++        width: stage.clientWidth,
++        height: stage.clientHeight,
++      });
++    };
++
++    updateSize();
++    const observer = new ResizeObserver(updateSize);
++    observer.observe(stage);
++
++    return () => observer.disconnect();
++  }, []);
++
++  const emitMetric = useCallback(() => {
++    if (stageSize.height === 0) return;
++
++    const now = performance.now();
++    sequenceRef.current += 1;
++    const nextBar = createMetricBar(sequenceRef.current, now);
++    const incomingBar = reducedMotion
++      ? {
++          ...nextBar,
++          y: stageSize.height - nextBar.height,
++          velocity: 0,
++          settled: true,
++          settledAt: now,
++        }
++      : nextBar;
++
++    setFeed((currentFeed) => [nextBar, ...currentFeed].slice(0, 8));
++    setBars((currentBars) =>
++      compactSettledBars([...currentBars, incomingBar], stageSize.height),
++    );
++  }, [reducedMotion, stageSize.height]);
++
++  useEffect(() => {
++    if (!running || stageSize.height === 0) return;
++
++    emitMetric();
++    const timer = window.setInterval(emitMetric, reducedMotion ? 1250 : 760);
++
++    return () => window.clearInterval(timer);
++  }, [emitMetric, reducedMotion, running, stageSize.height]);
++
++  useEffect(() => {
++    if (!running || reducedMotion || stageSize.height === 0) return;
++
++    let frameId = 0;
++    let lastFrame = performance.now();
++
++    const step = (now: number) => {
++      const deltaSeconds = Math.min(0.04, (now - lastFrame) / 1000);
++      lastFrame = now;
++      setBars((currentBars) =>
++        currentBars.length === 0
++          ? currentBars
++          : advanceBars(currentBars, deltaSeconds, stageSize.height, now),
++      );
++      frameId = window.requestAnimationFrame(step);
++    };
++
++    frameId = window.requestAnimationFrame(step);
++
++    return () => window.cancelAnimationFrame(frameId);
++  }, [reducedMotion, running, stageSize.height]);
++
++  useEffect(() => {
++    if (!reducedMotion || stageSize.height === 0) return;
++
++    const now = performance.now();
++    setBars((currentBars) =>
++      compactSettledBars(
++        currentBars.map((bar) =>
++          bar.settled
++            ? bar
++            : {
++                ...bar,
++                velocity: 0,
++                settled: true,
++                settledAt: now,
++              },
++        ),
++        stageSize.height,
++      ),
++    );
++  }, [reducedMotion, stageSize.height]);
++
++  const laneWidth = stageSize.width > 0 ? stageSize.width / LANE_COUNT : 0;
++  const barWidth = useMemo(() => {
++    if (laneWidth === 0) return 64;
++    return Math.max(52, Math.min(118, laneWidth * 0.78));
++  }, [laneWidth]);
++  const settledCount = bars.filter((bar) => bar.settled).length;
++  const fallingCount = bars.length - settledCount;
++  const stageLabel = `${fallingCount} falling metric bars and ${settledCount} stacked metric bars`;
++
++  return (
++    <main className="app-shell">
++      <section className="topbar" aria-label="Metric rain controls">
++        <div>
++          <p className="kicker">
++            <Radio size={18} aria-hidden="true" />
++            Simulated metric stream
++          </p>
++          <h1>Metric Data Rain</h1>
++        </div>
++
++        <div className="control-group">
++          <button
++            className="control-button primary"
++            type="button"
++            onClick={() => setRunning((current) => !current)}
++            aria-pressed={!running}
++          >
++            {running ? <Pause size={18} /> : <Play size={18} />}
++            {running ? "Pause" : "Resume"}
++          </button>
++          <button
++            className={`control-button ${reducedMotion ? "is-active" : ""}`}
++            type="button"
++            onClick={() => setReducedMotion((current) => !current)}
++            aria-pressed={reducedMotion}
++          >
++            <Gauge size={18} />
++            Reduced motion
++            <span>{reducedMotion ? "On" : "Off"}</span>
++          </button>
++        </div>
++      </section>
++
++      <section className="dashboard">
++        <div className="stage-panel">
++          <div className="panel-header">
++            <span>
++              <Activity size={18} aria-hidden="true" />
++              Falling bars
++            </span>
++            <strong>{running ? (reducedMotion ? "Reduced" : "Live") : "Paused"}</strong>
++          </div>
++
++          <div
++            ref={stageRef}
++            className={`rain-stage ${reducedMotion ? "is-reduced" : ""}`}
++            role="img"
++            aria-label={stageLabel}
++          >
++            {Array.from({ length: LANE_COUNT }, (_, lane) => (
++              <div
++                className="lane"
++                key={lane}
++                style={{
++                  left: `${(lane / LANE_COUNT) * 100}%`,
++                  width: `${100 / LANE_COUNT}%`,
++                }}
++              >
++                <span>Lane {lane + 1}</span>
++              </div>
++            ))}
++
++            <div className="floor-line" aria-hidden="true" />
++
++            {bars.map((bar) => {
++              const left =
++                laneWidth * bar.lane + (laneWidth - barWidth) / 2;
++              return (
++                <div
++                  aria-label={`${bar.name}, ${bar.valueText}, lane ${
++                    bar.lane + 1
++                  }`}
++                  className={`metric-bar metric-${bar.kind} ${
++                    bar.settled ? "is-settled" : "is-falling"
++                  }`}
++                  key={bar.id}
++                  style={
++                    {
++                      "--bar-x": `${Math.max(4, left)}px`,
++                      "--bar-y": `${Math.round(bar.y)}px`,
++                      "--bar-width": `${barWidth}px`,
++                      "--bar-height": `${bar.height}px`,
++                    } as CSSProperties
++                  }
++                >
++                  <span className={`metric-shape shape-${bar.kind}`} aria-hidden="true" />
++                  <span className="metric-copy">
++                    <strong>{bar.short}</strong>
++                    <span>{bar.valueText}</span>
++                  </span>
++                </div>
++              );
++            })}
++          </div>
++        </div>
++
++        <aside className="feed-panel" aria-label="Live metric feed">
++          <div className="panel-header feed-header">
++            <span>Live feed</span>
++            <strong>{feed.length} latest</strong>
++          </div>
++
++          <ul aria-live="polite" className="feed-list">
++            {feed.length === 0 ? (
++              <li className="empty-feed">Waiting for metrics</li>
++            ) : (
++              feed.map((event) => (
++                <li className={`feed-item metric-${event.kind}`} key={event.id}>
++                  <span className={`metric-shape shape-${event.kind}`} aria-hidden="true" />
++                  <span>
++                    <strong>{event.name}</strong>
++                    <small>
++                      {event.valueText} into lane {event.lane + 1}
++                    </small>
++                  </span>
++                </li>
++              ))
++            )}
++          </ul>
++
++          <dl className="stats">
++            <div>
++              <dt>Falling</dt>
++              <dd>{fallingCount}</dd>
++            </div>
++            <div>
++              <dt>Stacked</dt>
++              <dd>{settledCount}</dd>
++            </div>
++            <div>
++              <dt>Mode</dt>
++              <dd>{reducedMotion ? "Step" : "Motion"}</dd>
++            </div>
++          </dl>
++        </aside>
++      </section>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..ef24f1b 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,570 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color: #f4f0e8;
++  background: #171717;
++  font-family:
++    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
++    sans-serif;
++  font-synthesis: none;
++  text-rendering: optimizeLegibility;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  min-height: 100vh;
++  background:
++    linear-gradient(135deg, rgba(23, 23, 23, 0.96), rgba(31, 34, 32, 0.94)),
++    repeating-linear-gradient(
++      0deg,
++      rgba(255, 255, 255, 0.035) 0 1px,
++      transparent 1px 34px
++    );
++}
++
++button {
++  font: inherit;
++}
++
++#root {
++  min-height: 100vh;
++}
++
++.app-shell {
++  width: min(1240px, calc(100% - 32px));
++  margin: 0 auto;
++  padding: 28px 0;
++}
++
++.topbar {
++  display: flex;
++  align-items: end;
++  justify-content: space-between;
++  gap: 20px;
++  padding-bottom: 18px;
++}
++
++.kicker {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  margin: 0 0 6px;
++  color: #9be6d2;
++  font-size: 0.82rem;
++  font-weight: 760;
++  letter-spacing: 0;
++  text-transform: uppercase;
++}
++
++h1 {
++  margin: 0;
++  color: #fffaf1;
++  font-size: 2.6rem;
++  line-height: 1;
++  letter-spacing: 0;
++}
++
++.control-group {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: flex-end;
++  gap: 10px;
++}
++
++.control-button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  min-height: 44px;
++  gap: 8px;
++  border: 1px solid #45433d;
++  border-radius: 8px;
++  padding: 0 14px;
++  color: #f4f0e8;
++  background: #24231f;
++  cursor: pointer;
++}
++
++.control-button svg {
++  flex: 0 0 auto;
++}
++
++.control-button span {
++  display: inline-flex;
++  min-width: 30px;
++  justify-content: center;
++  border-radius: 999px;
++  padding: 2px 7px;
++  color: #151515;
++  background: #d8d1c3;
++  font-size: 0.74rem;
++  font-weight: 800;
++}
++
++.control-button:hover,
++.control-button:focus-visible {
++  border-color: #f5ce67;
++  outline: 3px solid rgba(245, 206, 103, 0.22);
++  outline-offset: 2px;
++}
++
++.control-button.primary {
++  border-color: #f5ce67;
++  color: #151515;
++  background: #f5ce67;
++  font-weight: 800;
++}
++
++.control-button.is-active {
++  border-color: #8ee5ce;
++  background: #17312c;
++}
++
++.dashboard {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) 340px;
++  gap: 18px;
++  align-items: stretch;
++}
++
++.stage-panel,
++.feed-panel {
++  border: 1px solid rgba(255, 250, 241, 0.16);
++  border-radius: 8px;
++  background: rgba(21, 21, 20, 0.84);
++  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.26);
++  overflow: hidden;
++}
++
++.panel-header {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 12px;
++  min-height: 52px;
++  padding: 0 16px;
++  border-bottom: 1px solid rgba(255, 250, 241, 0.12);
++  color: #eee7da;
++}
++
++.panel-header span {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  min-width: 0;
++  font-weight: 800;
++}
++
++.panel-header strong {
++  flex: 0 0 auto;
++  border-radius: 999px;
++  padding: 4px 10px;
++  color: #141414;
++  background: #9be6d2;
++  font-size: 0.76rem;
++  text-transform: uppercase;
++  letter-spacing: 0;
++}
++
++.rain-stage {
++  position: relative;
++  height: clamp(420px, 68vh, 660px);
++  min-height: 420px;
++  overflow: hidden;
++  background:
++    linear-gradient(180deg, rgba(255, 250, 241, 0.08), rgba(255, 250, 241, 0)),
++    repeating-linear-gradient(
++      90deg,
++      rgba(255, 255, 255, 0.05) 0 1px,
++      transparent 1px 84px
++    ),
++    #111614;
++}
++
++.rain-stage.is-reduced {
++  background:
++    linear-gradient(180deg, rgba(142, 229, 206, 0.12), rgba(255, 250, 241, 0)),
++    repeating-linear-gradient(
++      0deg,
++      rgba(255, 255, 255, 0.055) 0 1px,
++      transparent 1px 40px
++    ),
++    #111614;
++}
++
++.lane {
++  position: absolute;
++  inset-block: 0;
++  border-right: 1px solid rgba(255, 250, 241, 0.08);
++}
++
++.lane:first-child {
++  border-left: 1px solid rgba(255, 250, 241, 0.08);
++}
++
++.lane span {
++  position: absolute;
++  left: 50%;
++  top: 12px;
++  transform: translateX(-50%);
++  border-radius: 999px;
++  padding: 4px 8px;
++  color: #d8d1c3;
++  background: rgba(0, 0, 0, 0.32);
++  font-size: 0.72rem;
++  font-weight: 780;
++  white-space: nowrap;
++}
++
++.floor-line {
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  height: 12px;
++  border-top: 2px solid #f4f0e8;
++  background:
++    repeating-linear-gradient(
++      90deg,
++      rgba(244, 240, 232, 0.9) 0 16px,
++      rgba(244, 240, 232, 0.25) 16px 24px
++    ),
++    #24231f;
++}
++
++.metric-bar {
++  --bar-bg: #f5ce67;
++  --bar-edge: #775b09;
++  --bar-pattern:
++    repeating-linear-gradient(
++      45deg,
++      rgba(255, 255, 255, 0.24) 0 7px,
++      transparent 7px 14px
++    );
++  position: absolute;
++  left: 0;
++  top: 0;
++  display: grid;
++  grid-template-rows: auto 1fr;
++  align-content: center;
++  justify-items: center;
++  gap: 4px;
++  width: var(--bar-width);
++  height: var(--bar-height);
++  min-height: 54px;
++  padding: 9px 7px;
++  border: 2px solid var(--bar-edge);
++  border-radius: 7px 7px 4px 4px;
++  color: #111;
++  background: var(--bar-bg);
++  box-shadow:
++    inset 0 -10px 0 rgba(0, 0, 0, 0.12),
++    0 7px 16px rgba(0, 0, 0, 0.24);
++  transform: translate3d(var(--bar-x), var(--bar-y), 0);
++  will-change: transform;
++}
++
++.metric-bar::after {
++  position: absolute;
++  inset: 0;
++  border-radius: inherit;
++  background: var(--bar-pattern);
++  content: "";
++  opacity: 0.56;
++  pointer-events: none;
++}
++
++.metric-bar.is-settled {
++  box-shadow:
++    inset 0 -10px 0 rgba(0, 0, 0, 0.15),
++    0 2px 0 rgba(0, 0, 0, 0.5);
++}
++
++.metric-shape,
++.metric-copy {
++  position: relative;
++  z-index: 1;
++}
++
++.metric-shape {
++  display: inline-block;
++  width: 16px;
++  height: 16px;
++  border: 2px solid #111;
++  background: rgba(255, 255, 255, 0.68);
++}
++
++.shape-cpu {
++  border-radius: 3px;
++}
++
++.shape-memory {
++  border-radius: 999px;
++}
++
++.shape-latency {
++  clip-path: polygon(50% 0, 100% 100%, 0 100%);
++}
++
++.shape-errors {
++  transform: rotate(45deg);
++}
++
++.shape-network {
++  border-radius: 2px 9px 2px 9px;
++}
++
++.metric-copy {
++  display: grid;
++  justify-items: center;
++  gap: 2px;
++  max-width: 100%;
++  overflow: hidden;
++  line-height: 1.05;
++  text-align: center;
++}
++
++.metric-copy strong,
++.metric-copy span {
++  max-width: 100%;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.metric-copy strong {
++  font-size: 0.92rem;
++  letter-spacing: 0;
++}
++
++.metric-copy span {
++  font-size: 0.7rem;
++  font-weight: 800;
++}
++
++.metric-cpu {
++  --bar-bg: #f5ce67;
++  --bar-edge: #775b09;
++  --bar-pattern:
++    repeating-linear-gradient(
++      45deg,
++      rgba(255, 255, 255, 0.42) 0 6px,
++      transparent 6px 12px
++    );
++}
++
++.metric-memory {
++  --bar-bg: #8ee5ce;
++  --bar-edge: #0a6255;
++  --bar-pattern:
++    radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 2px, transparent 2px 9px);
++}
++
++.metric-latency {
++  --bar-bg: #8cb8ff;
++  --bar-edge: #173e83;
++  --bar-pattern:
++    repeating-linear-gradient(
++      0deg,
++      rgba(255, 255, 255, 0.36) 0 4px,
++      transparent 4px 12px
++    );
++}
++
++.metric-errors {
++  --bar-bg: #ff8f70;
++  --bar-edge: #7f250f;
++  --bar-pattern:
++    repeating-linear-gradient(
++      45deg,
++      rgba(255, 255, 255, 0.36) 0 4px,
++      transparent 4px 12px
++    ),
++    repeating-linear-gradient(
++      -45deg,
++      rgba(255, 255, 255, 0.3) 0 4px,
++      transparent 4px 12px
++    );
++}
++
++.metric-network {
++  --bar-bg: #c6ec75;
++  --bar-edge: #526b0e;
++  --bar-pattern:
++    repeating-linear-gradient(
++      90deg,
++      rgba(255, 255, 255, 0.38) 0 5px,
++      transparent 5px 13px
++    );
++}
++
++.feed-panel {
++  display: grid;
++  grid-template-rows: auto minmax(0, 1fr) auto;
++  min-height: 420px;
++}
++
++.feed-list {
++  display: grid;
++  align-content: start;
++  gap: 9px;
++  margin: 0;
++  padding: 14px;
++  overflow: auto;
++  list-style: none;
++}
++
++.feed-item,
++.empty-feed {
++  border: 1px solid rgba(255, 250, 241, 0.12);
++  border-radius: 8px;
++  background: rgba(255, 250, 241, 0.055);
++}
++
++.feed-item {
++  display: grid;
++  grid-template-columns: auto minmax(0, 1fr);
++  gap: 10px;
++  align-items: center;
++  padding: 11px;
++}
++
++.feed-item .metric-shape {
++  width: 18px;
++  height: 18px;
++}
++
++.feed-item strong,
++.feed-item small {
++  display: block;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.feed-item strong {
++  color: #fffaf1;
++  font-size: 0.94rem;
++}
++
++.feed-item small {
++  margin-top: 2px;
++  color: #d8d1c3;
++  font-size: 0.78rem;
++}
++
++.empty-feed {
++  padding: 14px;
++  color: #d8d1c3;
++}
++
++.stats {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 1px;
++  margin: 0;
++  border-top: 1px solid rgba(255, 250, 241, 0.12);
++  background: rgba(255, 250, 241, 0.12);
++}
++
++.stats div {
++  min-width: 0;
++  padding: 12px;
++  background: #181817;
++}
++
++.stats dt,
++.stats dd {
++  margin: 0;
++}
++
++.stats dt {
++  color: #d8d1c3;
++  font-size: 0.72rem;
++  font-weight: 800;
++  text-transform: uppercase;
++}
++
++.stats dd {
++  margin-top: 5px;
++  color: #fffaf1;
++  font-size: 1.35rem;
++  font-weight: 850;
++}
++
++@media (max-width: 900px) {
++  .app-shell {
++    width: min(100% - 20px, 760px);
++    padding: 18px 0;
++  }
++
++  .topbar {
++    align-items: stretch;
++    flex-direction: column;
++  }
++
++  h1 {
++    font-size: 2.1rem;
++  }
++
++  .control-group {
++    justify-content: stretch;
++  }
++
++  .control-button {
++    flex: 1 1 180px;
++  }
++
++  .dashboard {
++    grid-template-columns: 1fr;
++  }
++
++  .rain-stage {
++    height: 520px;
++  }
++
++  .feed-panel {
++    min-height: auto;
++  }
++}
++
++@media (max-width: 520px) {
++  .app-shell {
++    width: min(100% - 14px, 480px);
++  }
++
++  .panel-header {
++    padding: 0 10px;
++  }
++
++  .rain-stage {
++    height: 500px;
++    min-height: 500px;
++  }
++
++  .lane span {
++    font-size: 0.65rem;
++    padding: 3px 5px;
++  }
++
++  .metric-copy strong {
++    font-size: 0.78rem;
++  }
++
++  .metric-copy span {
++    font-size: 0.62rem;
++  }
++
++  .stats {
++    grid-template-columns: 1fr;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .metric-bar {
++    will-change: auto;
++  }
++}

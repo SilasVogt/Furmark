@@ -1,0 +1,347 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..8c9da31 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,226 @@
+-import React from "react";
++import React, { useCallback, useEffect, useRef, useState } from "react";
+ import { createRoot } from "react-dom/client";
+ import "./style.css";
+ 
++type Satellite = {
++  cx: number;
++  cy: number;
++  radius: number;
++  angle: number;
++  speed: number;
++  size: number;
++  hue: number;
++};
++
++const SATELLITE_COUNT = 64;
++const PALETTE_HUES = [195, 210, 265, 295, 325];
++
++function createSatellites(width: number, height: number): Satellite[] {
++  const sats: Satellite[] = [];
++  const maxR = Math.hypot(width, height) * 0.5;
++  for (let i = 0; i < SATELLITE_COUNT; i++) {
++    const radius = 40 + Math.random() * Math.max(40, maxR - 60);
++    const cx = width * (0.25 + Math.random() * 0.5);
++    const cy = height * (0.25 + Math.random() * 0.5);
++    sats.push({
++      cx,
++      cy,
++      radius,
++      angle: Math.random() * Math.PI * 2,
++      speed: (0.15 + Math.random() * 0.6) * (Math.random() < 0.5 ? 1 : -1),
++      size: 1.5 + Math.random() * 3,
++      hue: PALETTE_HUES[(Math.random() * PALETTE_HUES.length) | 0],
++    });
++  }
++  return sats;
++}
++
++type Pointer = { x: number; y: number; active: boolean };
++
++function OrbitField({ reducedMotion }: { reducedMotion: boolean }) {
++  const canvasRef = useRef<HTMLCanvasElement | null>(null);
++  const satsRef = useRef<Satellite[]>([]);
++  const pointerRef = useRef<Pointer>({ x: 0, y: 0, active: false });
++  const rafRef = useRef<number | null>(null);
++  const sizeRef = useRef({ width: 0, height: 0, dpr: 1 });
++  const lastFrameRef = useRef(0);
++  const lastDrawHashRef = useRef(0);
++
++  const [running, setRunning] = useState(!reducedMotion);
++  const runningRef = useRef(running);
++  runningRef.current = running;
++
++  const prefersStill = reducedMotion;
++
++  const resize = useCallback(() => {
++    const canvas = canvasRef.current;
++    if (!canvas) return;
++    const parent = canvas.parentElement;
++    if (!parent) return;
++    const rect = parent.getBoundingClientRect();
++    const dpr = Math.min(window.devicePixelRatio || 1, 2);
++    const width = Math.max(1, Math.floor(rect.width));
++    const height = Math.max(1, Math.floor(rect.height));
++    canvas.width = Math.floor(width * dpr);
++    canvas.height = Math.floor(height * dpr);
++    canvas.style.width = `${width}px`;
++    canvas.style.height = `${height}px`;
++    sizeRef.current = { width, height, dpr };
++    if (satsRef.current.length === 0) {
++      satsRef.current = createSatellites(width, height);
++    }
++  }, []);
++
++  const draw = useCallback(
++    (now: number) => {
++      const canvas = canvasRef.current;
++      const ctx = canvas?.getContext("2d");
++      if (!canvas || !ctx) {
++        rafRef.current = requestAnimationFrame(draw);
++        return;
++      }
++      const { width, height, dpr } = sizeRef.current;
++      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
++
++      const dt = Math.min(0.05, (now - lastFrameRef.current) / 1000 || 0);
++      lastFrameRef.current = now;
++      const moving = runningRef.current && !prefersStill;
++      const pointer = pointerRef.current;
++
++      // soft trail background
++      ctx.fillStyle = "rgba(7, 10, 25, 0.28)";
++      ctx.fillRect(0, 0, width, height);
++
++      const sats = satsRef.current;
++      for (let i = 0; i < sats.length; i++) {
++        const s = sats[i];
++        if (moving) {
++          s.angle += s.speed * dt;
++        }
++
++        let px = s.cx + Math.cos(s.angle) * s.radius;
++        let py = s.cy + Math.sin(s.angle) * s.radius;
++
++        // pointer influence: tug the drawn position toward pointer
++        if (pointer.active) {
++          const dx = pointer.x - px;
++          const dy = pointer.y - py;
++          const dist = Math.hypot(dx, dy);
++          const influence = Math.max(0, 1 - dist / 220) * 60;
++          px += (dx / (dist || 1)) * influence;
++          py += (dy / (dist || 1)) * influence;
++        }
++
++        const glow = ctx.createRadialGradient(px, py, 0, px, py, s.size * 4);
++        glow.addColorStop(0, `hsla(${s.hue}, 95%, 70%, 0.95)`);
++        glow.addColorStop(1, `hsla(${s.hue}, 95%, 60%, 0)`);
++        ctx.fillStyle = glow;
++        ctx.beginPath();
++        ctx.arc(px, py, s.size * 4, 0, Math.PI * 2);
++        ctx.fill();
++
++        ctx.fillStyle = `hsla(${s.hue}, 100%, 85%, 1)`;
++        ctx.beginPath();
++        ctx.arc(px, py, s.size, 0, Math.PI * 2);
++        ctx.fill();
++      }
++
++      // cheap frame-diff signal for verification
++      lastDrawHashRef.current = (lastDrawHashRef.current + Math.floor(now)) >>> 0;
++
++      rafRef.current = requestAnimationFrame(draw);
++    },
++    [prefersStill],
++  );
++
++  useEffect(() => {
++    resize();
++    const onResize = () => {
++      satsRef.current = [];
++      resize();
++    };
++    window.addEventListener("resize", onResize);
++    return () => window.removeEventListener("resize", onResize);
++  }, [resize]);
++
++  useEffect(() => {
++    lastFrameRef.current = performance.now();
++    rafRef.current = requestAnimationFrame(draw);
++    return () => {
++      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
++    };
++  }, [draw]);
++
++  const handlePointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
++    const canvas = canvasRef.current;
++    if (!canvas) return;
++    const rect = canvas.getBoundingClientRect();
++    pointerRef.current = {
++      x: e.clientX - rect.left,
++      y: e.clientY - rect.top,
++      active: true,
++    };
++  };
++
++  const handlePointerLeave = () => {
++    pointerRef.current.active = false;
++  };
++
++  const toggleRunning = () => setRunning((r) => !r);
++
++  return (
++    <div className="orbit-stage">
++      <canvas
++        ref={canvasRef}
++        className="orbit-canvas"
++        onPointerMove={handlePointer}
++        onPointerDown={handlePointer}
++        onPointerLeave={handlePointerLeave}
++        aria-label="Animated orbit field. Move your pointer to influence the satellites."
++        role="img"
++      />
++      <div className="orbit-controls">
++        <button
++          type="button"
++          className="orbit-btn"
++          onClick={toggleRunning}
++          aria-pressed={running}
++          disabled={prefersStill && !running}
++        >
++          {running ? "Pause" : "Resume"}
++        </button>
++        <span className="orbit-status" aria-live="polite">
++          {prefersStill
++            ? "Reduced motion: field held still"
++            : running
++              ? "Orbiting"
++              : "Paused"}
++        </span>
++      </div>
++    </div>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const [reduced, setReduced] = useState(false);
++  useEffect(() => {
++    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
++    setReduced(mq.matches);
++    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
++    mq.addEventListener("change", handler);
++    return () => mq.removeEventListener("change", handler);
++  }, []);
++
++  return (
++    <main>
++      <h1>Orbit Field</h1>
++      <OrbitField reducedMotion={reduced} />
++    </main>
++  );
+ }
+ 
+-createRoot(document.getElementById("root")!).render(<App />);
++createRoot(document.getElementById("root")!).render(
++  <React.StrictMode>
++    <App />
++  </React.StrictMode>,
++);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..dc9f475 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,107 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: dark;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body,
++#root {
++  height: 100%;
++}
++
++body {
++  margin: 0;
++  font-family: system-ui, sans-serif;
++  background: #05070f;
++  color: #e7ecff;
++}
++
++main {
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++  padding: 16px;
++  height: 100%;
++}
++
++h1 {
++  margin: 0;
++  font-size: 1.05rem;
++  letter-spacing: 0.04em;
++  text-transform: uppercase;
++  color: #9fb4ff;
++}
++
++.orbit-stage {
++  position: relative;
++  flex: 1;
++  min-height: 320px;
++  border-radius: 14px;
++  overflow: hidden;
++  border: 1px solid rgba(160, 180, 255, 0.18);
++  background: #070a19;
++  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45) inset;
++}
++
++.orbit-canvas {
++  display: block;
++  width: 100%;
++  height: 100%;
++  touch-action: none;
++}
++
++.orbit-controls {
++  position: absolute;
++  left: 12px;
++  bottom: 12px;
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 8px 10px;
++  border-radius: 10px;
++  background: rgba(10, 14, 30, 0.72);
++  border: 1px solid rgba(160, 180, 255, 0.18);
++  backdrop-filter: blur(6px);
++}
++
++.orbit-btn {
++  appearance: none;
++  border: 1px solid rgba(160, 180, 255, 0.4);
++  background: linear-gradient(180deg, #2a3578, #1a2150);
++  color: #fff;
++  font: inherit;
++  font-size: 0.9rem;
++  font-weight: 600;
++  padding: 6px 14px;
++  border-radius: 8px;
++  cursor: pointer;
++  min-width: 84px;
++}
++
++.orbit-btn:hover:not(:disabled) {
++  border-color: #9fb4ff;
++}
++
++.orbit-btn:focus-visible {
++  outline: 2px solid #9fb4ff;
++  outline-offset: 2px;
++}
++
++.orbit-btn:disabled {
++  opacity: 0.5;
++  cursor: not-allowed;
++}
++
++.orbit-status {
++  font-size: 0.82rem;
++  color: #c2cdf7;
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .orbit-status {
++    font-style: italic;
++  }
++}

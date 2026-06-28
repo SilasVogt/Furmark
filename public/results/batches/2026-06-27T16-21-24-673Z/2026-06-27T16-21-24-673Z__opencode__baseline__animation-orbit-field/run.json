@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T06:51:44.038Z",
+  "repoCommit": "ccee22e",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "animation-orbit-field",
+  "category": "browser-animation",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/workspace",
+  "exitCode": 0,
+  "durationMs": 76149,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "passed",
+  "scores": {
+    "correctness": 0,
+    "visual": 100,
+    "animation": 60,
+    "codeQuality": 91.1,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 53.5
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__animation-orbit-field/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

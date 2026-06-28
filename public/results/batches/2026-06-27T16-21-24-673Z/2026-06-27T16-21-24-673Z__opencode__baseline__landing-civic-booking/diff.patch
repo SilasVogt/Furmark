@@ -1,0 +1,1569 @@
+diff --git a/index.html b/index.html
+index f6dacfc..46df319 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,16 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta
++      name="description"
++      content="Civic Slot helps you book appointments at local government offices. Find available times, choose a service, and reserve a slot."
++    />
++    <title>Civic Slot — Book appointments at local government offices</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..4b11789 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,815 @@
+ import React from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  CalendarCheck,
++  CheckCircle2,
++  ShieldCheck,
++  Clock,
++  Phone,
++  Mail,
++  MessageSquare,
++  Accessibility,
++  Languages,
++  Keyboard,
++  Eye,
++  FileText,
++  IdCard,
++  Car,
++  Home,
++  GraduationCap,
++  HeartPulse,
++  Stamp,
++  HelpCircle,
++} from "lucide-react";
+ import "./style.css";
+ 
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <a className="skip-link" href="#main">
++        Skip to main content
++      </a>
++
++      <header className="site-header">
++        <div className="container site-header__inner">
++          <a className="brand" href="#main" aria-label="Civic Slot home">
++            <span className="brand__mark" aria-hidden="true">
++              <CalendarCheck size={18} />
++            </span>
++            <span>Civic Slot</span>
++          </a>
++
++          <nav className="primary-nav" aria-label="Primary">
++            <ul>
++              <li>
++                <a href="#services">Services</a>
++              </li>
++              <li>
++                <a href="#how">How it works</a>
++              </li>
++              <li>
++                <a href="#accessibility">Accessibility</a>
++              </li>
++              <li>
++                <a href="#support">Support</a>
++              </li>
++            </ul>
++          </nav>
++
++          <div className="header-actions">
++            <a className="btn btn--primary" href="#book">
++              Book an appointment
++            </a>
++          </div>
++        </div>
++      </header>
++
++      <main id="main">
++        {/* Hero */}
++        <section className="hero" aria-labelledby="hero-title">
++          <div className="container hero__grid">
++            <div>
++              <p className="eyebrow">Public service appointment booking</p>
++              <h1 id="hero-title">
++                Book a time at your local government office.
++              </h1>
++              <p className="lede">
++                Civic Slot shows real availability for services at participating
++                offices. Pick a service, choose a time that works for you, and
++                reserve a slot in a few steps. No account required to search.
++              </p>
++
++              <ul className="hero__bullets">
++                <li>
++                  <CheckCircle2 size={18} aria-hidden="true" />
++                  Free to use. No account required to check availability.
++                </li>
++                <li>
++                  <CheckCircle2 size={18} aria-hidden="true" />
++                  Real-time slots from official office calendars.
++                </li>
++                <li>
++                  <CheckCircle2 size={18} aria-hidden="true" />
++                  Confirmation by email or text. Cancel or reschedule online.
++                </li>
++              </ul>
++
++              <div className="hero__cta">
++                <a className="btn btn--primary" href="#book">
++                  Find a slot
++                </a>
++                <a className="btn btn--ghost" href="#how">
++                  See how it works
++                </a>
++              </div>
++            </div>
++
++            <QuickBooking id="book" />
++          </div>
++        </section>
++
++        {/* Service categories */}
++        <section
++          id="services"
++          className="section"
++          aria-labelledby="services-title"
++        >
++          <div className="container">
++            <div className="section__head">
++              <p className="eyebrow">Service categories</p>
++              <h2 id="services-title">
++                Common services you can book through Civic Slot
++              </h2>
++              <p>
++                Choose a category to see participating offices and current
++                availability. What is offered changes by office and location.
++              </p>
++            </div>
++
++            <div className="service-grid">
++              <a className="service-card" href="#book">
++                <span className="service-card__icon" aria-hidden="true">
++                  <IdCard size={22} />
++                </span>
++                <h3>IDs and records</h3>
++                <p>
++                  Identification cards, birth and marriage certificates, and
++                  name changes.
++                </p>
++                <span className="service-card__meta">View offices</span>
++              </a>
++
++              <a className="service-card" href="#book">
++                <span className="service-card__icon" aria-hidden="true">
++                  <Car size={22} />
++                </span>
++                <h3>Driving and vehicles</h3>
++                <p>
++                  License renewals, vehicle registration, and title transfers.
++                </p>
++                <span className="service-card__meta">View offices</span>
++              </a>
++
++              <a className="service-card" href="#book">
++                <span className="service-card__icon" aria-hidden="true">
++                  <Stamp size={22} />
++                </span>
++                <h3>Permits and licensing</h3>
++                <p>
++                  Business licenses, event permits, and construction approvals.
++                </p>
++                <span className="service-card__meta">View offices</span>
++              </a>
++
++              <a className="service-card" href="#book">
++                <span className="service-card__icon" aria-hidden="true">
++                  <Home size={22} />
++                </span>
++                <h3>Property and taxes</h3>
++                <p>
++                  Property records, assessment questions, and tax payments.
++                </p>
++                <span className="service-card__meta">View offices</span>
++              </a>
++
++              <a className="service-card" href="#book">
++                <span className="service-card__icon" aria-hidden="true">
++                  <GraduationCap size={22} />
++                </span>
++                <h3>Education and family</h3>
++                <p>
++                  School enrollment, family services, and youth program
++                  sign-ups.
++                </p>
++                <span className="service-card__meta">View offices</span>
++              </a>
++
++              <a className="service-card" href="#book">
++                <span className="service-card__icon" aria-hidden="true">
++                  <HeartPulse size={22} />
++                </span>
++                <h3>Health and benefits</h3>
++                <p>
++                  Benefits enrollment, health program intake, and case
++                  follow-ups.
++                </p>
++                <span className="service-card__meta">View offices</span>
++              </a>
++            </div>
++          </div>
++        </section>
++
++        {/* Availability / how it works */}
++        <section
++          id="how"
++          className="section section--surface"
++          aria-labelledby="how-title"
++        >
++          <div className="container">
++            <div className="section__head">
++              <p className="eyebrow">How it works</p>
++              <h2 id="how-title">Availability, explained in plain terms</h2>
++              <p>
++                Time slots come directly from each office's calendar. When you
++                reserve a slot, that time is held for you and removed from
++                public results so others are not misled.
++              </p>
++            </div>
++
++            <ol className="steps">
++              <li className="step">
++                <h3>1. Choose a service</h3>
++                <p>
++                  Start with the type of service. We will only show offices that
++                  actually offer it.
++                </p>
++              </li>
++              <li className="step">
++                <h3>2. Pick an office or location</h3>
++                <p>
++                  See walk-in, video, and in-person options together so you can
++                  compare what fits.
++                </p>
++              </li>
++              <li className="step">
++                <h3>3. Select a slot</h3>
++                <p>
++                  Open times are listed in order. Slots are removed as they are
++                  taken, so what you see is what is available.
++                </p>
++              </li>
++              <li className="step">
++                <h3>4. Confirm and get details</h3>
++                <p>
++                  Enter your contact details, confirm, and receive an email or
++                  text with what to bring and where to go.
++                </p>
++              </li>
++            </ol>
++          </div>
++        </section>
++
++        {/* Accessibility commitments */}
++        <section
++          id="accessibility"
++          className="section"
++          aria-labelledby="a11y-title"
++        >
++          <div className="container">
++            <div className="section__head">
++              <p className="eyebrow">Accessibility commitments</p>
++              <h2 id="a11y-title">Built to be usable by everyone</h2>
++              <p>
++                Civic Slot follows recognized accessibility standards and is
++                tested with assistive technology. We publish what works, what is
++                in progress, and how to ask for help.
++              </p>
++            </div>
++
++            <div className="commitments">
++              <div className="commitment">
++                <Accessibility size={20} aria-hidden="true" />
++                <div>
++                  <h3>Standards-based</h3>
++                  <p>
++                    Tested against WCAG 2.1 AA. Landmarks, headings, and labels
++                    are used so screen readers can navigate predictably.
++                  </p>
++                </div>
++              </div>
++              <div className="commitment">
++                <Keyboard size={20} aria-hidden="true" />
++                <div>
++                  <h3>Full keyboard support</h3>
++                  <p>
++                    Every action can be reached with a keyboard, with a visible
++                    focus indicator and a logical tab order.
++                  </p>
++                </div>
++              </div>
++              <div className="commitment">
++                <Eye size={20} aria-hidden="true" />
++                <div>
++                  <h3>Readable by design</h3>
++                  <p>
++                    Plain language, high-contrast colors, and resizable text. We
++                    avoid jargon and write to a general reading level.
++                  </p>
++                </div>
++              </div>
++              <div className="commitment">
++                <Languages size={20} aria-hidden="true" />
++                <div>
++                  <h3>Languages and formats</h3>
++                  <p>
++                    Common pages are available in multiple languages. Large
++                    print and alternate formats are available on request.
++                  </p>
++                </div>
++              </div>
++              <div className="commitment">
++                <ShieldCheck size={20} aria-hidden="true" />
++                <div>
++                  <h3>Privacy first</h3>
++                  <p>
++                    We ask only for the details an office needs to hold your
++                    appointment, and we explain why before you provide them.
++                  </p>
++                </div>
++              </div>
++              <div className="commitment">
++                <MessageSquare size={20} aria-hidden="true" />
++                <div>
++                  <h3>Report a barrier</h3>
++                  <p>
++                    Found something hard to use? Tell us and we will work on it.
++                    You can also request help booking an appointment.
++                  </p>
++                </div>
++              </div>
++            </div>
++          </div>
++        </section>
++
++        {/* Support / contact */}
++        <section
++          id="support"
++          className="section section--surface"
++          aria-labelledby="support-title"
++        >
++          <div className="container">
++            <div className="section__head">
++              <p className="eyebrow">Contact and support</p>
++              <h2 id="support-title">Help booking or managing an appointment</h2>
++              <p>
++                Our staff can help you book, reschedule, or cancel, including by
++                phone and in accessible formats. Support is free.
++              </p>
++            </div>
++
++            <div className="contact-grid">
++              <div>
++                <ul className="contact-list">
++                  <li>
++                    <Phone size={20} aria-hidden="true" />
++                    <div>
++                      <strong>Phone support</strong>
++                      <a href="tel:+18005550100">1-800-555-0100</a>
++                      <div className="meta">
++                        Monday–Friday, 8:00 a.m. to 6:00 p.m. local time.
++                      </div>
++                    </div>
++                  </li>
++                  <li>
++                    <Clock size={20} aria-hidden="true" />
++                    <div>
++                      <strong>Walk-in help</strong>
++                      <div className="meta">
++                        Available at most participating offices during posted
++                        hours. Check office details before visiting.
++                      </div>
++                    </div>
++                  </li>
++                  <li>
++                    <Mail size={20} aria-hidden="true" />
++                    <div>
++                      <strong>Email</strong>
++                      <a href="mailto:help@www.example.gov">
++                        help@www.example.gov
++                      </a>
++                      <div className="meta">
++                        Replies usually within one business day.
++                      </div>
++                    </div>
++                  </li>
++                  <li>
++                    <FileText size={20} aria-hidden="true" />
++                    <div>
++                      <strong>Bring the right documents</strong>
++                      <div className="meta">
++                        Your confirmation lists what to bring. If you are unsure,
++                        call ahead to confirm.
++                      </div>
++                    </div>
++                  </li>
++                </ul>
++              </div>
++
++              <SupportForm />
++            </div>
++          </div>
++        </section>
++      </main>
++
++      <footer className="site-footer">
++        <div className="container">
++          <div className="site-footer__grid">
++            <div>
++              <h2>Civic Slot</h2>
++              <p>
++                A public-service booking service for participating local
++                government offices. Civic Slot is provided at no cost to
++                residents.
++              </p>
++            </div>
++            <div>
++              <h2>Use Civic Slot</h2>
++              <ul>
++                <li>
++                  <a href="#book">Book an appointment</a>
++                </li>
++                <li>
++                  <a href="#services">Browse services</a>
++                </li>
++                <li>
++                  <a href="#how">How it works</a>
++                </li>
++                <li>
++                  <a href="#support">Get support</a>
++                </li>
++              </ul>
++            </div>
++            <div>
++              <h2>About this site</h2>
++              <ul>
++                <li>
++                  <a href="#accessibility">Accessibility statement</a>
++                </li>
++                <li>
++                  <a href="#privacy">Privacy</a>
++                </li>
++                <li>
++                  <a href="#terms">Terms of use</a>
++                </li>
++                <li>
++                  <a href="#support">Report a barrier</a>
++                </li>
++              </ul>
++            </div>
++          </div>
++          <div className="site-footer__bottom">
++            <span>Public service tool. No fees, no account required to search.</span>
++            <span>© {new Date().getFullYear()} Civic Slot</span>
++          </div>
++        </div>
++      </footer>
++    </>
++  );
++}
++
++type BookingState = {
++  service: string;
++  office: string;
++  date: string;
++  time: string;
++  contact: string;
++  submitted: boolean;
++};
++
++const initialBooking: BookingState = {
++  service: "",
++  office: "",
++  date: "",
++  time: "",
++  contact: "",
++  submitted: false,
++};
++
++function QuickBooking({ id }: { id: string }) {
++  const [state, setState] = React.useState<BookingState>(initialBooking);
++
++  const today = new Date().toISOString().split("T")[0];
++
++  const update =
++    (key: keyof Omit<BookingState, "submitted">) =>
++    (
++      e: React.ChangeEvent<
++        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
++      >,
++    ) => {
++      setState((s) => ({ ...s, [key]: e.target.value }));
++    };
++
++  const onSubmit = (e: React.FormEvent) => {
++    e.preventDefault();
++    if (!state.service || !state.office || !state.date || !state.time) {
++      return;
++    }
++    setState((s) => ({ ...s, submitted: true }));
++  };
++
++  const liveMessage = state.submitted
++    ? `Checking ${state.service} availability at ${state.office} on ${state.date}. Results open below.`
++    : "";
++
++  return (
++    <div className="booking-card" id={id}>
++      <h2>Find an appointment</h2>
++      <p className="card-note">
++        Required fields are marked{" "}
++        <span aria-hidden="true" className="req">
++          *
++        </span>
++        .
++      </p>
++
++      <form onSubmit={onSubmit} noValidate aria-describedby="booking-help">
++        <div className="form-grid">
++          <div className="field">
++            <label htmlFor="service">
++              Service <span aria-hidden="true" className="req">*</span>
++              <span className="sr-only">required</span>
++            </label>
++            <span id="service-help" className="help">
++              Choose the type of service you need.
++            </span>
++            <select
++              id="service"
++              name="service"
++              required
++              value={state.service}
++              onChange={update("service")}
++              aria-describedby="service-help"
++              aria-required="true"
++            >
++              <option value="">Select a service…</option>
++              <option value="ids-records">IDs and records</option>
++              <option value="driving-vehicles">Driving and vehicles</option>
++              <option value="permits">Permits and licensing</option>
++              <option value="property-taxes">Property and taxes</option>
++              <option value="education-family">Education and family</option>
++              <option value="health-benefits">Health and benefits</option>
++              <option value="other">Something else</option>
++            </select>
++          </div>
++
++          <div className="field">
++            <label htmlFor="office">
++              Office or location{" "}
++              <span aria-hidden="true" className="req">
++                *
++              </span>
++              <span className="sr-only">required</span>
++            </label>
++            <span id="office-help" className="help">
++              Show availability at a specific office or anywhere nearby.
++            </span>
++            <select
++              id="office"
++              name="office"
++              required
++              value={state.office}
++              onChange={update("office")}
++              aria-describedby="office-help"
++              aria-required="true"
++            >
++              <option value="">Any office near me</option>
++              <option value="downtown">Downtown Civic Center</option>
++              <option value="westside">Westside Branch Office</option>
++              <option value="northgate">Northgate Service Center</option>
++              <option value="eastpark">Eastpark Records Office</option>
++              <option value="video">Video appointment (online)</option>
++            </select>
++          </div>
++
++          <div className="field-group">
++            <div className="field">
++              <label htmlFor="date">
++                Date <span aria-hidden="true" className="req">*</span>
++                <span className="sr-only">required</span>
++              </label>
++              <span id="date-help" className="help">
++                First available day is shown by default.
++              </span>
++              <input
++                id="date"
++                name="date"
++                type="date"
++                required
++                min={today}
++                value={state.date}
++                onChange={update("date")}
++                aria-describedby="date-help"
++                aria-required="true"
++              />
++            </div>
++
++            <div className="field">
++              <label htmlFor="time">
++                Time of day{" "}
++                <span aria-hidden="true" className="req">
++                  *
++                </span>
++                <span className="sr-only">required</span>
++              </label>
++              <span id="time-help" className="help">
++                Narrow results to morning, afternoon, or evening.
++              </span>
++              <select
++                id="time"
++                name="time"
++                required
++                value={state.time}
++                onChange={update("time")}
++                aria-describedby="time-help"
++                aria-required="true"
++              >
++                <option value="">Any time</option>
++                <option value="morning">Morning (before 12:00)</option>
++                <option value="afternoon">Afternoon (12:00–17:00)</option>
++                <option value="evening">Evening (after 17:00)</option>
++              </select>
++            </div>
++          </div>
++
++          <div className="field">
++            <label htmlFor="contact">
++              Email or phone{" "}
++              <span className="req" aria-hidden="true">
++                (optional)
++              </span>
++            </label>
++            <span id="contact-help" className="help">
++              Add this to receive a reminder before your appointment.
++            </span>
++            <input
++              id="contact"
++              name="contact"
++              type="text"
++              autoComplete="off"
++              placeholder="you@example.com or 555-0100"
++              value={state.contact}
++              onChange={update("contact")}
++              aria-describedby="contact-help"
++            />
++          </div>
++
++          <button type="submit" className="btn btn--primary booking-card__submit">
++            <HelpCircle size={18} aria-hidden="true" />
++            Search available slots
++          </button>
++        </div>
++
++        <p id="booking-help" className="sr-only">
++          This form searches public appointment availability. Your entries are
++          only used to find a slot and are not stored unless you confirm a
++          booking.
++        </p>
++
++        <div
++          className="booking-card__live"
++          role="status"
++          aria-live="polite"
++          hidden={!state.submitted}
++        >
++          {liveMessage}
++        </div>
++      </form>
++    </div>
++  );
++}
++
++function SupportForm() {
++  const [sent, setSent] = React.useState(false);
++  const [topic, setTopic] = React.useState("book");
++  const [needCallback, setNeedCallback] = React.useState(false);
++
++  const onSubmit = (e: React.FormEvent) => {
++    e.preventDefault();
++    setSent(true);
++  };
++
++  return (
++    <form className="support-form" onSubmit={onSubmit} aria-labelledby="support-form-title">
++      <h3 id="support-form-title">Send us a message</h3>
++
++      <div className="field">
++        <label htmlFor="sf-name">Your name</label>
++        <span id="sf-name-help" className="help">
++          First and last name, or the name on your case if you have one.
++        </span>
++        <input
++          id="sf-name"
++          name="name"
++          type="text"
++          autoComplete="name"
++          aria-describedby="sf-name-help"
++        />
++      </div>
++
++      <div className="field-group" style={{ marginTop: "1rem" }}>
++        <div className="field">
++          <label htmlFor="sf-email">Email</label>
++          <input
++            id="sf-email"
++            name="email"
++            type="email"
++            autoComplete="email"
++          />
++        </div>
++        <div className="field">
++          <label htmlFor="sf-phone">Phone</label>
++          <input
++            id="sf-phone"
++            name="phone"
++            type="tel"
++            autoComplete="tel"
++          />
++        </div>
++      </div>
++
++      <fieldset style={{ marginTop: "1rem" }}>
++        <legend>What do you need help with?</legend>
++        <div className="radio-row">
++          <input
++            id="topic-book"
++            type="radio"
++            name="topic"
++            value="book"
++            checked={topic === "book"}
++            onChange={() => setTopic("book")}
++          />
++          <label htmlFor="topic-book">Book an appointment</label>
++        </div>
++        <div className="radio-row">
++          <input
++            id="topic-change"
++            type="radio"
++            name="topic"
++            value="change"
++            checked={topic === "change"}
++            onChange={() => setTopic("change")}
++          />
++          <label htmlFor="topic-change">Reschedule or cancel</label>
++        </div>
++        <div className="radio-row">
++          <input
++            id="topic-access"
++            type="radio"
++            name="topic"
++            value="access"
++            checked={topic === "access"}
++            onChange={() => setTopic("access")}
++          />
++          <label htmlFor="topic-access">Accessibility or accommodation</label>
++        </div>
++        <div className="radio-row">
++          <input
++            id="topic-other"
++            type="radio"
++            name="topic"
++            value="other"
++            checked={topic === "other"}
++            onChange={() => setTopic("other")}
++          />
++          <label htmlFor="topic-other">Something else</label>
++        </div>
++      </fieldset>
++
++      <div className="field" style={{ marginTop: "1rem" }}>
++        <label htmlFor="sf-message">
++          Message <span className="req" aria-hidden="true">*</span>
++          <span className="sr-only">required</span>
++        </label>
++        <span id="sf-message-help" className="help">
++          Tell us what you need. Include an appointment number if you have one.
++        </span>
++        <textarea
++          id="sf-message"
++          name="message"
++          rows={4}
++          required
++          aria-describedby="sf-message-help"
++          aria-required="true"
++        />
++      </div>
++
++      <div className="checkbox-row" style={{ marginTop: "0.5rem" }}>
++        <input
++          id="sf-callback"
++          type="checkbox"
++          checked={needCallback}
++          onChange={(e) => setNeedCallback(e.target.checked)}
++        />
++        <label htmlFor="sf-callback">
++          I would like a phone call back. Standard accessibility supports are
++          available.
++        </label>
++      </div>
++
++      <div className="form-actions">
++        <button type="submit" className="btn btn--primary">
++          Send message
++        </button>
++        {sent && (
++          <span className="form-status" role="status">
++            Thanks. We received your message and will reply within one business
++            day.
++          </span>
++        )}
++      </div>
++    </form>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..d957a40 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,720 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #ffffff;
++  --surface: #f5f7fa;
++  --surface-2: #eceff3;
++  --border: #c9d1d9;
++  --border-strong: #8b96a3;
++  --text: #14202b;
++  --text-muted: #445463;
++  --primary: #15417a;
++  --primary-hover: #0f3260;
++  --primary-contrast: #ffffff;
++  --accent: #1f6feb;
++  --focus: #1f6feb;
++  --success-bg: #e6f4ec;
++  --success-text: #0f5132;
++  --warning-bg: #fff4e0;
++  --warning-text: #6b3e00;
++  --shadow: 0 1px 2px rgba(16, 24, 40, 0.08), 0 1px 3px rgba(16, 24, 40, 0.06);
++  --radius: 8px;
++  --maxw: 1100px;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
++    sans-serif;
++  line-height: 1.6;
++  color: var(--text);
++  background: var(--bg);
++  -webkit-font-smoothing: antialiased;
++}
++
++a {
++  color: var(--primary);
++  text-underline-offset: 2px;
++}
++
++a:hover {
++  color: var(--primary-hover);
++}
++
++h1,
++h2,
++h3 {
++  line-height: 1.25;
++  color: var(--text);
++  margin: 0 0 0.5rem;
++}
++
++p {
++  margin: 0 0 1rem;
++}
++
++/* Visible focus everywhere */
++a:focus-visible,
++button:focus-visible,
++input:focus-visible,
++select:focus-visible,
++textarea:focus-visible,
++[tabindex]:focus-visible {
++  outline: 3px solid var(--focus);
++  outline-offset: 2px;
++  border-radius: 3px;
++}
++
++.skip-link {
++  position: absolute;
++  left: 0;
++  top: 0;
++  background: var(--primary);
++  color: var(--primary-contrast);
++  padding: 0.75rem 1rem;
++  text-decoration: none;
++  z-index: 100;
++  transform: translateY(-150%);
++  transition: transform 0.15s ease;
++}
++
++.skip-link:focus {
++  transform: translateY(0);
++}
++
++.sr-only {
++  position: absolute !important;
++  width: 1px !important;
++  height: 1px !important;
++  padding: 0 !important;
++  margin: -1px !important;
++  overflow: hidden !important;
++  clip: rect(0, 0, 0, 0) !important;
++  clip-path: inset(50%) !important;
++  white-space: nowrap !important;
++  border: 0 !important;
++}
++
++/* Layout */
++.container {
++  max-width: var(--maxw);
++  margin: 0 auto;
++  padding: 0 1.25rem;
++}
++
++.section {
++  padding: 3.25rem 0;
++  border-top: 1px solid var(--border);
++}
++
++.section--surface {
++  background: var(--surface);
++}
++
++.section__head {
++  max-width: 60ch;
++  margin-bottom: 1.75rem;
++}
++
++.section__head p {
++  color: var(--text-muted);
++  font-size: 1.025rem;
++  margin: 0;
++}
++
++.eyebrow {
++  display: inline-block;
++  font-size: 0.8rem;
++  font-weight: 700;
++  letter-spacing: 0.04em;
++  text-transform: uppercase;
++  color: var(--primary);
++  margin: 0 0 0.5rem;
++}
++
++/* Header / nav */
++.site-header {
++  background: var(--bg);
++  border-bottom: 1px solid var(--border);
++  position: sticky;
++  top: 0;
++  z-index: 50;
++}
++
++.site-header__inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 1rem;
++  min-height: 64px;
++  flex-wrap: wrap;
++}
++
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.55rem;
++  text-decoration: none;
++  color: var(--text);
++  font-weight: 700;
++  font-size: 1.1rem;
++}
++
++.brand__mark {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 32px;
++  height: 32px;
++  border-radius: 8px;
++  background: var(--primary);
++  color: var(--primary-contrast);
++}
++
++.primary-nav ul {
++  list-style: none;
++  display: flex;
++  gap: 0.25rem;
++  margin: 0;
++  padding: 0;
++  flex-wrap: wrap;
++}
++
++.primary-nav a {
++  display: inline-block;
++  padding: 0.5rem 0.75rem;
++  text-decoration: none;
++  color: var(--text);
++  border-radius: 6px;
++  font-weight: 600;
++}
++
++.primary-nav a:hover {
++  background: var(--surface-2);
++}
++
++.header-actions {
++  display: flex;
++  gap: 0.5rem;
++  align-items: center;
++}
++
++/* Hero */
++.hero {
++  background:
++    linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
++  padding: 3.5rem 0 3.25rem;
++}
++
++.hero__grid {
++  display: grid;
++  grid-template-columns: 1.1fr 0.9fr;
++  gap: 2.5rem;
++  align-items: start;
++}
++
++.hero h1 {
++  font-size: clamp(2rem, 4vw, 2.75rem);
++  margin-bottom: 1rem;
++}
++
++.hero p.lede {
++  font-size: 1.125rem;
++  color: var(--text-muted);
++  max-width: 52ch;
++  margin-bottom: 1.5rem;
++}
++
++.hero__bullets {
++  list-style: none;
++  margin: 0 0 1.5rem;
++  padding: 0;
++  display: grid;
++  gap: 0.5rem;
++}
++
++.hero__bullets li {
++  display: flex;
++  align-items: flex-start;
++  gap: 0.5rem;
++  color: var(--text);
++}
++
++.hero__bullets svg {
++  flex-shrink: 0;
++  margin-top: 4px;
++  color: var(--success-text);
++}
++
++.hero__cta {
++  display: flex;
++  gap: 0.75rem;
++  flex-wrap: wrap;
++}
++
++/* Quick booking card */
++.booking-card {
++  background: var(--bg);
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  box-shadow: var(--shadow);
++  padding: 1.5rem;
++}
++
++.booking-card h2 {
++  font-size: 1.25rem;
++  margin-bottom: 0.25rem;
++}
++
++.booking-card .card-note {
++  color: var(--text-muted);
++  font-size: 0.925rem;
++  margin-bottom: 1.25rem;
++}
++
++.form-grid {
++  display: grid;
++  gap: 1rem;
++}
++
++.field {
++  display: flex;
++  flex-direction: column;
++  gap: 0.35rem;
++}
++
++.field label {
++  font-weight: 600;
++  font-size: 0.95rem;
++}
++
++.field .help {
++  font-size: 0.85rem;
++  color: var(--text-muted);
++}
++
++.field .req {
++  color: #b42318;
++}
++
++input,
++select,
++textarea {
++  font: inherit;
++  color: var(--text);
++  background: var(--bg);
++  border: 1px solid var(--border-strong);
++  border-radius: 6px;
++  padding: 0.6rem 0.7rem;
++  width: 100%;
++}
++
++input::placeholder {
++  color: #6b7280;
++}
++
++input:focus,
++select:focus,
++textarea:focus {
++  border-color: var(--primary);
++  outline: 3px solid var(--focus);
++  outline-offset: 1px;
++}
++
++select {
++  appearance: none;
++  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2314202b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
++  background-repeat: no-repeat;
++  background-position: right 0.7rem center;
++  padding-right: 2.25rem;
++}
++
++.field-group {
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 1rem;
++}
++
++/* Buttons */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 0.5rem;
++  font: inherit;
++  font-weight: 600;
++  text-decoration: none;
++  border-radius: 6px;
++  border: 2px solid transparent;
++  padding: 0.7rem 1.1rem;
++  cursor: pointer;
++  min-height: 44px;
++  transition: background 0.12s ease, border-color 0.12s ease,
++    color 0.12s ease;
++}
++
++.btn--primary {
++  background: var(--primary);
++  color: var(--primary-contrast);
++}
++
++.btn--primary:hover {
++  background: var(--primary-hover);
++}
++
++.btn--secondary {
++  background: var(--bg);
++  color: var(--primary);
++  border-color: var(--primary);
++}
++
++.btn--secondary:hover {
++  background: var(--surface);
++}
++
++.btn--ghost {
++  background: transparent;
++  color: var(--text);
++  border-color: var(--border-strong);
++}
++
++.btn--ghost:hover {
++  background: var(--surface);
++}
++
++.booking-card__submit {
++  margin-top: 0.5rem;
++  width: 100%;
++}
++
++.booking-card__live {
++  margin-top: 1rem;
++  padding: 0.75rem 1rem;
++  border-radius: 6px;
++  background: var(--success-bg);
++  color: var(--success-text);
++  font-size: 0.95rem;
++  border: 1px solid #abdfc5;
++}
++
++.booking-card__live[hidden] {
++  display: none;
++}
++
++/* Service categories */
++.service-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
++  gap: 1rem;
++}
++
++.service-card {
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--bg);
++  padding: 1.25rem;
++  display: flex;
++  flex-direction: column;
++  gap: 0.5rem;
++  text-decoration: none;
++  color: var(--text);
++  transition: border-color 0.12s ease, box-shadow 0.12s ease;
++}
++
++.service-card:hover {
++  border-color: var(--primary);
++  box-shadow: var(--shadow);
++}
++
++.service-card__icon {
++  width: 40px;
++  height: 40px;
++  border-radius: 8px;
++  background: var(--surface-2);
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  color: var(--primary);
++  margin-bottom: 0.25rem;
++}
++
++.service-card h3 {
++  font-size: 1.05rem;
++  margin: 0;
++}
++
++.service-card p {
++  color: var(--text-muted);
++  font-size: 0.95rem;
++  margin: 0;
++}
++
++.service-card__meta {
++  margin-top: auto;
++  font-size: 0.85rem;
++  color: var(--primary);
++  font-weight: 600;
++}
++
++/* Availability / steps */
++.steps {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
++  gap: 1.25rem;
++  counter-reset: step;
++}
++
++.step {
++  position: relative;
++  padding: 1.25rem;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--bg);
++}
++
++.step::before {
++  counter-increment: step;
++  content: counter(step);
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 32px;
++  height: 32px;
++  border-radius: 50%;
++  background: var(--primary);
++  color: var(--primary-contrast);
++  font-weight: 700;
++  margin-bottom: 0.75rem;
++}
++
++.step h3 {
++  font-size: 1.05rem;
++  margin-bottom: 0.25rem;
++}
++
++.step p {
++  color: var(--text-muted);
++  font-size: 0.95rem;
++  margin: 0;
++}
++
++/* Accessibility commitments */
++.commitments {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
++  gap: 1rem;
++}
++
++.commitment {
++  display: flex;
++  gap: 0.75rem;
++  align-items: flex-start;
++  padding: 1rem;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: var(--bg);
++}
++
++.commitment svg {
++  flex-shrink: 0;
++  color: var(--primary);
++  margin-top: 2px;
++}
++
++.commitment h3 {
++  font-size: 1rem;
++  margin: 0 0 0.25rem;
++}
++
++.commitment p {
++  margin: 0;
++  font-size: 0.925rem;
++  color: var(--text-muted);
++}
++
++/* Contact / support */
++.contact-grid {
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 2rem;
++  align-items: start;
++}
++
++.contact-list {
++  list-style: none;
++  padding: 0;
++  margin: 0;
++  display: grid;
++  gap: 1rem;
++}
++
++.contact-list li {
++  display: flex;
++  gap: 0.75rem;
++  align-items: flex-start;
++}
++
++.contact-list svg {
++  color: var(--primary);
++  flex-shrink: 0;
++  margin-top: 4px;
++}
++
++.contact-list strong {
++  display: block;
++}
++
++.contact-list .meta {
++  color: var(--text-muted);
++  font-size: 0.9rem;
++}
++
++.support-form {
++  background: var(--bg);
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  padding: 1.5rem;
++}
++
++.support-form h3 {
++  margin-top: 0;
++}
++
++fieldset {
++  border: none;
++  padding: 0;
++  margin: 0;
++}
++
++legend {
++  font-weight: 700;
++  padding: 0;
++  margin-bottom: 0.5rem;
++}
++
++.checkbox-row,
++.radio-row {
++  display: flex;
++  gap: 0.4rem;
++  align-items: flex-start;
++  margin-bottom: 0.5rem;
++}
++
++.checkbox-row input,
++.radio-row input {
++  width: auto;
++  margin-top: 4px;
++}
++
++.checkbox-row label,
++.radio-row label {
++  font-weight: 400;
++}
++
++.form-actions {
++  display: flex;
++  gap: 0.75rem;
++  align-items: center;
++  flex-wrap: wrap;
++  margin-top: 0.5rem;
++}
++
++.form-status {
++  font-size: 0.9rem;
++  color: var(--success-text);
++  font-weight: 600;
++}
++
++/* Footer */
++.site-footer {
++  background: #0f1a24;
++  color: #d7dee5;
++  padding: 2.5rem 0 1.75rem;
++  margin-top: 0;
++}
++
++.site-footer a {
++  color: #b6d2f2;
++}
++
++.site-footer__grid {
++  display: grid;
++  grid-template-columns: 1.5fr 1fr 1fr;
++  gap: 2rem;
++  margin-bottom: 1.5rem;
++}
++
++.site-footer h2 {
++  color: #ffffff;
++  font-size: 1.05rem;
++  margin-bottom: 0.75rem;
++}
++
++.site-footer ul {
++  list-style: none;
++  padding: 0;
++  margin: 0;
++  display: grid;
++  gap: 0.4rem;
++}
++
++.site-footer p {
++  color: #aebbc7;
++  font-size: 0.95rem;
++}
++
++.site-footer__bottom {
++  border-top: 1px solid #2a3947;
++  padding-top: 1rem;
++  font-size: 0.85rem;
++  color: #8b9aa8;
++  display: flex;
++  justify-content: space-between;
++  gap: 1rem;
++  flex-wrap: wrap;
++}
++
++/* Responsive */
++@media (max-width: 860px) {
++  .hero__grid {
++    grid-template-columns: 1fr;
++    gap: 2rem;
++  }
++  .contact-grid {
++    grid-template-columns: 1fr;
++  }
++  .site-footer__grid {
++    grid-template-columns: 1fr 1fr;
++  }
++}
++
++@media (max-width: 600px) {
++  .field-group {
++    grid-template-columns: 1fr;
++  }
++  .site-header__inner {
++    align-items: flex-start;
++  }
++  .primary-nav ul {
++    gap: 0;
++  }
++  .site-footer__grid {
++    grid-template-columns: 1fr;
++  }
++  .section {
++    padding: 2.5rem 0;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  * {
++    transition: none !important;
++    scroll-behavior: auto !important;
++  }
++}

@@ -1,0 +1,775 @@
+diff --git a/index.html b/index.html
+index f6dacfc..9f04949 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Arcwell — Modular Desk Lamp</title><meta name="description" content="Arcwell is a modular desk lamp with swappable arms, lenses and base finishes. Configure yours." /></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..8d9a7d6 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,385 @@
+-import React from "react";
++import React, { useId, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import { ArrowRight, Check } from "lucide-react";
++import { ARMS, LENSES, FINISHES, BASE_PRICE, priceFor, usd } from "./config";
++import type { Arm, Lens, Finish } from "./config";
+ import "./style.css";
+ 
++/* ---------- The generated product visual: an SVG lamp that reflects the config ---------- */
++
++function Lamp({ arm, lens, finish }: { arm: Arm; lens: Lens; finish: Finish }) {
++  const uid = useId().replace(/:/g, "");
++  const metal = `metal-${uid}`;
++  const beamGrad = `beam-${uid}`;
++  const pool = `pool-${uid}`;
++  const halo = `halo-${uid}`;
++  const blur = `blur-${uid}`;
++
++  const hx = arm.head.x;
++  const hy = arm.head.y;
++  const lensCy = hy + 52; // lens face sits below the head pivot
++  const lensRx = 24;
++  const poolRx = lens.poolRx;
++  const groundY = 434;
++
++  return (
++    <svg
++      className="lamp"
++      viewBox="0 0 480 520"
++      role="img"
++      aria-label={`Arcwell lamp with ${arm.label} arm, ${lens.label} lens at ${lens.kelvin}, ${finish.label} finish`}
++    >
++      <defs>
++        <linearGradient id={metal} x1="0" y1="0" x2="0" y2="1">
++          <stop offset="0" stopColor={finish.light} />
++          <stop offset="0.55" stopColor={finish.mid} />
++          <stop offset="1" stopColor={finish.dark} />
++        </linearGradient>
++        <linearGradient id={beamGrad} x1="0" y1="0" x2="0" y2="1">
++          <stop offset="0" stopColor={lens.beam} stopOpacity="0.5" />
++          <stop offset="1" stopColor={lens.beam} stopOpacity="0" />
++        </linearGradient>
++        <radialGradient id={pool}>
++          <stop offset="0" stopColor={lens.beam} stopOpacity="0.55" />
++          <stop offset="1" stopColor={lens.beam} stopOpacity="0" />
++        </radialGradient>
++        <radialGradient id={halo}>
++          <stop offset="0" stopColor={lens.glow} stopOpacity="0.85" />
++          <stop offset="1" stopColor={lens.glow} stopOpacity="0" />
++        </radialGradient>
++        <filter id={blur} x="-50%" y="-50%" width="200%" height="200%">
++          <feGaussianBlur stdDeviation="9" />
++        </filter>
++      </defs>
++
++      {/* ground shadow */}
++      <ellipse cx="160" cy="452" rx="104" ry="17" fill="#000" opacity="0.45" filter={`url(#${blur})`} />
++
++      {/* pool of light on the desk + projected cone */}
++      <ellipse cx={hx} cy={groundY} rx={poolRx} ry="16" fill={`url(#${pool})`} filter={`url(#${blur})`} />
++      <polygon
++        points={`${hx - lensRx},${lensCy} ${hx + lensRx},${lensCy} ${hx + poolRx},${groundY} ${hx - poolRx},${groundY}`}
++        fill={`url(#${beamGrad})`}
++      />
++
++      {/* base — bottom + body drawn before the arm so the arm appears to rise out of it */}
++      <ellipse cx="160" cy="440" rx="76" ry="15" fill={finish.dark} />
++      <path
++        d="M84 430 L84 440 A76 15 0 0 0 236 440 L236 430 A76 15 0 0 1 84 430 Z"
++        fill={finish.mid}
++      />
++
++      {/* arm */}
++      <path
++        d={arm.path}
++        fill="none"
++        stroke={`url(#${metal})`}
++        strokeWidth="11"
++        strokeLinecap="round"
++        strokeLinejoin="round"
++      />
++
++      {/* base top surface (covers the arm root) */}
++      <ellipse cx="160" cy="430" rx="76" ry="15" fill={`url(#${metal})`} />
++      <ellipse cx="160" cy="430" rx="58" ry="11" fill="none" stroke="#000" strokeOpacity="0.12" />
++      <circle cx="206" cy="432" r="3" fill={lens.glow} />
++
++      {/* emissive halo behind the head */}
++      <circle cx={hx} cy={lensCy} r="60" fill={`url(#${halo})`} />
++
++      {/* lamp head / shade */}
++      <circle cx={hx} cy={hy} r="7" fill={finish.light} />
++      <path
++        d={`M ${hx - 13} ${hy + 8} L ${hx - lensRx} ${lensCy} A ${lensRx} 8 0 0 0 ${hx + lensRx} ${lensCy} L ${hx + 13} ${hy + 8} A 13 6 0 0 1 ${hx - 13} ${hy + 8} Z`}
++        fill={`url(#${metal})`}
++      />
++      <ellipse cx={hx} cy={hy + 8} rx="13" ry="6" fill={finish.light} />
++
++      {/* the glowing lens itself */}
++      <ellipse cx={hx} cy={lensCy} rx={lensRx} ry="8" fill={lens.glow} />
++      <ellipse cx={hx} cy={lensCy} rx={lensRx - 7} ry="5" fill="#fff" opacity="0.55" />
++    </svg>
++  );
++}
++
++/* ---------- Accessible radio-group control (native inputs, custom paint) ---------- */
++
++function ControlGroup<T extends { id: string }>({
++  legend,
++  options,
++  value,
++  onChange,
++  children,
++}: {
++  legend: string;
++  options: readonly T[];
++  value: string;
++  onChange: (id: string) => void;
++  children: (o: T, selected: boolean) => React.ReactNode;
++}) {
++  return (
++    <fieldset className="control">
++      <legend>{legend}</legend>
++      <div className="control-opts" role="radiogroup" aria-label={legend}>
++        {options.map((o) => {
++          const selected = o.id === value;
++          return (
++            <label key={o.id} className={"opt" + (selected ? " is-sel" : "")}>
++              <input
++                type="radio"
++                name={legend}
++                value={o.id}
++                checked={selected}
++                onChange={() => onChange(o.id)}
++              />
++              {children(o, selected)}
++            </label>
++          );
++        })}
++      </div>
++    </fieldset>
++  );
++}
++
++/* ---------- Configurator (the centerpiece, lives in the first viewport) ---------- */
++
++function Configurator() {
++  const [armId, setArmId] = useState<string>("arc");
++  const [lensId, setLensId] = useState<string>("flood");
++  const [finishId, setFinishId] = useState<string>("graphite");
++  const [added, setAdded] = useState(false);
++
++  const arm = ARMS.find((a) => a.id === armId)!;
++  const lens = LENSES.find((l) => l.id === lensId)!;
++  const finish = FINISHES.find((f) => f.id === finishId)!;
++  const price = priceFor(arm, lens, finish);
++
++  return (
++    <div className="config card">
++      <div className="stage">
++        <Lamp arm={arm} lens={lens} finish={finish} />
++      </div>
++
++      <div className="config-controls">
++        <ControlGroup legend="Arm" options={ARMS} value={armId} onChange={(id) => { setArmId(id); setAdded(false); }}>
++          {(o) => (
++            <span className="pill">
++              <span className="pill-label">{o.label}</span>
++              <span className="pill-sub">{o.sub}</span>
++            </span>
++          )}
++        </ControlGroup>
++
++        <ControlGroup legend="Lens" options={LENSES} value={lensId} onChange={(id) => { setLensId(id); setAdded(false); }}>
++          {(o) => (
++            <span className="pill">
++              <span className="pill-label">{o.label}</span>
++              <span className="pill-sub">{o.kelvin}</span>
++            </span>
++          )}
++        </ControlGroup>
++
++        <ControlGroup legend="Finish" options={FINISHES} value={finishId} onChange={(id) => { setFinishId(id); setAdded(false); }}>
++          {(o, selected) => (
++            <span className="swatch-wrap">
++              <span className="swatch" style={{ background: o.swatch }} aria-hidden="true">
++                {selected && <Check size={14} strokeWidth={3} />}
++              </span>
++              <span className="swatch-label">{o.label}</span>
++            </span>
++          )}
++        </ControlGroup>
++
++        <div className="buy">
++          <div className="buy-price">
++            <span className="price">{usd(price)}</span>
++            <span className="price-note">incl. PSU · free shipping</span>
++          </div>
++          <button className="btn btn-primary" onClick={() => setAdded(true)}>
++            {added ? (
++              <>
++                <Check size={18} strokeWidth={2.5} /> Added to cart
++              </>
++            ) : (
++              <>
++                Add to cart <ArrowRight size={18} strokeWidth={2.5} />
++              </>
++            )}
++          </button>
++        </div>
++        <p className="buy-meta" aria-live="polite">
++          {added ? "Your Arcwell configuration is in the cart." : "Ships in 2–3 weeks · 30-day returns · 5-year warranty"}
++        </p>
++      </div>
++    </div>
++  );
++}
++
++/* ---------- Static content sections ---------- */
++
++const STATS = [
++  { value: "1,100", unit: "lm", label: "Calibrated output" },
++  { value: "97", unit: "CRI", label: "Colour fidelity" },
++  { value: "2700–5000", unit: "K", label: "Tunable white" },
++  { value: "9", unit: "W", label: "Peak draw" },
++  { value: "30,000", unit: "h", label: "Rated LED life" },
++  { value: "5", unit: "yr", label: "Warranty" },
++];
++
++const SPECS: [string, string][] = [
++  ["Dimensions", "Up to 620 mm reach · 410 mm height"],
++  ["Materials", "Anodised 6063 aluminium · die-cast zinc base"],
++  ["Weight", "2.4 kg (Graphite, Arc arm)"],
++  ["Dimming", "Stepless touch + companion app"],
++  ["Mounting", "Weighted desk base or 12 mm clamp"],
++  ["Connectivity", "USB-C PD passthrough · Matter-ready"],
++  ["In the box", "Lamp, base, PSU, hex key, spare lens gasket"],
++  ["Modularity", "Tool-free magnetic arm, lens & base swaps"],
++];
++
++function ArmIcon({ d }: { d: string }) {
++  return (
++    <svg viewBox="0 0 480 520" className="arm-icon" aria-hidden="true">
++      <path d={d} fill="none" stroke="currentColor" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
++      <ellipse cx="160" cy="440" rx="70" ry="13" fill="currentColor" />
++    </svg>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <header className="nav">
++        <div className="container nav-inner">
++          <a href="#top" className="wordmark">ARCWELL</a>
++          <nav className="nav-links" aria-label="Primary">
++            <a href="#system">System</a>
++            <a href="#specs">Specs</a>
++            <a href="#configure" className="nav-cta">Configure</a>
++          </nav>
++        </div>
++      </header>
++
++      <main id="top">
++        {/* HERO + CONFIGURATOR */}
++        <section className="hero container" id="configure">
++          <div className="hero-copy">
++            <p className="eyebrow">Arcwell · Modular system</p>
++            <h1>A desk lamp you compose.</h1>
++            <p className="lede">
++              Swap arms, lenses and finishes in seconds. Arcwell adapts to how you actually
++              work — precise task light by day, a warm ambient wash by night.
++            </p>
++            <ul className="value">
++              <li>Tool-free magnetic swaps</li>
++              <li>2700–5000 K tunable white, CRI 97</li>
++              <li>Anodised aluminium, built for decades</li>
++            </ul>
++            <div className="hero-actions">
++              <a href="#specs" className="btn btn-ghost">View full specs</a>
++              <a href="#system" className="link-arrow">How the system works <ArrowRight size={16} /></a>
++            </div>
++          </div>
++
++          <Configurator />
++        </section>
++
++        {/* SPECS */}
++        <section className="specs container" id="specs">
++          <div className="section-head">
++            <p className="eyebrow">Specifications</p>
++            <h2>Measured, not marketed.</h2>
++          </div>
++          <div className="stats">
++            {STATS.map((s) => (
++              <div className="stat" key={s.label}>
++                <div className="stat-value">
++                  {s.value}<span className="stat-unit">{s.unit}</span>
++                </div>
++                <div className="stat-label">{s.label}</div>
++              </div>
++            ))}
++          </div>
++          <dl className="specsheet">
++            {SPECS.map(([k, v]) => (
++              <div className="specrow" key={k}>
++                <dt>{k}</dt>
++                <dd>{v}</dd>
++              </div>
++            ))}
++          </dl>
++        </section>
++
++        {/* MODULAR SYSTEM */}
++        <section className="system container" id="system">
++          <div className="section-head">
++            <p className="eyebrow">The system</p>
++            <h2>A platform, not a product.</h2>
++            <p className="section-lede">
++              Three swappable layers click together magnetically. Start with one Arcwell and
++              re-shape it as your desk, your eyes and your mood change.
++            </p>
++          </div>
++          <div className="system-grid">
++            <div className="layer">
++              <h3>Arms</h3>
++              <p>Re-aim the light — from a tight cantilever to a full-desk boom.</p>
++              <div className="arm-row">
++                {ARMS.map((a) => (
++                  <figure className="arm-card" key={a.id}>
++                    <ArmIcon d={a.path} />
++                    <figcaption>{a.label}</figcaption>
++                  </figure>
++                ))}
++              </div>
++            </div>
++            <div className="layer">
++              <h3>Lenses</h3>
++              <p>Trade beam shape and colour temperature for the task at hand.</p>
++              <div className="chip-row">
++                {LENSES.map((l) => (
++                  <span className="chip" key={l.id}>
++                    <span className="chip-dot" style={{ background: l.glow }} />
++                    {l.label} · {l.kelvin}
++                  </span>
++                ))}
++              </div>
++            </div>
++            <div className="layer">
++              <h3>Finishes</h3>
++              <p>Match the metal to your space — restrained or a deliberate accent.</p>
++              <div className="chip-row">
++                {FINISHES.map((f) => (
++                  <span className="chip" key={f.id}>
++                    <span className="chip-dot" style={{ background: f.swatch }} />
++                    {f.label}
++                  </span>
++                ))}
++              </div>
++            </div>
++          </div>
++        </section>
++
++        {/* CLOSING CTA */}
++        <section className="cta">
++          <div className="container cta-inner">
++            <h2>Build your Arcwell.</h2>
++            <p>From {usd(BASE_PRICE)}. Configured by you, shipped flat, assembled in under a minute.</p>
++            <a href="#configure" className="btn btn-primary">Start configuring <ArrowRight size={18} strokeWidth={2.5} /></a>
++          </div>
++        </section>
++      </main>
++
++      <footer className="footer">
++        <div className="container footer-inner">
++          <span className="wordmark">ARCWELL</span>
++          <span className="footer-note">A modular desk-light system.</span>
++          <span className="footer-note">© 2026 Arcwell Studio</span>
++        </div>
++      </footer>
++    </>
++  );
+ }
+ 
+-createRoot(document.getElementById("root")!).render(<App />);
++const root = document.getElementById("root");
++if (root) createRoot(root).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..560e327 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,369 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++/* ---------- Tokens ---------- */
++:root {
++  --bg: #0a0b0e;
++  --bg-2: #101218;
++  --surface: #14161d;
++  --surface-2: #1b1e27;
++  --line: rgba(255, 255, 255, 0.09);
++  --line-strong: rgba(255, 255, 255, 0.16);
++  --text: #edeff3;
++  --muted: #8b909d;
++  --muted-2: #636875;
++  --accent: #6e7cff;
++  --accent-ink: #0a0b0e;
++  --radius: 18px;
++  --maxw: 1180px;
++  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
++}
++
++* { box-sizing: border-box; }
++
++html { scroll-behavior: smooth; }
++
++html, body {
++  margin: 0;
++  max-width: 100%;
++  overflow-x: hidden;
++}
++
++body {
++  background: var(--bg);
++  color: var(--text);
++  line-height: 1.55;
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
++  /* subtle studio backdrop, not flat black */
++  background-image:
++    radial-gradient(1100px 620px at 78% -8%, rgba(110, 124, 255, 0.13), transparent 60%),
++    radial-gradient(820px 520px at 8% 0%, rgba(255, 174, 85, 0.06), transparent 55%);
++  background-attachment: fixed;
++}
++
++h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.02em; line-height: 1.06; }
++p { margin: 0; }
++a { color: inherit; text-decoration: none; }
++
++:focus-visible {
++  outline: 2px solid var(--accent);
++  outline-offset: 3px;
++  border-radius: 4px;
++}
++
++.container { width: min(var(--maxw), 100% - 48px); margin-inline: auto; }
++
++.eyebrow {
++  text-transform: uppercase;
++  letter-spacing: 0.22em;
++  font-size: 0.72rem;
++  font-weight: 600;
++  color: var(--accent);
++}
++
++.wordmark { font-weight: 700; letter-spacing: 0.32em; font-size: 0.95rem; }
++
++/* ---------- Buttons ---------- */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  border: 1px solid transparent;
++  border-radius: 999px;
++  padding: 12px 22px;
++  font: inherit;
++  font-weight: 600;
++  font-size: 0.95rem;
++  cursor: pointer;
++  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
++}
++.btn:active { transform: translateY(1px); }
++.btn-primary { background: var(--accent); color: var(--accent-ink); }
++.btn-primary:hover { background: #8390ff; }
++.btn-ghost { background: transparent; color: var(--text); border-color: var(--line-strong); }
++.btn-ghost:hover { border-color: var(--text); }
++
++.link-arrow {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  color: var(--muted);
++  font-weight: 500;
++  font-size: 0.92rem;
++}
++.link-arrow:hover { color: var(--text); }
++.link-arrow svg { transition: transform 0.15s ease; }
++.link-arrow:hover svg { transform: translateX(3px); }
++
++/* ---------- Nav ---------- */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  backdrop-filter: blur(14px);
++  background: rgba(10, 11, 14, 0.72);
++  border-bottom: 1px solid var(--line);
++}
++.nav-inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  height: 64px;
++}
++.nav-links { display: flex; align-items: center; gap: 28px; font-size: 0.9rem; color: var(--muted); }
++.nav-links a:hover { color: var(--text); }
++.nav-cta {
++  color: var(--text) !important;
++  border: 1px solid var(--line-strong);
++  padding: 7px 16px;
++  border-radius: 999px;
++}
++.nav-cta:hover { border-color: var(--text); }
++
++/* ---------- Hero ---------- */
++.hero {
++  display: grid;
++  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.05fr);
++  gap: clamp(28px, 4vw, 64px);
++  align-items: center;
++  padding: clamp(40px, 6vw, 90px) 0 clamp(56px, 7vw, 110px);
++  scroll-margin-top: 80px;
++}
++.hero-copy { max-width: 30rem; }
++.hero h1 {
++  font-size: clamp(2.4rem, 5.4vw, 4rem);
++  margin: 18px 0 20px;
++}
++.lede { color: var(--muted); font-size: clamp(1rem, 1.4vw, 1.15rem); }
++.value {
++  list-style: none;
++  padding: 0;
++  margin: 26px 0 30px;
++  display: grid;
++  gap: 12px;
++}
++.value li {
++  position: relative;
++  padding-left: 26px;
++  color: var(--text);
++  font-size: 0.96rem;
++}
++.value li::before {
++  content: "";
++  position: absolute;
++  left: 0;
++  top: 0.55em;
++  width: 12px;
++  height: 12px;
++  border-radius: 999px;
++  border: 2px solid var(--accent);
++}
++.hero-actions { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
++
++/* ---------- Configurator card ---------- */
++.card {
++  background: linear-gradient(180deg, var(--surface), var(--bg-2));
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.9);
++}
++.config { overflow: hidden; }
++
++.stage {
++  position: relative;
++  padding: 8px 8px 0;
++  background:
++    radial-gradient(120% 80% at 70% 22%, rgba(110, 124, 255, 0.12), transparent 60%),
++    linear-gradient(180deg, #0d0f15, #0a0b10);
++  border-bottom: 1px solid var(--line);
++}
++/* faint studio grid floor */
++.stage::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  background-image:
++    linear-gradient(var(--line) 1px, transparent 1px),
++    linear-gradient(90deg, var(--line) 1px, transparent 1px);
++  background-size: 38px 38px;
++  -webkit-mask-image: radial-gradient(80% 60% at 50% 30%, #000, transparent 75%);
++  mask-image: radial-gradient(80% 60% at 50% 30%, #000, transparent 75%);
++  opacity: 0.5;
++  pointer-events: none;
++}
++.lamp {
++  position: relative;
++  display: block;
++  width: 100%;
++  height: auto;
++  max-height: 380px;
++}
++
++.config-controls { padding: clamp(18px, 2.4vw, 26px); display: grid; gap: 20px; }
++
++/* ---------- Controls ---------- */
++.control { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
++.control legend {
++  padding: 0;
++  font-size: 0.74rem;
++  text-transform: uppercase;
++  letter-spacing: 0.16em;
++  color: var(--muted);
++  margin-bottom: 10px;
++}
++.control-opts { display: flex; flex-wrap: wrap; gap: 10px; }
++
++.opt { position: relative; cursor: pointer; }
++.opt input {
++  position: absolute;
++  opacity: 0;
++  width: 0;
++  height: 0;
++}
++.opt:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 12px; }
++
++/* segmented pill (arm + lens) */
++.pill {
++  display: flex;
++  flex-direction: column;
++  gap: 1px;
++  padding: 10px 15px;
++  border: 1px solid var(--line-strong);
++  border-radius: 12px;
++  background: var(--surface-2);
++  transition: border-color 0.15s ease, background 0.15s ease;
++}
++.pill-label { font-weight: 600; font-size: 0.92rem; }
++.pill-sub { font-size: 0.74rem; color: var(--muted); }
++.opt:hover .pill { border-color: var(--muted-2); }
++.opt.is-sel .pill {
++  border-color: var(--accent);
++  background: rgba(110, 124, 255, 0.12);
++}
++
++/* finish swatch */
++.swatch-wrap { display: flex; align-items: center; gap: 10px; padding: 7px 14px 7px 7px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); transition: border-color 0.15s ease; }
++.swatch {
++  display: grid;
++  place-items: center;
++  width: 30px;
++  height: 30px;
++  border-radius: 999px;
++  color: #fff;
++  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
++}
++.swatch-label { font-size: 0.9rem; font-weight: 500; }
++.opt:hover .swatch-wrap { border-color: var(--muted-2); }
++.opt.is-sel .swatch-wrap { border-color: var(--accent); }
++
++/* ---------- Buy ---------- */
++.buy {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 16px;
++  flex-wrap: wrap;
++  padding-top: 6px;
++  border-top: 1px solid var(--line);
++  margin-top: 2px;
++}
++.buy-price { display: flex; flex-direction: column; }
++.price { font-size: 1.7rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
++.price-note { font-size: 0.76rem; color: var(--muted); }
++.buy .btn-primary { padding: 13px 24px; }
++.buy-meta { font-size: 0.8rem; color: var(--muted-2); margin-top: -4px; }
++
++/* ---------- Sections ---------- */
++.section-head { max-width: 38rem; margin-bottom: clamp(28px, 4vw, 48px); }
++.section-head h2 { font-size: clamp(1.8rem, 3.6vw, 2.7rem); margin-top: 14px; }
++.section-lede { color: var(--muted); margin-top: 16px; font-size: 1.05rem; }
++
++.specs, .system { padding: clamp(56px, 8vw, 110px) 0; scroll-margin-top: 72px; }
++.specs { border-top: 1px solid var(--line); }
++
++/* stats — spec-sheet rows, not feature cards */
++.stats {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 1px;
++  background: var(--line);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  overflow: hidden;
++}
++.stat { background: var(--bg); padding: clamp(20px, 2.6vw, 30px); }
++.stat-value { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
++.stat-unit { font-size: 0.9rem; color: var(--accent); margin-left: 5px; font-weight: 600; letter-spacing: 0; }
++.stat-label { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
++
++.specsheet { margin: 28px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(28px, 4vw, 64px); }
++.specrow { display: flex; justify-content: space-between; gap: 18px; padding: 16px 0; border-top: 1px solid var(--line); }
++.specrow dt { color: var(--muted); font-size: 0.92rem; flex: 0 0 auto; }
++.specrow dd { margin: 0; text-align: right; font-size: 0.92rem; }
++
++/* system */
++.system { border-top: 1px solid var(--line); }
++.system-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); }
++.layer h3 { font-size: 1.25rem; }
++.layer > p { color: var(--muted); margin: 10px 0 20px; font-size: 0.95rem; }
++.arm-row { display: flex; gap: 12px; }
++.arm-card { margin: 0; flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 6px; text-align: center; color: var(--muted); }
++.arm-icon { width: 100%; height: auto; display: block; color: var(--text); aspect-ratio: 1 / 1; }
++.arm-card figcaption { font-size: 0.8rem; padding-bottom: 4px; }
++.chip-row { display: flex; flex-wrap: wrap; gap: 10px; }
++.chip {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  padding: 8px 14px;
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  font-size: 0.86rem;
++  background: var(--surface);
++}
++.chip-dot { width: 12px; height: 12px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2); }
++
++/* ---------- Closing CTA ---------- */
++.cta { border-top: 1px solid var(--line); }
++.cta-inner {
++  text-align: center;
++  padding: clamp(64px, 9vw, 120px) 0;
++  display: grid;
++  justify-items: center;
++  gap: 18px;
++}
++.cta h2 { font-size: clamp(2rem, 5vw, 3.4rem); }
++.cta p { color: var(--muted); max-width: 32rem; }
++.cta .btn { margin-top: 8px; }
++
++/* ---------- Footer ---------- */
++.footer { border-top: 1px solid var(--line); }
++.footer-inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  flex-wrap: wrap;
++  gap: 12px;
++  padding: 30px 0;
++}
++.footer-note { color: var(--muted-2); font-size: 0.85rem; }
++
++/* ---------- Responsive ---------- */
++@media (max-width: 900px) {
++  .hero { grid-template-columns: 1fr; }
++  .hero-copy { max-width: none; order: 1; }
++  .config { order: 2; }
++  .specsheet { grid-template-columns: 1fr; }
++  .system-grid { grid-template-columns: 1fr; gap: 36px; }
++}
++
++@media (max-width: 620px) {
++  .nav-links { gap: 16px; }
++  .nav-links a:not(.nav-cta) { display: none; }
++  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++  .buy { gap: 14px; }
++  .buy .btn-primary { width: 100%; justify-content: center; }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  html { scroll-behavior: auto; }
++  * { transition: none !important; }
++}

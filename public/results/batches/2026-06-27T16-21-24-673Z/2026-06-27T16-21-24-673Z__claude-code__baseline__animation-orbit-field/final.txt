@@ -1,0 +1,19 @@
+I built the interactive canvas orbit field and verified it end-to-end.
+
+## What changed
+
+- **`src/OrbitField.tsx`** (new) — the canvas component containing all animation logic:
+  - **Orbiting field**: 150 particles spread across 6 counter-rotating rings around a central glowing attractor. Inner rings orbit faster, particles wobble subtly, and additive (`lighter`) blending plus motion trails give a smooth cosmic look. Angles advance by `Δtime`, so motion is frame-rate independent.
+  - **Pointer response**: the field center eases toward the cursor and particles are pushed out of a repulsion bubble around it, with a halo marking the interaction point. Pointer moves redraw a single frame even while paused, so the effect is always visible.
+  - **Pause/Resume control**: an accessible native `<button>` (Pause/Play icon + label, dynamic `aria-label`, visible focus ring) that starts/stops the `requestAnimationFrame` loop. Paused frames are frozen. A visually-hidden `aria-live` region announces state changes.
+  - **Reduced motion**: reads `prefers-reduced-motion` via `matchMedia` (and reacts to changes). When set, it starts paused/static by default while still rendering a full frame; a hint explains motion can be enabled manually.
+  - **Crispness**: backing store scaled by `devicePixelRatio` (capped at 2.5) with a `ResizeObserver` re-fitting the canvas to the viewport.
+- **`src/main.tsx`** — mounts `OrbitField` inside a full-viewport `<main>` with a visually-hidden `<h1>`.
+- **`src/style.css`** — full-bleed dark layout, glassmorphic centered control, hint text, focus-visible styling, and a `.visually-hidden` utility.
+
+## Verification
+
+- `pnpm build` (`tsc --noEmit && vite build`) — passes (type-check clean, production bundle built).
+- Behavioral check via headless Chromium (Playwright) against a preview server — **6/6 passed**: nonblank pixels, frames differ over time, pause stops motion, pointer movement changes the field, resume restarts motion, and reduced-motion renders nonblank-but-static.
+
+All stated success criteria are satisfied.

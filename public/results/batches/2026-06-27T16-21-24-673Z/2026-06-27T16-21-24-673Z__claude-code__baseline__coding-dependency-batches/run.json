@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-27T16:21:24.674Z",
+  "repoCommit": "2a6b795",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "coding-dependency-batches",
+  "category": "pure-coding",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/workspace",
+  "exitCode": 0,
+  "durationMs": 267806,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 2603,
+    "outputTokens": 21054
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 96.3
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-dependency-batches/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

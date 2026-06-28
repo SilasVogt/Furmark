@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T06:51:44.038Z",
+  "repoCommit": "ccee22e",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "landing-incident-console",
+  "category": "landing-page",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/workspace",
+  "exitCode": 0,
+  "durationMs": 836184,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "passed",
+  "scores": {
+    "correctness": 0,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 0,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 41.3
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__baseline__landing-incident-console/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

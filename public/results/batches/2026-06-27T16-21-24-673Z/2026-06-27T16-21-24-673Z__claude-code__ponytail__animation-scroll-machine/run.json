@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T04:47:36.739Z",
+  "repoCommit": "ccee22e",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "ponytail",
+  "taskId": "animation-scroll-machine",
+  "category": "browser-animation",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/workspace",
+  "exitCode": 0,
+  "durationMs": 544734,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 2,
+    "outputTokens": 196
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 80,
+    "animation": 40,
+    "codeQuality": 95.4,
+    "styleCompliance": 75,
+    "skillUplift": 40.7,
+    "total": 83.3
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__animation-scroll-machine/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "ponytail",
+  "skillPath": "skills/ponytail/SKILL.md",
+  "skillSha256": "d11df477b1a4e807155a7e578b135a4d9c52beef06eb3a44322940c331a06942",
+  "activation": "prompt-injected"
+}

@@ -1,0 +1,1086 @@
+diff --git a/index.html b/index.html
+index f6dacfc..c0119d0 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Arcwell Modular Desk Lamp</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..6225b36 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,297 @@
+-import React from "react";
++import React, { useMemo, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  Check,
++  Ruler,
++  ShieldCheck,
++  ShoppingBag,
++  SlidersHorizontal,
++  Sun,
++  Zap,
++} from "lucide-react";
++import lampHero from "./assets/arcwell-lamp-hero.png";
+ import "./style.css";
+ 
++type Option = {
++  id: string;
++  label: string;
++  detail: string;
++  price?: number;
++  swatch?: string;
++};
++
++const arms: Option[] = [
++  { id: "reach-35", label: "Reach 35", detail: "Compact reach for 24 in desks" },
++  { id: "reach-52", label: "Reach 52", detail: "Long reach for deep benches", price: 40 },
++  { id: "reach-72", label: "Reach 72", detail: "Two-link sweep for shared stations", price: 85 },
++];
++
++const lenses: Option[] = [
++  { id: "focus", label: "Focus lens", detail: "Tight beam for drafting" },
++  { id: "diffuse", label: "Diffuse lens", detail: "Soft field for reading", price: 30 },
++  { id: "studio", label: "Studio lens", detail: "High CRI module for color checks", price: 55 },
++];
++
++const finishes: Option[] = [
++  { id: "graphite", label: "Satin Graphite", detail: "Anodized aluminum", swatch: "#24272b" },
++  { id: "silver", label: "Frosted Silver", detail: "Bead-blasted steel", swatch: "#c8d1d8", price: 25 },
++  { id: "black", label: "Ion Black", detail: "Ceramic-coated base", swatch: "#080a0c", price: 35 },
++];
++
++const specs = [
++  { label: "Output", value: "450 to 900 lm", note: "Flicker-managed dimming", icon: Sun },
++  { label: "Temperature", value: "2700 to 6500 K", note: "Warm task light to cool review light", icon: Zap },
++  { label: "Reach", value: "35, 52, 72 cm", note: "Swappable arm lengths", icon: Ruler },
++  { label: "Power", value: "USB-C PD", note: "65 W adapter included", icon: Zap },
++  { label: "Base", value: "Steel core", note: "Low profile with silicone feet", icon: ShieldCheck },
++  { label: "Warranty", value: "5 years", note: "Replaceable joints and lens rings", icon: ShieldCheck },
++];
++
++function money(value: number) {
++  return new Intl.NumberFormat("en-US", {
++    style: "currency",
++    currency: "USD",
++    maximumFractionDigits: 0,
++  }).format(value);
++}
++
++function OptionGroup({
++  legend,
++  name,
++  value,
++  options,
++  onChange,
++}: {
++  legend: string;
++  name: string;
++  value: string;
++  options: Option[];
++  onChange: (id: string) => void;
++}) {
++  return (
++    <fieldset className="option-group">
++      <legend>{legend}</legend>
++      <div className="option-list" role="radiogroup" aria-label={legend}>
++        {options.map((option) => {
++          const checked = option.id === value;
++          return (
++            <label className="option" key={option.id}>
++              <input
++                type="radio"
++                name={name}
++                value={option.id}
++                checked={checked}
++                onChange={() => onChange(option.id)}
++              />
++              <span className="option-content">
++                {option.swatch ? (
++                  <span
++                    className="swatch"
++                    style={{ "--swatch": option.swatch } as React.CSSProperties}
++                    aria-hidden="true"
++                  />
++                ) : null}
++                <span>
++                  <span className="option-label">{option.label}</span>
++                  <span className="option-detail">{option.detail}</span>
++                </span>
++                {checked ? <Check className="check" aria-hidden="true" size={18} /> : null}
++              </span>
++            </label>
++          );
++        })}
++      </div>
++    </fieldset>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const [arm, setArm] = useState(arms[1].id);
++  const [lens, setLens] = useState(lenses[1].id);
++  const [finish, setFinish] = useState(finishes[0].id);
++
++  const build = useMemo(() => {
++    const selectedArm = arms.find((item) => item.id === arm) ?? arms[0];
++    const selectedLens = lenses.find((item) => item.id === lens) ?? lenses[0];
++    const selectedFinish = finishes.find((item) => item.id === finish) ?? finishes[0];
++    const price =
++      420 + (selectedArm.price ?? 0) + (selectedLens.price ?? 0) + (selectedFinish.price ?? 0);
++
++    return { selectedArm, selectedLens, selectedFinish, price };
++  }, [arm, lens, finish]);
++
++  return (
++    <main>
++      <header className="site-header" aria-label="Arcwell">
++        <a className="brand" href="#top" aria-label="Arcwell home">
++          <span className="brand-mark" aria-hidden="true" />
++          Arcwell
++        </a>
++        <nav aria-label="Primary navigation">
++          <a href="#modules">Modules</a>
++          <a href="#configure">Configure</a>
++          <a href="#specs">Specs</a>
++        </nav>
++        <a className="nav-cta" href="#buy">
++          Buy Arcwell
++        </a>
++      </header>
++
++      <section className="hero" id="top">
++        <div className="hero-copy">
++          <h1>Arcwell</h1>
++          <p>A modular desk lamp with swappable arms, lenses, and finishes for precise work light.</p>
++          <div className="hero-actions" aria-label="Primary actions">
++            <a className="button primary" href="#buy">
++              <ShoppingBag size={18} aria-hidden="true" />
++              Buy Arcwell
++            </a>
++            <a className="button secondary" href="#configure">
++              <SlidersHorizontal size={18} aria-hidden="true" />
++              Configure
++            </a>
++          </div>
++        </div>
++        <div className="hero-media">
++          <img
++            src={lampHero}
++            alt="Arcwell modular desk lamp in black and chrome on a graphite studio surface"
++          />
++        </div>
++      </section>
++
++      <section className="signal-strip" aria-label="Product highlights">
++        <div>
++          <span>Modules</span>
++          <strong>Arms, lenses, bases</strong>
++        </div>
++        <div>
++          <span>Output</span>
++          <strong>450 to 900 lm</strong>
++        </div>
++        <div>
++          <span>Power</span>
++          <strong>USB-C, 65 W</strong>
++        </div>
++        <div>
++          <span>Warranty</span>
++          <strong>5 years</strong>
++        </div>
++      </section>
++
++      <section className="configure-section" id="configure">
++        <div className="section-heading">
++          <h2>Configure the working light.</h2>
++          <p>Choose the reach, beam, and base finish before checkout.</p>
++        </div>
++
++        <div className="configure-layout">
++          <form className="configurator">
++            <OptionGroup legend="Arm reach" name="arm" value={arm} options={arms} onChange={setArm} />
++            <OptionGroup
++              legend="Lens module"
++              name="lens"
++              value={lens}
++              options={lenses}
++              onChange={setLens}
++            />
++            <OptionGroup
++              legend="Base finish"
++              name="finish"
++              value={finish}
++              options={finishes}
++              onChange={setFinish}
++            />
++          </form>
++
++          <aside className="build-summary" aria-live="polite">
++            <div className="summary-image">
++              <img src={lampHero} alt="" />
++            </div>
++            <div className="summary-content">
++              <span>Selected build</span>
++              <h3>{build.selectedArm.label}</h3>
++              <p>
++                {build.selectedLens.label}, {build.selectedFinish.label}
++              </p>
++              <div className="summary-price">{money(build.price)}</div>
++              <a className="button primary wide" href="#buy">
++                <ShoppingBag size={18} aria-hidden="true" />
++                Buy Arcwell
++              </a>
++            </div>
++          </aside>
++        </div>
++      </section>
++
++      <section className="modules-section" id="modules">
++        <div className="module-media">
++          <img
++            src={lampHero}
++            alt="Close view of Arcwell modular joints and cylindrical lens head"
++          />
++        </div>
++        <div className="module-copy">
++          <h2>Built as a small hardware system.</h2>
++          <p>Every visible joint is a service point. Swap modules without sending the lamp back.</p>
++          <div className="detail-rows">
++            <article>
++              <h3>Magnetic arm collars</h3>
++              <p>Align by touch, then lock with a quarter turn.</p>
++            </article>
++            <article>
++              <h3>Lens bayonet</h3>
++              <p>Change from drafting beam to wide reading field in seconds.</p>
++            </article>
++            <article>
++              <h3>Weighted bases</h3>
++              <p>Three finishes, one low profile with felt and silicone foot rings.</p>
++            </article>
++            <article>
++              <h3>Service kit</h3>
++              <p>Joints, lens rings, and power leads stay replaceable.</p>
++            </article>
++          </div>
++        </div>
++      </section>
++
++      <section className="specs-section" id="specs">
++        <div className="section-heading compact">
++          <h2>Concise specifications.</h2>
++          <p>The numbers that matter for a desk, studio, or bench.</p>
++        </div>
++        <div className="spec-grid">
++          {specs.map((spec, index) => {
++            const Icon = spec.icon;
++            return (
++              <article className={index === 0 || index === 2 ? "spec-tile wide" : "spec-tile"} key={spec.label}>
++                <Icon size={20} aria-hidden="true" />
++                <span>{spec.label}</span>
++                <strong>{spec.value}</strong>
++                <p>{spec.note}</p>
++              </article>
++            );
++          })}
++        </div>
++      </section>
++
++      <section className="buy-section" id="buy">
++        <div>
++          <h2>Ready for your desk.</h2>
++          <p>Arcwell starts at $420 with one arm, one lens, and one base finish. Modules ship separately.</p>
++        </div>
++        <a className="button primary" href="mailto:sales@arcwell.example?subject=Buy%20Arcwell">
++          <ShoppingBag size={18} aria-hidden="true" />
++          Buy Arcwell
++        </a>
++      </section>
++
++      <footer>
++        <span>Arcwell Hardware Studio</span>
++        <a href="mailto:support@arcwell.example">support@arcwell.example</a>
++      </footer>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..c5f329a 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,769 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: dark;
++  font-family:
++    "Avenir Next", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
++  background: #0d0f10;
++  color: #eef3f5;
++  --bg: #0d0f10;
++  --panel: #15181b;
++  --panel-strong: #1d2226;
++  --line: rgba(223, 235, 241, 0.16);
++  --muted: #9daab1;
++  --text: #eef3f5;
++  --accent: #78d7f8;
++  --accent-ink: #061116;
++  --shadow: rgba(0, 0, 0, 0.36);
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  overflow-x: hidden;
++  background:
++    radial-gradient(circle at 15% 0%, rgba(120, 215, 248, 0.12), transparent 30rem),
++    linear-gradient(180deg, #111416 0%, #0d0f10 52%, #101315 100%);
++}
++
++body,
++button,
++input {
++  font: inherit;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++button,
++a,
++label {
++  -webkit-tap-highlight-color: transparent;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++main {
++  width: 100%;
++}
++
++.site-header {
++  display: grid;
++  grid-template-columns: 1fr auto 1fr;
++  align-items: center;
++  gap: 1rem;
++  width: min(100% - 2rem, 1180px);
++  min-height: 68px;
++  margin: 0 auto;
++  padding: 0.85rem 0;
++}
++
++.brand,
++.nav-cta,
++nav a,
++.button {
++  align-items: center;
++  display: inline-flex;
++  min-height: 42px;
++  white-space: nowrap;
++}
++
++.brand {
++  gap: 0.7rem;
++  font-weight: 700;
++  font-size: 1.05rem;
++}
++
++.brand-mark {
++  width: 1.05rem;
++  height: 1.05rem;
++  border: 2px solid var(--accent);
++  border-radius: 50%;
++  box-shadow: inset 0 0 0 3px rgba(120, 215, 248, 0.14);
++}
++
++nav {
++  display: flex;
++  align-items: center;
++  gap: 0.35rem;
++  padding: 0.25rem;
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  background: rgba(238, 243, 245, 0.04);
++}
++
++nav a {
++  min-height: 36px;
++  padding: 0 0.85rem;
++  border-radius: 999px;
++  color: var(--muted);
++  font-size: 0.92rem;
++}
++
++nav a:hover,
++nav a:focus-visible {
++  color: var(--text);
++  background: rgba(238, 243, 245, 0.08);
++}
++
++.nav-cta {
++  justify-self: end;
++  min-height: 40px;
++  padding: 0 1rem;
++  border: 1px solid rgba(120, 215, 248, 0.36);
++  border-radius: 999px;
++  color: var(--accent);
++  font-weight: 700;
++}
++
++.hero {
++  display: grid;
++  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
++  align-items: center;
++  gap: clamp(1.5rem, 4vw, 5rem);
++  width: min(100% - 2rem, 1180px);
++  min-height: calc(100dvh - 152px);
++  margin: 0 auto;
++  padding: 2rem 0 3rem;
++}
++
++.hero-copy {
++  position: relative;
++  z-index: 1;
++}
++
++.hero h1,
++.section-heading h2,
++.module-copy h2,
++.buy-section h2 {
++  margin: 0;
++  color: var(--text);
++  font-weight: 760;
++  line-height: 0.96;
++}
++
++.hero h1 {
++  font-size: 5.6rem;
++}
++
++.hero p {
++  max-width: 27rem;
++  margin: 1.25rem 0 0;
++  color: #c9d4d9;
++  font-size: 1.18rem;
++  line-height: 1.55;
++}
++
++.hero-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.8rem;
++  margin-top: 1.8rem;
++}
++
++.button {
++  justify-content: center;
++  gap: 0.55rem;
++  min-height: 48px;
++  padding: 0 1.15rem;
++  border-radius: 999px;
++  border: 1px solid transparent;
++  font-weight: 750;
++  transition:
++    transform 180ms ease,
++    border-color 180ms ease,
++    background 180ms ease;
++}
++
++.button:hover,
++.button:focus-visible,
++.nav-cta:hover,
++.nav-cta:focus-visible {
++  transform: translateY(-1px);
++}
++
++.button:active,
++.nav-cta:active {
++  transform: translateY(1px);
++}
++
++.primary {
++  background: var(--accent);
++  color: var(--accent-ink);
++  box-shadow: 0 18px 50px rgba(120, 215, 248, 0.18);
++}
++
++.secondary {
++  border-color: var(--line);
++  background: rgba(238, 243, 245, 0.05);
++  color: var(--text);
++}
++
++.wide {
++  width: 100%;
++}
++
++.hero-media {
++  position: relative;
++  overflow: hidden;
++  border: 1px solid rgba(223, 235, 241, 0.14);
++  border-radius: 8px;
++  background: #141719;
++  box-shadow: 0 30px 90px var(--shadow);
++}
++
++.hero-media::after,
++.summary-image::after,
++.module-media::after {
++  position: absolute;
++  inset: 0;
++  content: "";
++  pointer-events: none;
++  background: linear-gradient(90deg, rgba(13, 15, 16, 0.26), transparent 36%);
++  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
++}
++
++.hero-media img {
++  width: 100%;
++  min-height: 28rem;
++  object-fit: cover;
++  object-position: 56% center;
++}
++
++.signal-strip {
++  display: grid;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++  width: min(100% - 2rem, 1180px);
++  margin: 0 auto;
++  border-top: 1px solid var(--line);
++  border-bottom: 1px solid var(--line);
++}
++
++.signal-strip div {
++  min-width: 0;
++  padding: 1rem 1.25rem;
++  border-left: 1px solid var(--line);
++}
++
++.signal-strip div:first-child {
++  border-left: 0;
++}
++
++.signal-strip span,
++.option-detail,
++.summary-content span,
++.spec-tile span,
++footer {
++  color: var(--muted);
++}
++
++.signal-strip span,
++.summary-content span,
++.spec-tile span {
++  display: block;
++  margin-bottom: 0.25rem;
++  font-size: 0.82rem;
++}
++
++.signal-strip strong {
++  display: block;
++  overflow-wrap: anywhere;
++  color: var(--text);
++  font-size: 1rem;
++}
++
++.configure-section,
++.modules-section,
++.specs-section,
++.buy-section {
++  width: min(100% - 2rem, 1180px);
++  margin: 0 auto;
++}
++
++.configure-section {
++  padding: 6.5rem 0 5rem;
++}
++
++.section-heading {
++  max-width: 42rem;
++  margin-bottom: 2.2rem;
++}
++
++.section-heading.compact {
++  margin-bottom: 1.6rem;
++}
++
++.section-heading h2,
++.module-copy h2,
++.buy-section h2 {
++  font-size: 3rem;
++}
++
++.section-heading p,
++.module-copy > p,
++.buy-section p,
++.detail-rows p,
++.spec-tile p {
++  color: #bac6cc;
++  line-height: 1.55;
++}
++
++.section-heading p,
++.module-copy > p,
++.buy-section p {
++  max-width: 34rem;
++  margin: 0.85rem 0 0;
++  font-size: 1.05rem;
++}
++
++.configure-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.64fr);
++  align-items: start;
++  gap: 1.25rem;
++}
++
++.configurator {
++  display: grid;
++  gap: 1rem;
++}
++
++.option-group {
++  min-width: 0;
++  margin: 0;
++  padding: 1rem;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  background: rgba(238, 243, 245, 0.035);
++}
++
++.option-group legend {
++  padding: 0 0.35rem;
++  color: var(--text);
++  font-weight: 760;
++}
++
++.option-list {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 0.7rem;
++  margin-top: 0.75rem;
++}
++
++.option {
++  min-width: 0;
++}
++
++.option input {
++  position: absolute;
++  inline-size: 1px;
++  block-size: 1px;
++  overflow: hidden;
++  clip-path: inset(50%);
++  white-space: nowrap;
++}
++
++.option-content {
++  display: grid;
++  grid-template-columns: auto minmax(0, 1fr) auto;
++  align-items: center;
++  gap: 0.7rem;
++  min-height: 6.4rem;
++  padding: 0.9rem;
++  border: 1px solid rgba(223, 235, 241, 0.14);
++  border-radius: 8px;
++  background: rgba(13, 15, 16, 0.42);
++  cursor: pointer;
++  transition:
++    transform 180ms ease,
++    border-color 180ms ease,
++    background 180ms ease;
++}
++
++.option input:checked + .option-content {
++  border-color: rgba(120, 215, 248, 0.78);
++  background: rgba(120, 215, 248, 0.1);
++}
++
++.option input:focus-visible + .option-content {
++  outline: 3px solid rgba(120, 215, 248, 0.46);
++  outline-offset: 3px;
++}
++
++.option-content:hover {
++  transform: translateY(-1px);
++  border-color: rgba(223, 235, 241, 0.28);
++}
++
++.option-label {
++  display: block;
++  color: var(--text);
++  font-weight: 760;
++}
++
++.option-detail {
++  display: block;
++  margin-top: 0.25rem;
++  font-size: 0.9rem;
++  line-height: 1.35;
++}
++
++.swatch {
++  width: 1.35rem;
++  height: 1.35rem;
++  border: 1px solid rgba(238, 243, 245, 0.38);
++  border-radius: 50%;
++  background: var(--swatch);
++  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.28);
++}
++
++.check {
++  color: var(--accent);
++}
++
++.build-summary {
++  position: sticky;
++  top: 1rem;
++  overflow: hidden;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  background: var(--panel);
++  box-shadow: 0 24px 80px var(--shadow);
++}
++
++.summary-image {
++  position: relative;
++  overflow: hidden;
++  aspect-ratio: 16 / 9;
++  background: #111416;
++}
++
++.summary-image img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  object-position: 63% center;
++}
++
++.summary-content {
++  padding: 1.2rem;
++}
++
++.summary-content h3 {
++  margin: 0;
++  font-size: 1.7rem;
++}
++
++.summary-content p {
++  margin: 0.45rem 0 1rem;
++  color: #c4d0d6;
++}
++
++.summary-price {
++  margin-bottom: 1rem;
++  color: var(--text);
++  font-size: 2.15rem;
++  font-weight: 800;
++}
++
++.modules-section {
++  display: grid;
++  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
++  gap: 1.6rem;
++  align-items: stretch;
++  padding: 2rem 0 5rem;
++}
++
++.module-media {
++  position: relative;
++  overflow: hidden;
++  min-height: 34rem;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  background: #131719;
++}
++
++.module-media img {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  object-position: 38% center;
++}
++
++.module-copy {
++  align-self: center;
++  padding: 1rem 0 1rem 1.2rem;
++}
++
++.detail-rows {
++  display: grid;
++  gap: 0;
++  margin-top: 2rem;
++  border-top: 1px solid var(--line);
++}
++
++.detail-rows article {
++  padding: 1.1rem 0;
++  border-bottom: 1px solid var(--line);
++}
++
++.detail-rows h3 {
++  margin: 0;
++  color: var(--text);
++  font-size: 1.08rem;
++}
++
++.detail-rows p {
++  margin: 0.35rem 0 0;
++}
++
++.specs-section {
++  padding: 2rem 0 5.5rem;
++}
++
++.spec-grid {
++  display: grid;
++  grid-template-columns: repeat(4, minmax(0, 1fr));
++  gap: 0.85rem;
++}
++
++.spec-tile {
++  min-width: 0;
++  min-height: 13rem;
++  padding: 1rem;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  background:
++    linear-gradient(135deg, rgba(120, 215, 248, 0.08), transparent 34%),
++    rgba(238, 243, 245, 0.035);
++}
++
++.spec-tile.wide {
++  grid-column: span 2;
++}
++
++.spec-tile svg {
++  color: var(--accent);
++}
++
++.spec-tile strong {
++  display: block;
++  margin-top: 1.4rem;
++  color: var(--text);
++  font-size: 1.45rem;
++  line-height: 1.05;
++}
++
++.spec-tile p {
++  margin: 0.55rem 0 0;
++}
++
++.buy-section {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto;
++  gap: 1.5rem;
++  align-items: center;
++  margin-bottom: 4rem;
++  padding: 2rem;
++  border: 1px solid rgba(120, 215, 248, 0.28);
++  border-radius: 8px;
++  background:
++    linear-gradient(135deg, rgba(120, 215, 248, 0.12), transparent 44%),
++    var(--panel-strong);
++}
++
++footer {
++  display: flex;
++  justify-content: space-between;
++  gap: 1rem;
++  width: min(100% - 2rem, 1180px);
++  margin: 0 auto;
++  padding: 0 0 2rem;
++  font-size: 0.92rem;
++}
++
++:focus-visible {
++  outline: 3px solid rgba(120, 215, 248, 0.6);
++  outline-offset: 3px;
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    transition-duration: 0.01ms !important;
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++  }
++}
++
++@media (max-width: 980px) {
++  .site-header {
++    grid-template-columns: 1fr auto;
++  }
++
++  nav {
++    display: none;
++  }
++
++  .hero {
++    grid-template-columns: 1fr;
++    min-height: auto;
++    padding-top: 2rem;
++  }
++
++  .hero h1 {
++    font-size: 4.4rem;
++  }
++
++  .hero-media {
++    order: -1;
++  }
++
++  .hero-media img {
++    min-height: 22rem;
++    object-position: 57% center;
++  }
++
++  .signal-strip {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++
++  .signal-strip div:nth-child(3) {
++    border-left: 0;
++    border-top: 1px solid var(--line);
++  }
++
++  .signal-strip div:nth-child(4) {
++    border-top: 1px solid var(--line);
++  }
++
++  .configure-layout,
++  .modules-section,
++  .buy-section {
++    grid-template-columns: 1fr;
++  }
++
++  .build-summary {
++    position: static;
++  }
++
++  .module-copy {
++    padding-left: 0;
++  }
++
++  .spec-grid {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++}
++
++@media (max-width: 700px) {
++  .site-header,
++  .hero,
++  .signal-strip,
++  .configure-section,
++  .modules-section,
++  .specs-section,
++  .buy-section,
++  footer {
++    width: min(100% - 1rem, 1180px);
++  }
++
++  .site-header {
++    min-height: 62px;
++  }
++
++  .nav-cta {
++    padding: 0 0.8rem;
++  }
++
++  .hero {
++    gap: 1.25rem;
++    padding: 0.75rem 0 2rem;
++  }
++
++  .hero h1 {
++    font-size: 3.2rem;
++  }
++
++  .hero p {
++    font-size: 1rem;
++  }
++
++  .hero-actions,
++  .buy-section .button {
++    width: 100%;
++  }
++
++  .hero-actions .button {
++    width: 100%;
++  }
++
++  .hero-media img {
++    min-height: 17rem;
++  }
++
++  .signal-strip {
++    grid-template-columns: 1fr;
++  }
++
++  .signal-strip div,
++  .signal-strip div:nth-child(4) {
++    border-left: 0;
++    border-top: 1px solid var(--line);
++  }
++
++  .signal-strip div:first-child {
++    border-top: 0;
++  }
++
++  .configure-section {
++    padding: 4.5rem 0 3.5rem;
++  }
++
++  .section-heading h2,
++  .module-copy h2,
++  .buy-section h2 {
++    font-size: 2.2rem;
++  }
++
++  .option-list {
++    grid-template-columns: 1fr;
++  }
++
++  .option-content {
++    min-height: 5.4rem;
++  }
++
++  .module-media {
++    min-height: 24rem;
++  }
++
++  .spec-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .spec-tile.wide {
++    grid-column: auto;
++  }
++
++  .buy-section {
++    padding: 1.25rem;
++  }
++
++  footer {
++    flex-direction: column;
++  }
++}

@@ -1,0 +1,20 @@
+Done. Paws off the keyboard. :3
+
+## What changed
+Replaced the placeholder app with a static, responsive landing page for **Civic Slot** (React + TypeScript, the existing Vite stack).
+
+- `src/App.tsx` — the page, built from semantic landmarks: `header`/`nav`, `main`, labelled `section`s, and `footer`. Sections: booking hero, service categories, "How availability works", accessibility commitments, and contact/support.
+- `src/forms.ts` + `src/forms.test.ts` — pure, framework-free validation for the booking and support forms, with unit tests (the non-trivial logic).
+- `src/style.css` — full styling: a high-visibility focus ring (yellow + dark inner border on controls, yellow block on links), a skip link, AA-contrast colors, dark input borders (>=3:1), and `auto-fit` grids that stack on mobile and split at 820px+.
+- `src/main.tsx`, `index.html` — mount the app; set the page title, description, and `color-scheme`.
+
+## Accessibility and copy
+- Both forms use `label` + `htmlFor`, per-field helper text via `aria-describedby`, `aria-required`/`aria-invalid`, and an error summary with `role="alert"`. Focus moves to the status region on submit. `noValidate` keeps messages plain instead of native popups.
+- Copy is plain and public-service appropriate (no marketing superlatives), and the demo states honestly that it does not send or store details.
+
+## Verification
+- `pnpm test` -> 6/6 pass
+- `pnpm build` (`tsc --noEmit && vite build`) -> clean, no errors or warnings
+- `vite preview` -> HTTP 200 serving the correct page
+
+One honest note: "no console errors" is verified indirectly (clean type-check/build, controlled inputs, keyed lists, decorative icons marked `aria-hidden`); I did not drive a real browser to read the runtime console.

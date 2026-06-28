@@ -1,0 +1,46 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-27T16:21:24.674Z",
+  "repoCommit": "2a6b795",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "baseline",
+  "taskId": "coding-intervals",
+  "category": "pure-coding",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/workspace",
+  "exitCode": 0,
+  "durationMs": 428315,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 2605,
+    "outputTokens": 36178
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 96.3
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__coding-intervals/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

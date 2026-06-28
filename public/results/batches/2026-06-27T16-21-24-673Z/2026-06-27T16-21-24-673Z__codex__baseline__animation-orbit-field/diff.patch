@@ -1,0 +1,495 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..50fdd40 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,315 @@
+-import React from "react";
++import React, { useEffect, useRef, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import { Pause, Play } from "lucide-react";
+ import "./style.css";
+ 
++type PointerState = {
++  x: number;
++  y: number;
++  active: boolean;
++};
++
++type Satellite = {
++  angle: number;
++  orbit: number;
++  speed: number;
++  size: number;
++  tilt: number;
++  hue: number;
++  arc: number;
++  phase: number;
++  skew: number;
++};
++
++const satelliteCount = 96;
++const tau = Math.PI * 2;
++
++function seededRandom(seed: number) {
++  const next = Math.sin(seed * 12.9898) * 43758.5453;
++  return next - Math.floor(next);
++}
++
++function createSatellites() {
++  return Array.from({ length: satelliteCount }, (_, index): Satellite => {
++    const seed = index + 1;
++    const lane = index % 12;
++
++    return {
++      angle: seededRandom(seed) * tau,
++      orbit: 0.14 + (lane / 12) * 0.68 + seededRandom(seed + 11) * 0.035,
++      speed: 0.18 + seededRandom(seed + 23) * 0.55,
++      size: 1.1 + seededRandom(seed + 37) * 2.4,
++      tilt: 0.3 + seededRandom(seed + 41) * 0.46,
++      hue: [24, 46, 178, 218, 332][index % 5],
++      arc: 0.18 + seededRandom(seed + 53) * 0.42,
++      phase: seededRandom(seed + 67) * tau,
++      skew: -1 + seededRandom(seed + 79) * 2,
++    };
++  });
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const canvasRef = useRef<HTMLCanvasElement | null>(null);
++  const satellitesRef = useRef(createSatellites());
++  const pointerRef = useRef<PointerState>({ x: 0, y: 0, active: false });
++  const pausedRef = useRef(false);
++  const reducedMotionRef = useRef(false);
++  const phaseRef = useRef(0);
++  const lastFrameRef = useRef<number | null>(null);
++  const fieldOffsetRef = useRef({ x: 0, y: 0 });
++  const [paused, setPaused] = useState(false);
++  const [reducedMotion, setReducedMotion] = useState(false);
++
++  useEffect(() => {
++    pausedRef.current = paused;
++  }, [paused]);
++
++  useEffect(() => {
++    reducedMotionRef.current = reducedMotion;
++  }, [reducedMotion]);
++
++  useEffect(() => {
++    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
++    const updatePreference = () => setReducedMotion(media.matches);
++
++    updatePreference();
++    media.addEventListener("change", updatePreference);
++
++    return () => media.removeEventListener("change", updatePreference);
++  }, []);
++
++  useEffect(() => {
++    const canvas = canvasRef.current;
++    if (!canvas) {
++      return;
++    }
++
++    const context = canvas.getContext("2d", { alpha: false });
++    if (!context) {
++      return;
++    }
++
++    let width = 0;
++    let height = 0;
++    let animationFrame = 0;
++
++    const resizeCanvas = () => {
++      const rect = canvas.getBoundingClientRect();
++      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
++      width = Math.max(1, rect.width);
++      height = Math.max(1, rect.height);
++      canvas.width = Math.round(width * dpr);
++      canvas.height = Math.round(height * dpr);
++      context.setTransform(dpr, 0, 0, dpr, 0, 0);
++    };
++
++    const drawBackground = () => {
++      const background = context.createRadialGradient(
++        width * 0.5,
++        height * 0.46,
++        0,
++        width * 0.5,
++        height * 0.5,
++        Math.max(width, height) * 0.72,
++      );
++      background.addColorStop(0, "#211b19");
++      background.addColorStop(0.42, "#121313");
++      background.addColorStop(1, "#070706");
++
++      context.fillStyle = background;
++      context.fillRect(0, 0, width, height);
++    };
++
++    const drawOrbitGuide = (
++      centerX: number,
++      centerY: number,
++      radius: number,
++      tilt: number,
++      hue: number,
++      alpha: number,
++    ) => {
++      context.beginPath();
++      context.ellipse(centerX, centerY, radius, radius * tilt, 0, 0, tau);
++      context.strokeStyle = `hsla(${hue}, 80%, 68%, ${alpha})`;
++      context.lineWidth = 1;
++      context.stroke();
++    };
++
++    const draw = (frameTime: number) => {
++      if (!lastFrameRef.current) {
++        lastFrameRef.current = frameTime;
++      }
++
++      const seconds = Math.min(0.04, (frameTime - lastFrameRef.current) / 1000);
++      lastFrameRef.current = frameTime;
++
++      const pausedNow = pausedRef.current;
++      const motionScale = reducedMotionRef.current ? 0.08 : 1;
++
++      if (!pausedNow) {
++        phaseRef.current += seconds * motionScale;
++      }
++
++      const pointer = pointerRef.current;
++      const pointerTarget = pointer.active
++        ? { x: (pointer.x - width / 2) * 0.18, y: (pointer.y - height / 2) * 0.18 }
++        : { x: 0, y: 0 };
++      const offset = fieldOffsetRef.current;
++      const offsetEase = pausedNow ? 1 : reducedMotionRef.current ? 0.18 : 0.08;
++      offset.x += (pointerTarget.x - offset.x) * offsetEase;
++      offset.y += (pointerTarget.y - offset.y) * offsetEase;
++
++      const phase = phaseRef.current;
++      const baseRadius = Math.min(width, height) * 0.48;
++      const centerX = width * 0.5 + offset.x;
++      const centerY = height * 0.52 + offset.y * 0.72;
++      const pointerX = pointer.active ? pointer.x : centerX;
++      const pointerY = pointer.active ? pointer.y : centerY;
++      const pointerNormX = width > 0 ? (pointerX - width / 2) / width : 0;
++      const pointerNormY = height > 0 ? (pointerY - height / 2) / height : 0;
++
++      drawBackground();
++
++      context.save();
++      context.globalCompositeOperation = "lighter";
++
++      for (let lane = 0; lane < 12; lane += 1) {
++        const radius = baseRadius * (0.16 + lane * 0.068);
++        const tilt = 0.33 + lane * 0.027 + pointerNormY * 0.14;
++        const hue = [24, 46, 178, 218, 332][lane % 5];
++        drawOrbitGuide(centerX, centerY, radius, tilt, hue, 0.055 + lane * 0.004);
++      }
++
++      const sortedSatellites = satellitesRef.current
++        .map((satellite) => {
++          const angle =
++            satellite.angle +
++            phase * satellite.speed +
++            pointerNormX * satellite.skew * 1.4;
++          return { satellite, angle, depth: Math.sin(angle + satellite.phase) };
++        })
++        .sort((first, second) => first.depth - second.depth);
++
++      for (const { satellite, angle, depth } of sortedSatellites) {
++        const orbitRadius = baseRadius * satellite.orbit;
++        const tilt = Math.max(0.18, satellite.tilt + pointerNormY * 0.2);
++        const x = centerX + Math.cos(angle) * orbitRadius;
++        const y =
++          centerY +
++          Math.sin(angle + satellite.phase * 0.12) * orbitRadius * tilt +
++          Math.cos(angle * 0.7 + satellite.phase) * baseRadius * 0.014;
++        const pointerDistance = Math.hypot(pointerX - x, pointerY - y);
++        const pointerPull = pointer.active
++          ? Math.max(0, 1 - pointerDistance / Math.max(150, baseRadius * 0.62)) ** 2
++          : 0;
++        const pulledX = x + (pointerX - x) * pointerPull * 0.26;
++        const pulledY = y + (pointerY - y) * pointerPull * 0.26;
++        const depthLight = 0.56 + (depth + 1) * 0.22;
++        const radius = satellite.size * (0.72 + (depth + 1) * 0.22 + pointerPull);
++        const hue = satellite.hue + pointerPull * 38;
++
++        context.beginPath();
++        context.strokeStyle = `hsla(${hue}, 88%, 66%, ${0.09 + pointerPull * 0.22})`;
++        context.lineWidth = Math.max(1, radius * 0.56);
++        context.arc(pulledX, pulledY, radius * (5.5 + satellite.arc * 8), angle, angle + satellite.arc);
++        context.stroke();
++
++        context.beginPath();
++        context.fillStyle = `hsla(${hue}, 94%, ${58 + depthLight * 16}%, ${0.62 + pointerPull * 0.28})`;
++        context.arc(pulledX, pulledY, radius, 0, tau);
++        context.fill();
++
++        if (pointerPull > 0.08) {
++          context.beginPath();
++          context.strokeStyle = `hsla(${hue}, 96%, 72%, ${pointerPull * 0.18})`;
++          context.lineWidth = 1;
++          context.moveTo(x, y);
++          context.lineTo(pulledX, pulledY);
++          context.stroke();
++        }
++      }
++
++      if (pointer.active) {
++        const pulseRadius = Math.max(28, baseRadius * 0.08);
++        context.beginPath();
++        context.arc(pointer.x, pointer.y, pulseRadius, 0, tau);
++        context.strokeStyle = "hsla(178, 90%, 68%, 0.2)";
++        context.lineWidth = 1.5;
++        context.stroke();
++      }
++
++      context.restore();
++    };
++
++    const animate = (frameTime: number) => {
++      draw(frameTime);
++      animationFrame = window.requestAnimationFrame(animate);
++    };
++
++    const resizeObserver = new ResizeObserver(() => {
++      resizeCanvas();
++      draw(performance.now());
++    });
++
++    resizeCanvas();
++    resizeObserver.observe(canvas);
++    animationFrame = window.requestAnimationFrame(animate);
++
++    return () => {
++      window.cancelAnimationFrame(animationFrame);
++      resizeObserver.disconnect();
++    };
++  }, []);
++
++  const updatePointer = (event: React.PointerEvent<HTMLCanvasElement>) => {
++    const rect = event.currentTarget.getBoundingClientRect();
++    pointerRef.current = {
++      x: event.clientX - rect.left,
++      y: event.clientY - rect.top,
++      active: true,
++    };
++  };
++
++  const leavePointer = () => {
++    pointerRef.current = {
++      ...pointerRef.current,
++      active: false,
++    };
++  };
++
++  const togglePaused = () => setPaused((isPaused) => !isPaused);
++
++  return (
++    <main className="orbit-shell">
++      <h1 className="sr-only">Interactive canvas orbit field</h1>
++      <canvas
++        ref={canvasRef}
++        className="orbit-canvas"
++        role="img"
++        aria-label="Interactive orbit field with particles reacting to pointer movement."
++        onPointerDown={updatePointer}
++        onPointerMove={updatePointer}
++        onPointerLeave={leavePointer}
++        onPointerCancel={leavePointer}
++        onBlur={leavePointer}
++      />
++      <div className="orbit-toolbar" aria-label="Orbit controls">
++        <button
++          className="motion-toggle"
++          type="button"
++          aria-pressed={!paused}
++          aria-label={paused ? "Resume orbit animation" : "Pause orbit animation"}
++          onClick={togglePaused}
++        >
++          {paused ? <Play aria-hidden="true" size={18} /> : <Pause aria-hidden="true" size={18} />}
++          <span>{paused ? "Resume" : "Pause"}</span>
++        </button>
++        <span className="motion-state" aria-live="polite">
++          {reducedMotion ? "Reduced motion" : paused ? "Paused" : "Orbiting"}
++        </span>
++      </div>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..e898c69 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,167 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: dark;
++  font-family:
++    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
++    sans-serif;
++  font-synthesis: none;
++  text-rendering: optimizeLegibility;
++  -webkit-font-smoothing: antialiased;
++  --panel: rgba(15, 14, 12, 0.72);
++  --panel-border: rgba(255, 244, 214, 0.18);
++  --text: #fff8e9;
++  --muted: #c9c0ad;
++  --accent: #6be7d8;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body,
++#root {
++  width: 100%;
++  min-width: 320px;
++  height: 100%;
++  margin: 0;
++}
++
++body {
++  overflow: hidden;
++  background: #070706;
++}
++
++button {
++  font: inherit;
++}
++
++.orbit-shell {
++  position: relative;
++  width: 100vw;
++  height: 100dvh;
++  min-height: 420px;
++  overflow: hidden;
++  background: #070706;
++  color: var(--text);
++}
++
++.orbit-canvas {
++  position: absolute;
++  inset: 0;
++  display: block;
++  width: 100%;
++  height: 100%;
++  touch-action: none;
++  cursor: crosshair;
++}
++
++.orbit-toolbar {
++  position: fixed;
++  top: clamp(12px, 3vw, 28px);
++  left: clamp(12px, 3vw, 28px);
++  z-index: 2;
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  max-width: calc(100vw - 24px);
++  padding: 8px;
++  border: 1px solid var(--panel-border);
++  border-radius: 8px;
++  background: var(--panel);
++  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
++  backdrop-filter: blur(18px);
++}
++
++.motion-toggle {
++  display: inline-flex;
++  min-width: 116px;
++  min-height: 44px;
++  align-items: center;
++  justify-content: center;
++  gap: 9px;
++  padding: 0 15px;
++  border: 1px solid rgba(107, 231, 216, 0.46);
++  border-radius: 7px;
++  background: rgba(107, 231, 216, 0.12);
++  color: var(--text);
++  cursor: pointer;
++  transition:
++    background-color 160ms ease,
++    border-color 160ms ease,
++    transform 160ms ease;
++}
++
++.motion-toggle:hover {
++  border-color: rgba(255, 209, 111, 0.68);
++  background: rgba(255, 209, 111, 0.14);
++}
++
++.motion-toggle:active {
++  transform: translateY(1px);
++}
++
++.motion-toggle:focus-visible {
++  outline: 3px solid rgba(107, 231, 216, 0.6);
++  outline-offset: 3px;
++}
++
++.motion-toggle span {
++  line-height: 1;
++  white-space: nowrap;
++}
++
++.motion-state {
++  min-width: 96px;
++  padding: 0 8px;
++  color: var(--muted);
++  font-size: 0.875rem;
++  line-height: 1.2;
++  white-space: nowrap;
++}
++
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++
++@media (max-width: 520px) {
++  .orbit-shell {
++    min-height: 360px;
++  }
++
++  .orbit-toolbar {
++    right: 12px;
++    align-items: stretch;
++    justify-content: space-between;
++  }
++
++  .motion-toggle {
++    min-width: 108px;
++  }
++
++  .motion-state {
++    display: flex;
++    min-width: 0;
++    align-items: center;
++    justify-content: flex-end;
++    text-align: right;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    transition-duration: 1ms !important;
++    animation-duration: 1ms !important;
++    animation-iteration-count: 1 !important;
++  }
++}

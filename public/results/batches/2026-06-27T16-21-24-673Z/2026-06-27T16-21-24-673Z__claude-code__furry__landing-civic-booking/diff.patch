@@ -1,0 +1,647 @@
+diff --git a/index.html b/index.html
+index f6dacfc..bc7e152 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Civic Slot helps you find and book appointments for local government services. Choose a service, pick a time, and get a clear confirmation." /><meta name="color-scheme" content="light" /><title>Civic Slot | Book a local government appointment</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..cb65a83 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,5 @@
+-import React from "react";
+ import { createRoot } from "react-dom/client";
++import App from "./App";
+ import "./style.css";
+ 
+-function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
+-}
+-
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..31fcb8e 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,619 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --ink: #16242f;
++  --ink-soft: #3d4a54;
++  --primary: #0b3d62;
++  --primary-strong: #082c47;
++  --primary-tint: #e7eff5;
++  --page: #ffffff;
++  --muted: #eef2f6;
++  --card: #ffffff;
++  --field-border: #55606b;
++  --hairline: #cdd6de;
++  --focus: #ffdd00;
++  --focus-ink: #0b0c0c;
++  --error-ink: #8a0c18;
++  --error-bg: #fdecee;
++  --success-ink: #14401f;
++  --success-bg: #e6f4ea;
++  --radius: 10px;
++  --shadow: 0 1px 2px rgba(22, 36, 47, 0.08), 0 8px 24px rgba(22, 36, 47, 0.06);
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
++  font-size: 1.0625rem;
++  line-height: 1.6;
++  color: var(--ink);
++  background: var(--page);
++}
++
++h1,
++h2,
++h3 {
++  line-height: 1.25;
++  color: var(--ink);
++}
++
++p {
++  margin: 0 0 1rem;
++}
++
++a {
++  color: var(--primary);
++  text-underline-offset: 0.15em;
++}
++
++a:hover {
++  color: var(--primary-strong);
++}
++
++.container {
++  width: min(100% - 2rem, 1120px);
++  margin-inline: auto;
++}
++
++:where(section)[id] {
++  scroll-margin-top: 1.5rem;
++}
++
++/* Focus: a high-visibility ring that reads on light and dark backgrounds. */
++:focus-visible {
++  outline: 3px solid var(--focus);
++  outline-offset: 2px;
++}
++
++button:focus-visible,
++input:focus-visible,
++select:focus-visible,
++textarea:focus-visible,
++[tabindex]:focus-visible {
++  outline: 3px solid var(--focus);
++  outline-offset: 0;
++  box-shadow: inset 0 0 0 2px var(--focus-ink);
++}
++
++a:focus-visible {
++  box-shadow: 0 0 0 3px var(--focus), 0 5px 0 0 var(--focus-ink);
++  background: var(--focus);
++  color: var(--focus-ink);
++  text-decoration: none;
++  outline-color: transparent;
++}
++
++.skip-link {
++  position: absolute;
++  left: 0.5rem;
++  top: -4rem;
++  z-index: 100;
++  padding: 0.6rem 1rem;
++  background: var(--focus-ink);
++  color: #ffffff;
++  border-radius: var(--radius);
++  transition: top 0.15s ease;
++}
++
++.skip-link:focus {
++  top: 0.5rem;
++  color: var(--focus-ink);
++}
++
++/* Header */
++.site-header {
++  border-bottom: 2px solid var(--primary);
++  background: var(--page);
++}
++
++.site-header__inner {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: space-between;
++  gap: 0.75rem 1.5rem;
++  padding-block: 0.9rem;
++}
++
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.5rem;
++  font-size: 1.25rem;
++  font-weight: 700;
++  color: var(--primary);
++  text-decoration: none;
++}
++
++.brand__mark {
++  width: 28px;
++  height: 28px;
++}
++
++.nav {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.25rem 0.5rem;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.nav a {
++  display: inline-block;
++  padding: 0.45rem 0.7rem;
++  border-radius: var(--radius);
++  color: var(--ink);
++  text-decoration: none;
++  font-weight: 600;
++}
++
++.nav a:hover {
++  background: var(--primary-tint);
++  color: var(--primary-strong);
++}
++
++/* Hero */
++.hero {
++  background: linear-gradient(180deg, var(--primary-tint), var(--page));
++  border-bottom: 1px solid var(--hairline);
++  padding-block: clamp(2rem, 5vw, 4rem);
++}
++
++.hero__inner {
++  display: grid;
++  gap: 2rem;
++  grid-template-columns: 1fr;
++  align-items: start;
++}
++
++.eyebrow {
++  margin: 0 0 0.5rem;
++  font-weight: 700;
++  font-size: 0.95rem;
++  letter-spacing: 0.02em;
++  text-transform: uppercase;
++  color: var(--primary);
++}
++
++h1 {
++  margin: 0 0 1rem;
++  font-size: clamp(2rem, 4.5vw, 2.85rem);
++}
++
++.lede {
++  font-size: 1.15rem;
++  max-width: 60ch;
++}
++
++.hero__points {
++  list-style: none;
++  margin: 1.25rem 0 0;
++  padding: 0;
++  display: grid;
++  gap: 0.5rem;
++}
++
++.hero__points li {
++  display: flex;
++  align-items: center;
++  gap: 0.5rem;
++  font-weight: 600;
++}
++
++.hero__points svg {
++  width: 22px;
++  height: 22px;
++  color: var(--primary);
++  flex-shrink: 0;
++}
++
++/* Cards and sections */
++.section {
++  padding-block: clamp(2.5rem, 5vw, 4rem);
++}
++
++.section--muted {
++  background: var(--muted);
++  border-block: 1px solid var(--hairline);
++}
++
++.section h2 {
++  font-size: clamp(1.5rem, 3vw, 2rem);
++  margin: 0 0 0.5rem;
++}
++
++.section__lead {
++  max-width: 65ch;
++  color: var(--ink-soft);
++  margin-bottom: 1.75rem;
++}
++
++.card {
++  background: var(--card);
++  border: 1px solid var(--hairline);
++  border-radius: var(--radius);
++  padding: 1.5rem;
++  box-shadow: var(--shadow);
++}
++
++.grid {
++  display: grid;
++  gap: 1rem;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.cards {
++  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
++}
++
++.category h3 {
++  margin: 0.75rem 0 0.4rem;
++  font-size: 1.2rem;
++}
++
++.category p {
++  margin: 0;
++  color: var(--ink-soft);
++}
++
++.category__icon {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 48px;
++  height: 48px;
++  border-radius: 12px;
++  background: var(--primary-tint);
++  color: var(--primary);
++}
++
++.category__icon svg {
++  width: 26px;
++  height: 26px;
++}
++
++/* Steps */
++.steps {
++  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
++}
++
++.step h3 {
++  margin: 0 0 0.4rem;
++  font-size: 1.15rem;
++  color: var(--primary);
++}
++
++.step p {
++  margin: 0;
++  color: var(--ink-soft);
++}
++
++.callout {
++  display: flex;
++  gap: 1rem;
++  align-items: flex-start;
++  margin-top: 1.5rem;
++  padding: 1.25rem 1.5rem;
++  background: var(--card);
++  border: 1px solid var(--hairline);
++  border-left: 6px solid var(--primary);
++  border-radius: var(--radius);
++}
++
++.callout__icon {
++  width: 28px;
++  height: 28px;
++  color: var(--primary);
++  flex-shrink: 0;
++  margin-top: 0.2rem;
++}
++
++.callout h3 {
++  margin: 0 0 0.35rem;
++  font-size: 1.15rem;
++}
++
++.callout p {
++  margin: 0;
++  color: var(--ink-soft);
++}
++
++/* Accessibility commitments */
++.accessibility__intro {
++  max-width: 70ch;
++}
++
++.accessibility__icon {
++  width: 40px;
++  height: 40px;
++  color: var(--primary);
++}
++
++.commitments {
++  list-style: none;
++  margin: 1.5rem 0;
++  padding: 0;
++  display: grid;
++  gap: 0.85rem;
++  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
++}
++
++.commitments li {
++  display: flex;
++  gap: 0.65rem;
++  align-items: flex-start;
++}
++
++.commitments svg {
++  width: 24px;
++  height: 24px;
++  color: var(--primary);
++  flex-shrink: 0;
++  margin-top: 0.15rem;
++}
++
++.accessibility__note {
++  margin: 0;
++  font-weight: 600;
++}
++
++/* Support */
++.support {
++  display: grid;
++  gap: 2rem;
++}
++
++.contact-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 1.1rem;
++}
++
++.contact-list li {
++  display: flex;
++  gap: 0.75rem;
++  align-items: flex-start;
++}
++
++.contact-list svg {
++  width: 24px;
++  height: 24px;
++  color: var(--primary);
++  flex-shrink: 0;
++  margin-top: 0.2rem;
++}
++
++.contact-list > li > div {
++  display: flex;
++  flex-direction: column;
++}
++
++.contact-list__label {
++  font-weight: 700;
++}
++
++.contact-list__meta {
++  color: var(--ink-soft);
++  font-size: 0.95rem;
++}
++
++/* Forms */
++.card__title {
++  margin: 0 0 0.25rem;
++  font-size: 1.4rem;
++}
++
++.card__hint {
++  margin: 0 0 1.25rem;
++  color: var(--ink-soft);
++}
++
++.field {
++  margin-bottom: 1.1rem;
++}
++
++.field label {
++  display: block;
++  font-weight: 700;
++  margin-bottom: 0.2rem;
++}
++
++.field__hint {
++  margin: 0 0 0.4rem;
++  font-size: 0.95rem;
++  color: var(--ink-soft);
++}
++
++.field input,
++.field select,
++.field textarea {
++  width: 100%;
++  font: inherit;
++  color: var(--ink);
++  padding: 0.6rem 0.7rem;
++  border: 2px solid var(--field-border);
++  border-radius: 8px;
++  background: var(--page);
++}
++
++.field textarea {
++  resize: vertical;
++  min-height: 6rem;
++}
++
++.field input[aria-invalid="true"],
++.field select[aria-invalid="true"],
++.field textarea[aria-invalid="true"] {
++  border-color: var(--error-ink);
++  box-shadow: 0 0 0 1px var(--error-ink);
++}
++
++.button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 0.5rem;
++  min-height: 48px;
++  padding: 0.7rem 1.4rem;
++  font: inherit;
++  font-weight: 700;
++  border: 2px solid transparent;
++  border-radius: 8px;
++  cursor: pointer;
++}
++
++.button svg {
++  width: 20px;
++  height: 20px;
++}
++
++.button--primary {
++  background: var(--primary);
++  color: #ffffff;
++}
++
++.button--primary:hover {
++  background: var(--primary-strong);
++}
++
++.booking,
++.support-form {
++  align-self: start;
++}
++
++/* Form status messages */
++.form-status:empty {
++  display: none;
++}
++
++.form-status {
++  margin-bottom: 1.1rem;
++}
++
++.form-status__errors {
++  padding: 0.85rem 1rem;
++  background: var(--error-bg);
++  border-left: 6px solid var(--error-ink);
++  border-radius: 8px;
++  color: var(--error-ink);
++}
++
++.form-status__errors ul {
++  margin: 0.4rem 0 0;
++  padding-left: 1.2rem;
++}
++
++.form-status__title {
++  display: flex;
++  align-items: center;
++  gap: 0.4rem;
++  margin: 0;
++  font-weight: 700;
++}
++
++.form-status__title svg {
++  width: 20px;
++  height: 20px;
++}
++
++.form-status__ok {
++  display: flex;
++  align-items: flex-start;
++  gap: 0.5rem;
++  margin: 0;
++  padding: 0.85rem 1rem;
++  background: var(--success-bg);
++  border-left: 6px solid var(--success-ink);
++  border-radius: 8px;
++  color: var(--success-ink);
++  font-weight: 600;
++}
++
++.form-status__ok svg {
++  width: 20px;
++  height: 20px;
++  flex-shrink: 0;
++  margin-top: 0.2rem;
++}
++
++/* Footer */
++.site-footer {
++  background: var(--ink);
++  color: #eef2f6;
++  padding-block: 2.5rem;
++}
++
++.site-footer a {
++  color: #cfe0ee;
++}
++
++.site-footer a:hover {
++  color: #ffffff;
++}
++
++.site-footer__inner {
++  display: grid;
++  gap: 0.75rem;
++  max-width: 70ch;
++}
++
++.site-footer__brand {
++  display: flex;
++  align-items: center;
++  gap: 0.5rem;
++  margin: 0;
++  font-size: 1.2rem;
++  font-weight: 700;
++  color: #ffffff;
++}
++
++.site-footer__brand svg {
++  width: 24px;
++  height: 24px;
++}
++
++.site-footer p {
++  margin: 0;
++}
++
++.footer-nav {
++  list-style: none;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 0.5rem 1.25rem;
++  margin: 0.5rem 0 0;
++  padding: 0;
++}
++
++/* Wider screens: two-column hero and support */
++@media (min-width: 820px) {
++  .hero__inner {
++    grid-template-columns: 1.1fr 0.9fr;
++  }
++
++  .support {
++    grid-template-columns: 1fr 1fr;
++    align-items: start;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  html {
++    scroll-behavior: auto;
++  }
++
++  .skip-link {
++    transition: none;
++  }
++}

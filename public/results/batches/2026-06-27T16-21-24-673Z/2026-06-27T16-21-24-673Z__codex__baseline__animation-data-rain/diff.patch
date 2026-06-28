@@ -1,0 +1,1417 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..5591fae 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,637 @@
+-import React from "react";
++import React, {
++  useCallback,
++  useEffect,
++  useLayoutEffect,
++  useMemo,
++  useRef,
++  useState,
++} from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  Activity,
++  AlertTriangle,
++  BarChart3,
++  Cpu,
++  Database,
++  Gauge,
++  Pause,
++  Play,
++  RotateCcw,
++  Server,
++  ShieldAlert,
++} from "lucide-react";
+ import "./style.css";
+ 
++type MetricKind = "latency" | "cpu" | "throughput" | "errors" | "queue";
++type MotionState = "falling" | "settled";
++
++type MetricDefinition = {
++  kind: MetricKind;
++  label: string;
++  unit: string;
++  symbol: string;
++  shape: string;
++  min: number;
++  max: number;
++};
++
++type MetricBlock = {
++  id: number;
++  kind: MetricKind;
++  label: string;
++  unit: string;
++  symbol: string;
++  shape: string;
++  value: number;
++  displayValue: string;
++  lane: number;
++  height: number;
++  y: number;
++  velocity: number;
++  state: MotionState;
++  createdAt: number;
++};
++
++type FeedEvent = {
++  id: number;
++  kind: MetricKind;
++  label: string;
++  symbol: string;
++  value: string;
++  tone: "normal" | "warn" | "hot";
++};
++
++type StageSize = {
++  width: number;
++  height: number;
++};
++
++const METRICS: MetricDefinition[] = [
++  {
++    kind: "latency",
++    label: "API latency",
++    unit: "ms",
++    symbol: "L",
++    shape: "stripe",
++    min: 60,
++    max: 520,
++  },
++  {
++    kind: "cpu",
++    label: "CPU load",
++    unit: "%",
++    symbol: "C",
++    shape: "dots",
++    min: 18,
++    max: 96,
++  },
++  {
++    kind: "throughput",
++    label: "Requests",
++    unit: "/s",
++    symbol: "R",
++    shape: "grid",
++    min: 900,
++    max: 6400,
++  },
++  {
++    kind: "errors",
++    label: "Error rate",
++    unit: "%",
++    symbol: "E",
++    shape: "slash",
++    min: 0,
++    max: 9,
++  },
++  {
++    kind: "queue",
++    label: "Queue depth",
++    unit: "jobs",
++    symbol: "Q",
++    shape: "bands",
++    min: 4,
++    max: 84,
++  },
++];
++
++const GAP = 4;
++const FLOOR_PAD = 22;
++const TOP_SAFE_PAD = 92;
++const MIN_BLOCK_HEIGHT = 44;
++const MAX_BLOCK_HEIGHT = 116;
++const FEED_LIMIT = 9;
++const INITIAL_STAGE: StageSize = { width: 900, height: 520 };
++
++const metricByKind = new Map(METRICS.map((metric) => [metric.kind, metric]));
++
++function clamp(value: number, min: number, max: number) {
++  return Math.min(max, Math.max(min, value));
++}
++
++function randomBetween(min: number, max: number) {
++  return min + Math.random() * (max - min);
++}
++
++function weightedValue(metric: MetricDefinition) {
++  const normal = randomBetween(metric.min, metric.max);
++  const spike = randomBetween(metric.max * 0.72, metric.max);
++  return Math.random() > 0.78 ? spike : normal;
++}
++
++function formatValue(metric: MetricDefinition, value: number) {
++  if (metric.kind === "throughput") {
++    return `${Math.round(value).toLocaleString()}${metric.unit}`;
++  }
++
++  if (metric.kind === "errors") {
++    return `${value.toFixed(1)}${metric.unit}`;
++  }
++
++  return `${Math.round(value)}${metric.unit}`;
++}
++
++function blockHeight(metric: MetricDefinition, value: number) {
++  const normalized = (value - metric.min) / (metric.max - metric.min);
++  return Math.round(
++    MIN_BLOCK_HEIGHT + clamp(normalized, 0, 1) * (MAX_BLOCK_HEIGHT - MIN_BLOCK_HEIGHT),
++  );
++}
++
++function toneFor(metric: MetricDefinition, value: number): FeedEvent["tone"] {
++  const normalized = (value - metric.min) / (metric.max - metric.min);
++
++  if (metric.kind === "errors" && normalized > 0.5) {
++    return "hot";
++  }
++
++  if (normalized > 0.82) {
++    return "hot";
++  }
++
++  if (normalized > 0.64) {
++    return "warn";
++  }
++
++  return "normal";
++}
++
++function totalLaneHeight(blocks: MetricBlock[], lane: number) {
++  const laneBlocks = blocks.filter((block) => block.lane === lane);
++
++  if (laneBlocks.length === 0) {
++    return 0;
++  }
++
++  return laneBlocks.reduce((total, block) => total + block.height, 0) + (laneBlocks.length - 1) * GAP;
++}
++
++function compactLane(blocks: MetricBlock[], lane: number, stageHeight: number) {
++  let barrier = stageHeight - FLOOR_PAD;
++
++  return blocks.map((block) => {
++    if (block.lane !== lane || block.state !== "settled") {
++      return block;
++    }
++
++    const y = barrier - block.height;
++    barrier = y - GAP;
++
++    return {
++      ...block,
++      y,
++      velocity: 0,
++    };
++  });
++}
++
++function pruneLane(blocks: MetricBlock[], lane: number, stageHeight: number) {
++  const maxHeight = stageHeight - TOP_SAFE_PAD;
++  let next = blocks;
++
++  while (totalLaneHeight(next, lane) > maxHeight) {
++    const oldestSettled = next
++      .filter((block) => block.lane === lane && block.state === "settled")
++      .sort((a, b) => a.createdAt - b.createdAt)[0];
++
++    if (!oldestSettled) {
++      break;
++    }
++
++    next = next.filter((block) => block.id !== oldestSettled.id);
++  }
++
++  return compactLane(next, lane, stageHeight);
++}
++
++function stepBlocks(blocks: MetricBlock[], dt: number, stageHeight: number) {
++  const moved = blocks.map((block) => {
++    if (block.state !== "falling") {
++      return block;
++    }
++
++    const velocity = Math.min(block.velocity + 1150 * dt, 820);
++    return {
++      ...block,
++      velocity,
++      y: block.y + velocity * dt,
++    };
++  });
++
++  const byId = new Map<number, MetricBlock>(moved.map((block) => [block.id, block]));
++
++  for (const metric of METRICS) {
++    const laneBlocks = moved
++      .filter((block) => block.lane === METRICS.indexOf(metric))
++      .sort((a, b) => b.y + b.height - (a.y + a.height));
++    let barrier = stageHeight - FLOOR_PAD;
++
++    for (const block of laneBlocks) {
++      const updated = byId.get(block.id);
++
++      if (!updated) {
++        continue;
++      }
++
++      if (updated.y + updated.height >= barrier) {
++        const y = barrier - updated.height;
++        byId.set(updated.id, {
++          ...updated,
++          y,
++          velocity: 0,
++          state: "settled",
++        });
++        barrier = y - GAP;
++      } else {
++        barrier = updated.y - GAP;
++      }
++    }
++  }
++
++  let next = Array.from(byId.values()).sort((a, b) => a.createdAt - b.createdAt);
++
++  for (const metric of METRICS) {
++    next = pruneLane(next, METRICS.indexOf(metric), stageHeight);
++  }
++
++  return next;
++}
++
++function useStageSize(stageRef: React.RefObject<HTMLDivElement | null>) {
++  const [stageSize, setStageSize] = useState<StageSize>(INITIAL_STAGE);
++
++  useLayoutEffect(() => {
++    if (!stageRef.current) {
++      return undefined;
++    }
++
++    const observer = new ResizeObserver(([entry]) => {
++      if (!entry) {
++        return;
++      }
++
++      setStageSize({
++        width: Math.round(entry.contentRect.width),
++        height: Math.round(entry.contentRect.height),
++      });
++    });
++
++    observer.observe(stageRef.current);
++
++    return () => observer.disconnect();
++  }, [stageRef]);
++
++  return stageSize;
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const [paused, setPaused] = useState(false);
++  const [reducedMotion, setReducedMotion] = useState(() =>
++    window.matchMedia("(prefers-reduced-motion: reduce)").matches,
++  );
++  const [blocks, setBlocks] = useState<MetricBlock[]>([]);
++  const [feed, setFeed] = useState<FeedEvent[]>([]);
++  const [eventCount, setEventCount] = useState(0);
++  const [settledCount, setSettledCount] = useState(0);
++  const nextId = useRef(1);
++  const blocksRef = useRef<MetricBlock[]>([]);
++  const stageRef = useRef<HTMLDivElement>(null);
++  const stageSize = useStageSize(stageRef);
++  const stageSizeRef = useRef(stageSize);
++
++  const laneWidth = stageSize.width / METRICS.length;
++  const barWidth = clamp(laneWidth * 0.68, 58, 112);
++
++  useEffect(() => {
++    stageSizeRef.current = stageSize;
++  }, [stageSize]);
++
++  useEffect(() => {
++    blocksRef.current = blocks;
++    setSettledCount(blocks.filter((block) => block.state === "settled").length);
++  }, [blocks]);
++
++  const commitBlocks = useCallback((updater: (blocks: MetricBlock[]) => MetricBlock[]) => {
++    setBlocks((current) => {
++      const next = updater(current);
++      blocksRef.current = next;
++      return next;
++    });
++  }, []);
++
++  const addMetricEvent = useCallback(
++    (forceKind?: MetricKind) => {
++      const metric =
++        (forceKind ? metricByKind.get(forceKind) : undefined) ??
++        METRICS[Math.floor(Math.random() * METRICS.length)];
++
++      const lane = METRICS.indexOf(metric);
++      const value = weightedValue(metric);
++      const displayValue = formatValue(metric, value);
++      const id = nextId.current++;
++      const height = blockHeight(metric, value);
++      const event: FeedEvent = {
++        id,
++        kind: metric.kind,
++        label: metric.label,
++        symbol: metric.symbol,
++        value: displayValue,
++        tone: toneFor(metric, value),
++      };
++      const newBlock: MetricBlock = {
++        id,
++        kind: metric.kind,
++        label: metric.label,
++        unit: metric.unit,
++        symbol: metric.symbol,
++        shape: metric.shape,
++        value,
++        displayValue,
++        lane,
++        height,
++        y: reducedMotion ? stageSizeRef.current.height - FLOOR_PAD - height : -height - 18,
++        velocity: reducedMotion ? 0 : randomBetween(110, 180),
++        state: reducedMotion ? "settled" : "falling",
++        createdAt: performance.now() + id,
++      };
++
++      setEventCount((count) => count + 1);
++      setFeed((current) => [event, ...current].slice(0, FEED_LIMIT));
++      commitBlocks((current) => {
++        const inserted = pruneLane([...current, newBlock], lane, stageSizeRef.current.height);
++        return reducedMotion ? compactLane(inserted, lane, stageSizeRef.current.height) : inserted;
++      });
++    },
++    [commitBlocks, reducedMotion],
++  );
++
++  useEffect(() => {
++    if (paused) {
++      return undefined;
++    }
++
++    const interval = window.setInterval(() => addMetricEvent(), reducedMotion ? 1200 : 760);
++    const seed = window.setTimeout(() => {
++      if (blocksRef.current.length === 0) {
++        METRICS.slice(0, 3).forEach((metric) => addMetricEvent(metric.kind));
++      }
++    }, 220);
++
++    return () => {
++      window.clearInterval(interval);
++      window.clearTimeout(seed);
++    };
++  }, [addMetricEvent, paused, reducedMotion]);
++
++  useEffect(() => {
++    if (paused || reducedMotion) {
++      return undefined;
++    }
++
++    let frame = 0;
++    let lastTime = performance.now();
++
++    const tick = (time: number) => {
++      const dt = clamp((time - lastTime) / 1000, 0.001, 0.036);
++      lastTime = time;
++
++      commitBlocks((current) => stepBlocks(current, dt, stageSizeRef.current.height));
++      frame = window.requestAnimationFrame(tick);
++    };
++
++    frame = window.requestAnimationFrame(tick);
++
++    return () => window.cancelAnimationFrame(frame);
++  }, [commitBlocks, paused, reducedMotion]);
++
++  useEffect(() => {
++    if (reducedMotion) {
++      commitBlocks((current) =>
++        METRICS.reduce(
++          (next, metric, lane) => compactLane(
++            next.map((block) =>
++              block.lane === lane
++                ? {
++                    ...block,
++                    state: "settled",
++                    velocity: 0,
++                  }
++                : block,
++            ),
++            lane,
++            stageSizeRef.current.height,
++          ),
++          current,
++        ),
++      );
++    }
++  }, [commitBlocks, reducedMotion]);
++
++  const laneTotals = useMemo(
++    () =>
++      METRICS.map((metric, lane) => ({
++        ...metric,
++        total: blocks.filter((block) => block.lane === lane).length,
++      })),
++    [blocks],
++  );
++
++  const resetStacks = () => {
++    setBlocks([]);
++    blocksRef.current = [];
++    setFeed([]);
++    setSettledCount(0);
++    setEventCount(0);
++  };
++
++  return (
++    <main className="app-shell">
++      <section className="control-band" aria-label="Metric rain controls">
++        <div className="brand-lockup">
++          <span className="brand-mark" aria-hidden="true">
++            <BarChart3 size={24} />
++          </span>
++          <div>
++            <p className="eyebrow">Live metrics</p>
++            <h1>Metric Rain</h1>
++          </div>
++        </div>
++
++        <div className="status-strip" aria-live="polite">
++          <span className={paused ? "status-dot paused" : "status-dot"} aria-hidden="true" />
++          <span>{paused ? "Paused" : reducedMotion ? "Reduced motion" : "Running"}</span>
++          <span>{eventCount} events</span>
++          <span>{settledCount} stacked</span>
++        </div>
++
++        <div className="controls">
++          <button className="primary-button" type="button" onClick={() => setPaused((value) => !value)}>
++            {paused ? <Play size={18} /> : <Pause size={18} />}
++            <span>{paused ? "Resume" : "Pause"}</span>
++          </button>
++
++          <label className="switch-control">
++            <input
++              checked={reducedMotion}
++              type="checkbox"
++              onChange={(event) => setReducedMotion(event.currentTarget.checked)}
++            />
++            <span className="switch-track" aria-hidden="true" />
++            <span>Reduced motion</span>
++          </label>
++
++          <button className="icon-button" type="button" onClick={() => addMetricEvent()}>
++            <Activity size={18} />
++            <span>Inject</span>
++          </button>
++
++          <button className="icon-button" type="button" onClick={resetStacks}>
++            <RotateCcw size={18} />
++            <span>Clear</span>
++          </button>
++        </div>
++      </section>
++
++      <section className="dashboard-grid">
++        <div className="rain-panel">
++          <div className="stage-header">
++            <div>
++              <p className="eyebrow">Collision lanes</p>
++              <h2>Incoming events fall into metric stacks</h2>
++            </div>
++            <div className="legend" aria-label="Metric legend">
++              {METRICS.map((metric) => (
++                <span className={`legend-item ${metric.kind}`} key={metric.kind}>
++                  <span className={`legend-swatch pattern-${metric.shape}`} aria-hidden="true">
++                    {metric.symbol}
++                  </span>
++                  {metric.label}
++                </span>
++              ))}
++            </div>
++          </div>
++
++          <div
++            className={reducedMotion ? "rain-stage reduced" : "rain-stage"}
++            ref={stageRef}
++            aria-label="Animated metric bars stacking by lane"
++          >
++            {METRICS.map((metric, lane) => (
++              <div
++                className="lane-guide"
++                key={metric.kind}
++                style={{
++                  left: `${(lane / METRICS.length) * 100}%`,
++                  width: `${100 / METRICS.length}%`,
++                }}
++              >
++                <span className={`lane-badge ${metric.kind}`}>{metric.symbol}</span>
++                <span>{metric.label}</span>
++              </div>
++            ))}
++
++            <div className="floor-line" />
++
++            {blocks.map((block) => {
++              const x = block.lane * laneWidth + (laneWidth - barWidth) / 2;
++
++              return (
++                <div
++                  aria-label={`${block.label} ${block.displayValue} ${block.state}`}
++                  className={`metric-bar ${block.kind} ${block.state} pattern-${block.shape}`}
++                  key={block.id}
++                  style={{
++                    height: `${block.height}px`,
++                    transform: `translate3d(${x}px, ${block.y}px, 0)`,
++                    width: `${barWidth}px`,
++                  }}
++                >
++                  <span className="bar-symbol" aria-hidden="true">
++                    {block.symbol}
++                  </span>
++                  <span className="bar-label">{block.label}</span>
++                  <strong>{block.displayValue}</strong>
++                </div>
++              );
++            })}
++          </div>
++        </div>
++
++        <aside className="feed-panel" aria-label="Simulated metric event feed">
++          <div className="feed-heading">
++            <div>
++              <p className="eyebrow">Simulated feed</p>
++              <h2>Recent events</h2>
++            </div>
++            <Server size={21} />
++          </div>
++
++          <div className="metric-summary">
++            <div>
++              <Gauge size={18} />
++              <span>{blocks.length} visible bars</span>
++            </div>
++            <div>
++              <Database size={18} />
++              <span>{METRICS.length} metric lanes</span>
++            </div>
++          </div>
++
++          <ul className="feed-list">
++            {feed.length === 0 ? (
++              <li className="empty-feed">Waiting for events</li>
++            ) : (
++              feed.map((event) => (
++                <li className={`feed-item ${event.kind} ${event.tone}`} key={event.id}>
++                  <span className="feed-symbol" aria-hidden="true">
++                    {event.symbol}
++                  </span>
++                  <span className="feed-label">{event.label}</span>
++                  <strong>{event.value}</strong>
++                  {event.tone === "hot" ? (
++                    <ShieldAlert size={16} aria-label="high value" />
++                  ) : event.tone === "warn" ? (
++                    <AlertTriangle size={16} aria-label="warning value" />
++                  ) : (
++                    <Cpu size={16} aria-label="normal value" />
++                  )}
++                </li>
++              ))
++            )}
++          </ul>
++
++          <div className="lane-counts">
++            {laneTotals.map((lane) => (
++              <div className={`lane-count ${lane.kind}`} key={lane.kind}>
++                <span>{lane.symbol}</span>
++                <strong>{lane.total}</strong>
++                <small>{lane.unit}</small>
++              </div>
++            ))}
++          </div>
++        </aside>
++      </section>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..4354850 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,767 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color: #20242b;
++  background: #f5f2eb;
++  font-family:
++    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
++  font-synthesis: none;
++  text-rendering: optimizeLegibility;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  min-height: 100vh;
++  background:
++    linear-gradient(90deg, rgba(47, 113, 98, 0.08) 1px, transparent 1px),
++    linear-gradient(0deg, rgba(47, 113, 98, 0.08) 1px, transparent 1px),
++    #f5f2eb;
++  background-size: 36px 36px;
++}
++
++button,
++input {
++  font: inherit;
++}
++
++button {
++  cursor: pointer;
++}
++
++.app-shell {
++  width: min(1420px, calc(100vw - 32px));
++  min-height: 100vh;
++  margin: 0 auto;
++  padding: 24px 0 32px;
++}
++
++.control-band,
++.rain-panel,
++.feed-panel {
++  border: 1px solid #d7d1c5;
++  background: rgba(255, 254, 250, 0.92);
++  box-shadow: 0 18px 48px rgba(57, 50, 43, 0.12);
++}
++
++.control-band {
++  display: grid;
++  grid-template-columns: minmax(230px, 1fr) auto minmax(390px, auto);
++  align-items: center;
++  gap: 18px;
++  min-height: 92px;
++  padding: 18px;
++  border-radius: 8px;
++}
++
++.brand-lockup {
++  display: flex;
++  align-items: center;
++  gap: 14px;
++}
++
++.brand-mark {
++  display: grid;
++  place-items: center;
++  width: 52px;
++  height: 52px;
++  border: 2px solid #1d5f56;
++  border-radius: 8px;
++  color: #ffffff;
++  background: #1d5f56;
++}
++
++.eyebrow {
++  margin: 0 0 3px;
++  color: #6c6256;
++  font-size: 0.74rem;
++  font-weight: 800;
++  text-transform: uppercase;
++}
++
++h1,
++h2 {
++  margin: 0;
++  color: #1f2526;
++  line-height: 1.05;
++}
++
++h1 {
++  font-size: clamp(1.65rem, 2rem, 2.25rem);
++}
++
++h2 {
++  font-size: 1.08rem;
++}
++
++.status-strip {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: center;
++  gap: 8px;
++  color: #39342d;
++  font-size: 0.9rem;
++  font-weight: 750;
++}
++
++.status-strip span:not(.status-dot) {
++  min-height: 31px;
++  padding: 7px 10px;
++  border: 1px solid #d7d1c5;
++  border-radius: 999px;
++  background: #fbfaf6;
++}
++
++.status-dot {
++  width: 12px;
++  height: 12px;
++  border-radius: 50%;
++  background: #2f9e6f;
++  box-shadow: 0 0 0 5px rgba(47, 158, 111, 0.13);
++}
++
++.status-dot.paused {
++  background: #a9513c;
++  box-shadow: 0 0 0 5px rgba(169, 81, 60, 0.13);
++}
++
++.controls {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: flex-end;
++  gap: 10px;
++}
++
++.primary-button,
++.icon-button,
++.switch-control {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 8px;
++  min-height: 42px;
++  border-radius: 8px;
++  font-size: 0.9rem;
++  font-weight: 800;
++}
++
++.primary-button,
++.icon-button {
++  border: 1px solid #254845;
++  color: #ffffff;
++  background: #254845;
++  transition:
++    transform 140ms ease,
++    background-color 140ms ease,
++    border-color 140ms ease;
++}
++
++.primary-button {
++  min-width: 112px;
++  padding: 0 15px;
++}
++
++.icon-button {
++  min-width: 92px;
++  padding: 0 12px;
++  color: #2b2b28;
++  border-color: #d2c8ba;
++  background: #fbfaf6;
++}
++
++.primary-button:hover,
++.icon-button:hover {
++  transform: translateY(-1px);
++}
++
++.primary-button:focus-visible,
++.icon-button:focus-visible,
++.switch-control:focus-within {
++  outline: 3px solid #b9682f;
++  outline-offset: 3px;
++}
++
++.switch-control {
++  position: relative;
++  min-width: 176px;
++  padding: 0 12px;
++  color: #2c332f;
++  border: 1px solid #d2c8ba;
++  background: #fbfaf6;
++}
++
++.switch-control input {
++  position: absolute;
++  inline-size: 1px;
++  block-size: 1px;
++  opacity: 0;
++}
++
++.switch-track {
++  position: relative;
++  width: 36px;
++  height: 20px;
++  flex: 0 0 auto;
++  border: 1px solid #81766a;
++  border-radius: 999px;
++  background: #d8d2c7;
++}
++
++.switch-track::after {
++  position: absolute;
++  top: 3px;
++  left: 3px;
++  width: 12px;
++  height: 12px;
++  border-radius: 50%;
++  background: #ffffff;
++  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
++  content: "";
++  transition: transform 160ms ease;
++}
++
++.switch-control input:checked + .switch-track {
++  border-color: #1d5f56;
++  background: #1d5f56;
++}
++
++.switch-control input:checked + .switch-track::after {
++  transform: translateX(16px);
++}
++
++.dashboard-grid {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) 350px;
++  gap: 18px;
++  margin-top: 18px;
++  align-items: stretch;
++}
++
++.rain-panel,
++.feed-panel {
++  border-radius: 8px;
++}
++
++.rain-panel {
++  min-width: 0;
++  overflow: hidden;
++}
++
++.stage-header,
++.feed-heading {
++  display: flex;
++  align-items: flex-start;
++  justify-content: space-between;
++  gap: 18px;
++  padding: 18px;
++}
++
++.legend {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: flex-end;
++  gap: 8px;
++  max-width: 600px;
++}
++
++.legend-item {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  min-height: 30px;
++  padding: 4px 8px 4px 5px;
++  border: 1px solid #d8d0c2;
++  border-radius: 999px;
++  color: #3a352e;
++  background: #fffdfa;
++  font-size: 0.78rem;
++  font-weight: 800;
++}
++
++.legend-swatch {
++  display: grid;
++  place-items: center;
++  width: 22px;
++  height: 22px;
++  border-radius: 5px;
++  color: #ffffff;
++  font-size: 0.72rem;
++  font-weight: 900;
++}
++
++.rain-stage {
++  position: relative;
++  height: clamp(480px, 61vh, 690px);
++  margin: 0 18px 18px;
++  overflow: hidden;
++  border: 1px solid #cfc6b8;
++  border-radius: 8px;
++  background:
++    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(236, 232, 221, 0.94)),
++    repeating-linear-gradient(0deg, transparent 0 43px, rgba(39, 45, 43, 0.08) 43px 44px);
++}
++
++.rain-stage.reduced::after {
++  position: absolute;
++  right: 12px;
++  bottom: 12px;
++  z-index: 7;
++  padding: 7px 9px;
++  border: 1px solid #d0c7b8;
++  border-radius: 999px;
++  color: #46413a;
++  background: rgba(255, 253, 248, 0.94);
++  font-size: 0.77rem;
++  font-weight: 850;
++  content: "reduced motion";
++}
++
++.lane-guide {
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  z-index: 1;
++  display: flex;
++  align-items: flex-start;
++  justify-content: center;
++  gap: 6px;
++  padding-top: 12px;
++  border-right: 1px dashed rgba(76, 71, 63, 0.24);
++  color: #554c43;
++  font-size: 0.74rem;
++  font-weight: 850;
++  pointer-events: none;
++}
++
++.lane-guide:last-of-type {
++  border-right: 0;
++}
++
++.lane-badge {
++  display: grid;
++  place-items: center;
++  width: 21px;
++  height: 21px;
++  border-radius: 5px;
++  color: #ffffff;
++  font-size: 0.72rem;
++  font-weight: 950;
++}
++
++.floor-line {
++  position: absolute;
++  right: 0;
++  bottom: 22px;
++  left: 0;
++  z-index: 2;
++  height: 3px;
++  background:
++    repeating-linear-gradient(
++      90deg,
++      rgba(37, 72, 69, 0.92) 0 18px,
++      rgba(37, 72, 69, 0.2) 18px 28px
++    );
++}
++
++.metric-bar {
++  position: absolute;
++  top: 0;
++  left: 0;
++  z-index: 4;
++  display: grid;
++  grid-template-columns: 24px minmax(0, 1fr);
++  grid-template-rows: auto 1fr;
++  align-items: center;
++  gap: 2px 6px;
++  min-height: 44px;
++  padding: 7px 8px;
++  overflow: hidden;
++  border: 2px solid rgba(30, 36, 35, 0.68);
++  border-radius: 7px 7px 3px 3px;
++  color: #ffffff;
++  box-shadow:
++    0 8px 14px rgba(41, 38, 34, 0.18),
++    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
++  will-change: transform;
++}
++
++.metric-bar.settled {
++  border-bottom-width: 4px;
++  box-shadow:
++    0 4px 8px rgba(41, 38, 34, 0.15),
++    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
++}
++
++.metric-bar.falling {
++  filter: saturate(1.06);
++}
++
++.bar-symbol,
++.feed-symbol {
++  display: grid;
++  place-items: center;
++  border: 1px solid rgba(255, 255, 255, 0.72);
++  border-radius: 5px;
++  color: #ffffff;
++  background: rgba(0, 0, 0, 0.18);
++  font-weight: 950;
++}
++
++.bar-symbol {
++  grid-row: 1 / 3;
++  width: 24px;
++  height: 24px;
++  font-size: 0.72rem;
++}
++
++.bar-label {
++  overflow: hidden;
++  font-size: 0.66rem;
++  font-weight: 850;
++  line-height: 1.05;
++  text-overflow: ellipsis;
++  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
++  white-space: nowrap;
++}
++
++.metric-bar strong {
++  font-size: 0.8rem;
++  line-height: 1.05;
++  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
++}
++
++.latency {
++  --metric-color: #246a73;
++}
++
++.cpu {
++  --metric-color: #7753a2;
++}
++
++.throughput {
++  --metric-color: #2d7a55;
++}
++
++.errors {
++  --metric-color: #a94738;
++}
++
++.queue {
++  --metric-color: #9b6a18;
++}
++
++.metric-bar,
++.legend-swatch,
++.lane-badge {
++  background-color: var(--metric-color);
++}
++
++.pattern-stripe {
++  background-image: repeating-linear-gradient(
++    135deg,
++    rgba(255, 255, 255, 0.22) 0 6px,
++    rgba(255, 255, 255, 0) 6px 12px
++  );
++}
++
++.pattern-dots {
++  background-image: radial-gradient(rgba(255, 255, 255, 0.34) 1.5px, transparent 1.5px);
++  background-size: 11px 11px;
++}
++
++.pattern-grid {
++  background-image:
++    linear-gradient(rgba(255, 255, 255, 0.24) 1px, transparent 1px),
++    linear-gradient(90deg, rgba(255, 255, 255, 0.24) 1px, transparent 1px);
++  background-size: 13px 13px;
++}
++
++.pattern-slash {
++  background-image:
++    repeating-linear-gradient(
++      45deg,
++      rgba(255, 255, 255, 0.28) 0 4px,
++      rgba(255, 255, 255, 0) 4px 10px
++    ),
++    repeating-linear-gradient(
++      -45deg,
++      rgba(0, 0, 0, 0.12) 0 5px,
++      rgba(0, 0, 0, 0) 5px 12px
++    );
++}
++
++.pattern-bands {
++  background-image: repeating-linear-gradient(
++    0deg,
++    rgba(255, 255, 255, 0.25) 0 5px,
++    rgba(255, 255, 255, 0) 5px 14px
++  );
++}
++
++.feed-panel {
++  display: flex;
++  flex-direction: column;
++  min-width: 0;
++  padding-bottom: 16px;
++}
++
++.feed-heading svg {
++  flex: 0 0 auto;
++  color: #355652;
++}
++
++.metric-summary {
++  display: grid;
++  grid-template-columns: 1fr;
++  gap: 8px;
++  padding: 0 18px 14px;
++}
++
++.metric-summary div {
++  display: flex;
++  align-items: center;
++  gap: 9px;
++  min-height: 38px;
++  padding: 9px 10px;
++  border: 1px solid #d8d0c2;
++  border-radius: 8px;
++  color: #38322c;
++  background: #fffdfa;
++  font-size: 0.86rem;
++  font-weight: 800;
++}
++
++.feed-list {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  min-height: 330px;
++  margin: 0;
++  padding: 0 18px;
++  list-style: none;
++}
++
++.feed-item,
++.empty-feed {
++  min-height: 45px;
++  border-radius: 8px;
++}
++
++.feed-item {
++  display: grid;
++  grid-template-columns: 30px minmax(0, 1fr) auto 18px;
++  align-items: center;
++  gap: 9px;
++  padding: 8px;
++  border: 1px solid color-mix(in srgb, var(--metric-color) 38%, #d7d1c5);
++  color: #2c2823;
++  background: color-mix(in srgb, var(--metric-color) 12%, #fffdfa);
++}
++
++.feed-item.hot {
++  border-style: solid;
++  box-shadow: inset 4px 0 0 var(--metric-color);
++}
++
++.feed-item.warn {
++  border-style: dashed;
++}
++
++.feed-symbol {
++  width: 30px;
++  height: 30px;
++  background: var(--metric-color);
++  font-size: 0.8rem;
++}
++
++.feed-label {
++  overflow: hidden;
++  font-size: 0.86rem;
++  font-weight: 850;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.feed-item strong {
++  font-size: 0.86rem;
++}
++
++.feed-item svg {
++  color: var(--metric-color);
++}
++
++.empty-feed {
++  display: grid;
++  place-items: center;
++  border: 1px dashed #cfc6b8;
++  color: #6e665c;
++  background: #fffdfa;
++  font-weight: 800;
++}
++
++.lane-counts {
++  display: grid;
++  grid-template-columns: repeat(5, 1fr);
++  gap: 7px;
++  margin-top: auto;
++  padding: 18px 18px 0;
++}
++
++.lane-count {
++  display: grid;
++  gap: 2px;
++  justify-items: center;
++  min-width: 0;
++  padding: 8px 4px;
++  border: 1px solid color-mix(in srgb, var(--metric-color) 32%, #d7d1c5);
++  border-radius: 8px;
++  background: color-mix(in srgb, var(--metric-color) 10%, #fffdfa);
++}
++
++.lane-count span {
++  display: grid;
++  place-items: center;
++  width: 23px;
++  height: 23px;
++  border-radius: 5px;
++  color: #ffffff;
++  background: var(--metric-color);
++  font-size: 0.72rem;
++  font-weight: 950;
++}
++
++.lane-count strong {
++  font-size: 1rem;
++  line-height: 1;
++}
++
++.lane-count small {
++  max-width: 100%;
++  overflow: hidden;
++  color: #6d6257;
++  font-size: 0.62rem;
++  font-weight: 850;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    transition-duration: 0.01ms !important;
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++  }
++}
++
++@media (max-width: 1100px) {
++  .control-band {
++    grid-template-columns: 1fr;
++  }
++
++  .status-strip,
++  .controls {
++    justify-content: flex-start;
++  }
++
++  .dashboard-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .feed-panel {
++    min-height: auto;
++  }
++
++  .feed-list {
++    min-height: 0;
++  }
++}
++
++@media (max-width: 740px) {
++  .app-shell {
++    width: min(100vw - 18px, 1420px);
++    padding-top: 9px;
++  }
++
++  .control-band,
++  .stage-header,
++  .feed-heading {
++    padding: 14px;
++  }
++
++  .brand-mark {
++    width: 46px;
++    height: 46px;
++  }
++
++  .controls {
++    display: grid;
++    grid-template-columns: 1fr 1fr;
++  }
++
++  .primary-button,
++  .icon-button,
++  .switch-control {
++    width: 100%;
++    min-width: 0;
++  }
++
++  .switch-control {
++    grid-column: 1 / -1;
++  }
++
++  .stage-header {
++    display: grid;
++  }
++
++  .legend {
++    justify-content: flex-start;
++  }
++
++  .rain-stage {
++    height: 520px;
++    margin: 0 10px 10px;
++  }
++
++  .lane-guide {
++    align-items: center;
++    justify-content: flex-start;
++    padding: 8px 0 0 4px;
++    writing-mode: vertical-rl;
++  }
++
++  .lane-badge {
++    width: 18px;
++    height: 18px;
++  }
++
++  .metric-bar {
++    grid-template-columns: 1fr;
++    grid-template-rows: 18px 1fr auto;
++    justify-items: center;
++    gap: 1px;
++    padding: 6px 4px;
++  }
++
++  .bar-symbol {
++    grid-row: auto;
++    width: 19px;
++    height: 19px;
++  }
++
++  .bar-label,
++  .metric-bar strong {
++    max-width: 100%;
++    font-size: 0.6rem;
++    text-align: center;
++  }
++
++  .lane-counts {
++    grid-template-columns: repeat(5, minmax(0, 1fr));
++  }
++}

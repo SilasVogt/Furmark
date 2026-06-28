@@ -1,0 +1,970 @@
+diff --git a/index.html b/index.html
+index f6dacfc..463a952 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="Traceboard is the incident timeline debugger for engineering teams — traces, deploys, flags, logs, and metrics on one scrubbable timeline so on-call engineers find root cause fast." /><meta name="theme-color" content="#070a11" /><title>Traceboard — Incident timeline debugger</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..c116609 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,316 @@
+-import React from "react";
++import { type CSSProperties } from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  AlertTriangle, ArrowRight, Bell, Check, Clock, FileText, GitBranch,
++  Layers, Network, Play, Rocket, Search, Share2,
++} from "lucide-react";
+ import "./style.css";
+ 
++// Live trace shown in the hero — left% / width% are positions on the time axis.
++const lanes = [
++  { svc: "api-gateway", meta: "p99 1.2s", spans: [{ l: 2, w: 95, kind: "ok", label: "POST /checkout" }] },
++  { svc: "checkout-svc", meta: "↑ 8.4s", spans: [{ l: 7, w: 86, kind: "slow", label: "createOrder()" }] },
++  { svc: "payments-svc", meta: "504 × 128", spans: [{ l: 13, w: 71, kind: "err", label: "authorize → 504" }] },
++  { svc: "postgres", meta: "p99 41ms", spans: [{ l: 15, w: 9, kind: "ok", label: "SELECT cart" }, { l: 29, w: 7, kind: "ok", label: "INSERT order" }] },
++  { svc: "redis", meta: "evictions ↑", spans: [{ l: 17, w: 5, kind: "warn", label: "GET sess" }, { l: 44, w: 33, kind: "slow", label: "lock wait" }] },
++] as const;
++
++const stats = [
++  { n: "12 min", l: "median time-to-root-cause" },
++  { n: "40+", l: "native integrations" },
++  { n: "100%", l: "OpenTelemetry-native" },
++];
++
++const integrations = ["OpenTelemetry", "Datadog", "Sentry", "PagerDuty", "GitHub", "Kubernetes", "Grafana", "Opsgenie"];
++
++const features = [
++  { icon: Layers, title: "One unified timeline", body: "Traces, deploys, feature flags, logs, and metrics on a single synchronized axis — no tab-hopping across four tools while production burns." },
++  { icon: Network, title: "Distributed trace waterfall", body: "Expand any request into per-service spans with latency, status codes, and the exact database calls rendered inline." },
++  { icon: Rocket, title: "Deploy & flag correlation", body: "Every release, rollback, and config change is pinned to the timeline, so a regression lines up against the change that caused it." },
++  { icon: AlertTriangle, title: "Automatic anomaly markers", body: "Latency, error-rate, and saturation spikes are detected and annotated for you — there are no dashboards to build first." },
++  { icon: Share2, title: "Shareable incident replays", body: "Send a link that scrubs a teammate to the exact moment, with every filter and span selection preserved." },
++  { icon: FileText, title: "One-click postmortems", body: "Export the annotated timeline and root-cause trail straight into your postmortem doc and ticket." },
++];
++
++const steps = [
++  { icon: Bell, k: "01", title: "Detect", body: "An alert from PagerDuty, Opsgenie, or your APM opens a Traceboard incident automatically — no manual setup mid-page." },
++  { icon: GitBranch, k: "02", title: "Correlate", body: "Overlay deploys, flags, and infra events to see exactly what changed in the minutes before things broke." },
++  { icon: Search, k: "03", title: "Resolve", body: "Drill into the failing trace, find the span, ship the fix, and watch recovery land on the same axis." },
++  { icon: FileText, k: "04", title: "Learn", body: "Attach the replay to a postmortem so the next on-call engineer starts exactly where you left off." },
++];
++
++const queryRows = [
++  { time: "14:02:33", svc: "payments-svc", path: "authorize(order_id)", dur: "8.41s", code: "504", ok: false },
++  { time: "14:02:34", svc: "payments-svc", path: "pool.acquire()", dur: "8.30s", code: "timeout", ok: false },
++  { time: "14:02:36", svc: "checkout-svc", path: "createOrder()", dur: "8.52s", code: "500", ok: false },
++  { time: "14:01:55", svc: "payments-svc", path: "authorize(order_id)", dur: "0.21s", code: "200", ok: true },
++];
++
++function Logo({ gid }: { gid: string }) {
++  return (
++    <>
++      <svg className="brand__mark" viewBox="0 0 28 28" width="26" height="26" aria-hidden="true">
++        <rect x="1" y="1" width="26" height="26" rx="8" fill={`url(#${gid})`} />
++        <path d="M5 16h4l2.6-7 3 11 2.4-6h4" fill="none" stroke="#070a11" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
++        <defs>
++          <linearGradient id={gid} x1="0" y1="0" x2="28" y2="28">
++            <stop stopColor="#8ea2ff" />
++            <stop offset="1" stopColor="#c08bff" />
++          </linearGradient>
++        </defs>
++      </svg>
++      <span className="brand__name">Traceboard</span>
++    </>
++  );
++}
++
++function Trace() {
++  return (
++    <figure className="trace" aria-label="Example Traceboard incident timeline: a checkout latency spike traced to a deploy">
++      <figcaption className="trace__head">
++        <span className="sev">SEV-2</span>
++        <span className="trace__title">Checkout latency spike</span>
++        <span className="trace__live"><span className="ping" />investigating</span>
++      </figcaption>
++      <div className="trace__sub">
++        <span><Clock aria-hidden />14:02:31 → 14:06:43</span>
++        <span aria-hidden>·</span>
++        <span>~8% of checkouts affected</span>
++      </div>
++      <div className="trace__axis" aria-hidden="true">
++        {["14:02:10", "14:02:25", "14:02:40", "14:02:55", "now"].map((t) => <span key={t}>{t}</span>)}
++      </div>
++      <div className="trace__lanes">
++        <span className="marker" style={{ "--at": 0.1 } as CSSProperties}>
++          <span className="marker__tag">deploy #4812</span>
++        </span>
++        <span className="marker marker--soft" style={{ "--at": 0.4 } as CSSProperties}>
++          <span className="marker__tag">alert fired</span>
++        </span>
++        {lanes.map((lane) => (
++          <div className="lane" key={lane.svc}>
++            <div className="lane__label">
++              <span className="lane__svc">{lane.svc}</span>
++              <span className="lane__meta">{lane.meta}</span>
++            </div>
++            <div className="lane__track">
++              {lane.spans.map((s, i) => (
++                <span key={i} className={`span span--${s.kind}`} style={{ left: `${s.l}%`, width: `${s.w}%` }}>
++                  {s.label}
++                </span>
++              ))}
++            </div>
++          </div>
++        ))}
++      </div>
++      <div className="trace__foot">
++        <span className="trace__cause">
++          <strong>Likely cause</strong> deploy #4812 shrank the payments-svc connection pool — exhausted under load.
++        </span>
++        <a className="trace__open" href="#demo">Open replay <ArrowRight aria-hidden /></a>
++      </div>
++    </figure>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <a className="skip" href="#main">Skip to content</a>
++
++      <header className="nav">
++        <div className="wrap nav__inner">
++          <a className="brand" href="#top" aria-label="Traceboard — home"><Logo gid="lg-nav" /></a>
++          <nav className="nav__links" aria-label="Primary">
++            <a href="#features">Features</a>
++            <a href="#query">Trace view</a>
++            <a href="#workflow">Workflow</a>
++            <a href="#integrations">Integrations</a>
++          </nav>
++          <div className="nav__cta">
++            <a className="btn btn--ghost btn--sm" href="#demo">Sign in</a>
++            <a className="btn btn--primary btn--sm" href="#start">Start free</a>
++          </div>
++        </div>
++      </header>
++
++      <main id="main">
++        <section className="hero" id="top">
++          <div className="wrap hero__grid">
++            <div className="hero__copy">
++              <span className="eyebrow"><span className="eyebrow__dot" />Incident timeline debugger</span>
++              <h1>See exactly what your system did <span className="grad">during the incident.</span></h1>
++              <p className="lead">
++                Traceboard rebuilds the minutes around any outage — traces, deploys, flags, logs, and metrics
++                on one scrubbable timeline — so on-call engineers find root cause instead of guessing.
++              </p>
++              <div className="hero__actions">
++                <a className="btn btn--primary" id="start" href="#start">Start debugging free <ArrowRight aria-hidden /></a>
++                <a className="btn btn--ghost" id="demo" href="#demo"><Play aria-hidden /> Watch 2-min demo</a>
++              </div>
++              <ul className="hero__stats">
++                {stats.map((s) => (
++                  <li key={s.l}><strong>{s.n}</strong><span>{s.l}</span></li>
++                ))}
++              </ul>
++            </div>
++            <div className="hero__visual"><Trace /></div>
++          </div>
++        </section>
++
++        <section className="strip" id="integrations" aria-label="Integrations">
++          <div className="wrap strip__inner">
++            <span className="strip__label">Plugs into the stack you already run</span>
++            <ul className="strip__logos">
++              {integrations.map((i) => <li key={i}>{i}</li>)}
++            </ul>
++          </div>
++        </section>
++
++        <section className="section" id="features">
++          <div className="wrap">
++            <div className="sec-head">
++              <span className="eyebrow"><span className="eyebrow__dot" />Capabilities</span>
++              <h2>Built for the messy middle of an incident</h2>
++              <p>The moment after the page fires and before you know what broke. Traceboard puts every signal on one axis so the answer is on screen, not in five tabs.</p>
++            </div>
++            <div className="features">
++              {features.map((f) => {
++                const Icon = f.icon;
++                return (
++                  <article className="card" key={f.title}>
++                    <span className="card__icon"><Icon aria-hidden /></span>
++                    <h3>{f.title}</h3>
++                    <p>{f.body}</p>
++                  </article>
++                );
++              })}
++            </div>
++          </div>
++        </section>
++
++        <section className="section deepdive" id="query">
++          <div className="wrap deepdive__grid">
++            <div>
++              <span className="eyebrow"><span className="eyebrow__dot" />Query</span>
++              <h2>Filter a million spans like a database</h2>
++              <p className="sec-sub">
++                Traceboard speaks a query language your team already thinks in. Slice by service, status,
++                duration, deploy, or trace attribute and the timeline redraws instantly.
++              </p>
++              <ul className="checklist">
++                <li><Check aria-hidden />Trace-aware filters that span every service</li>
++                <li><Check aria-hidden />Saved searches become alert monitors in one click</li>
++                <li><Check aria-hidden />Sub-second results over millions of spans</li>
++              </ul>
++            </div>
++            <div className="qbox" aria-label="Example Traceboard query and results">
++              <div className="qbox__bar">
++                <Search aria-hidden />
++                <code>service:payments-svc <em>status:&gt;=500</em> span.duration&gt;2s</code>
++              </div>
++              <ul className="qbox__rows">
++                {queryRows.map((r, i) => (
++                  <li className="qrow" key={i}>
++                    <span className="qrow__time">{r.time}</span>
++                    <span className="qrow__svc">{r.svc}</span>
++                    <span className="qrow__path">{r.path}</span>
++                    <span className="qrow__d">{r.dur}</span>
++                    <span className={`qrow__code qrow__code--${r.ok ? "ok" : "err"}`}>{r.code}</span>
++                  </li>
++                ))}
++              </ul>
++            </div>
++          </div>
++        </section>
++
++        <section className="section workflow" id="workflow">
++          <div className="wrap">
++            <div className="sec-head">
++              <span className="eyebrow"><span className="eyebrow__dot" />Workflow</span>
++              <h2>From alert to root cause in minutes</h2>
++              <p>One path through the worst part of on-call, with the timeline carrying context at every step.</p>
++            </div>
++            <ol className="steps">
++              {steps.map((s) => {
++                const Icon = s.icon;
++                return (
++                  <li className="step" key={s.k}>
++                    <div className="step__top">
++                      <span className="step__icon"><Icon aria-hidden /></span>
++                      <span className="step__k">{s.k}</span>
++                    </div>
++                    <h3>{s.title}</h3>
++                    <p>{s.body}</p>
++                  </li>
++                );
++              })}
++            </ol>
++          </div>
++        </section>
++
++        <section className="cta">
++          <div className="wrap">
++            <div className="cta__inner">
++              <h2>Stop guessing during incidents.</h2>
++              <p>Connect your traces and your next page comes with a timeline already drawn.</p>
++              <div className="hero__actions hero__actions--center">
++                <a className="btn btn--primary btn--lg" href="#start">Start debugging free <ArrowRight aria-hidden /></a>
++                <a className="btn btn--ghost btn--lg" href="#demo">Talk to an engineer</a>
++              </div>
++              <span className="cta__fine">Free for 14 days · No credit card · SOC 2 Type II</span>
++            </div>
++          </div>
++        </section>
++      </main>
++
++      <footer className="footer">
++        <div className="wrap">
++          <div className="footer__grid">
++            <div className="footer__brand">
++              <span className="brand"><Logo gid="lg-foot" /></span>
++              <p>The incident timeline debugger for engineering teams that are tired of guessing.</p>
++            </div>
++            <nav className="footer__col" aria-label="Product">
++              <h3>Product</h3>
++              <ul>
++                <li><a href="#features">Features</a></li>
++                <li><a href="#query">Trace view</a></li>
++                <li><a href="#workflow">Workflow</a></li>
++                <li><a href="#integrations">Integrations</a></li>
++              </ul>
++            </nav>
++            <nav className="footer__col" aria-label="Resources">
++              <h3>Resources</h3>
++              <ul>
++                <li><a href="#demo">Docs</a></li>
++                <li><a href="#demo">API reference</a></li>
++                <li><a href="#demo">Status</a></li>
++                <li><a href="#demo">Security</a></li>
++              </ul>
++            </nav>
++            <nav className="footer__col" aria-label="Company">
++              <h3>Company</h3>
++              <ul>
++                <li><a href="#demo">About</a></li>
++                <li><a href="#demo">Careers</a></li>
++                <li><a href="#demo">Blog</a></li>
++                <li><a href="#demo">Contact</a></li>
++              </ul>
++            </nav>
++          </div>
++          <div className="footer__bottom">
++            <span>© 2026 Traceboard, Inc.</span>
++            <nav aria-label="Legal">
++              <a href="#demo">Privacy</a>
++              <a href="#demo">Terms</a>
++              <a href="#demo">Status</a>
++            </nav>
++          </div>
++        </div>
++      </footer>
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..b1e9f53 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,634 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #070a11;
++  --bg-soft: #0b101a;
++  --surface: #0f1623;
++  --surface-2: #141d2c;
++  --border: #1f2a3b;
++  --border-strong: #2c3c52;
++  --text: #e9eef7;
++  --muted: #9aa7bd;
++  --faint: #6b7891;
++  --brand: #8ea2ff;
++  --brand-2: #c08bff;
++  --grad: linear-gradient(120deg, #8ea2ff, #c08bff);
++  --ok: #4fd6a0;
++  --warn: #ffcf6b;
++  --slow: #ff9e57;
++  --err: #ff6b81;
++  --shadow: 0 30px 80px -42px rgba(0, 0, 0, .85);
++  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
++}
++
++* { box-sizing: border-box; }
++
++html { scroll-behavior: smooth; }
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
++  color: var(--text);
++  background: var(--bg);
++  line-height: 1.6;
++  -webkit-font-smoothing: antialiased;
++}
++
++body::before {
++  content: "";
++  position: fixed;
++  inset: 0;
++  z-index: -1;
++  background:
++    radial-gradient(62% 48% at 82% -8%, rgba(142, 162, 255, .16), transparent 60%),
++    radial-gradient(48% 40% at 2% -4%, rgba(192, 139, 255, .12), transparent 55%),
++    var(--bg);
++}
++
++main { overflow-x: clip; }
++
++h1, h2, h3 { overflow-wrap: break-word; }
++
++::selection { background: rgba(142, 162, 255, .28); }
++
++a { color: inherit; }
++
++:where(a, button):focus-visible {
++  outline: 2px solid var(--brand);
++  outline-offset: 3px;
++  border-radius: 6px;
++}
++
++.skip {
++  position: fixed;
++  left: .75rem;
++  top: -4rem;
++  z-index: 100;
++  background: var(--brand);
++  color: #070a11;
++  font-weight: 700;
++  padding: .65rem .95rem;
++  border-radius: 9px;
++  text-decoration: none;
++  transition: top .15s ease;
++}
++.skip:focus { top: .75rem; }
++
++.wrap {
++  width: 100%;
++  max-width: 1180px;
++  margin-inline: auto;
++  padding-inline: clamp(1.1rem, 4vw, 2rem);
++}
++
++/* ---------- buttons ---------- */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  gap: .5rem;
++  font: inherit;
++  font-weight: 600;
++  font-size: .95rem;
++  line-height: 1;
++  padding: .82rem 1.2rem;
++  border: 1px solid transparent;
++  border-radius: 11px;
++  text-decoration: none;
++  cursor: pointer;
++  white-space: nowrap;
++  transition: transform .12s ease, filter .15s ease, background .15s ease, border-color .15s ease;
++}
++.btn:active { transform: translateY(1px); }
++.btn svg { width: 1.05em; height: 1.05em; }
++.btn--primary {
++  background: var(--grad);
++  color: #070a11;
++  box-shadow: 0 1px 0 rgba(255, 255, 255, .35) inset, 0 10px 26px -12px rgba(142, 162, 255, .8);
++}
++.btn--primary:hover { filter: brightness(1.07); }
++.btn--ghost {
++  background: var(--surface);
++  border-color: var(--border);
++  color: var(--text);
++}
++.btn--ghost:hover { border-color: var(--border-strong); background: var(--surface-2); }
++.btn--sm { padding: .56rem .9rem; font-size: .875rem; border-radius: 9px; }
++.btn--lg { padding: .95rem 1.45rem; font-size: 1rem; }
++
++/* ---------- nav ---------- */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  background: color-mix(in srgb, var(--bg) 80%, transparent);
++  backdrop-filter: blur(14px);
++  border-bottom: 1px solid var(--border);
++}
++.nav__inner {
++  display: flex;
++  align-items: center;
++  gap: 1.25rem;
++  height: 64px;
++}
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: .55rem;
++  text-decoration: none;
++  color: var(--text);
++  font-weight: 700;
++  letter-spacing: -.01em;
++}
++.brand__mark { display: block; flex: none; }
++.brand__name { font-size: 1.06rem; }
++.nav__links {
++  display: flex;
++  gap: .25rem;
++  margin-inline: auto;
++}
++.nav__links a {
++  color: var(--muted);
++  text-decoration: none;
++  font-size: .92rem;
++  padding: .5rem .7rem;
++  border-radius: 8px;
++}
++.nav__links a:hover { color: var(--text); background: var(--surface); }
++.nav__cta { display: flex; gap: .5rem; align-items: center; }
++
++/* ---------- hero ---------- */
++.hero { padding: clamp(2.5rem, 7vw, 5rem) 0 clamp(3rem, 7vw, 5rem); }
++.hero__grid {
++  display: grid;
++  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.2fr);
++  gap: clamp(2rem, 4vw, 3.5rem);
++  align-items: center;
++}
++.eyebrow {
++  display: inline-flex;
++  align-items: center;
++  gap: .5rem;
++  font-size: .78rem;
++  font-weight: 600;
++  letter-spacing: .04em;
++  text-transform: uppercase;
++  color: var(--brand);
++  background: color-mix(in srgb, var(--brand) 12%, transparent);
++  border: 1px solid color-mix(in srgb, var(--brand) 26%, transparent);
++  padding: .35rem .72rem;
++  border-radius: 999px;
++}
++.eyebrow__dot {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: var(--brand);
++  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
++}
++.hero__copy h1 {
++  font-size: clamp(2.1rem, 5vw + 1rem, 3.6rem);
++  line-height: 1.04;
++  letter-spacing: -.025em;
++  font-weight: 700;
++  margin: 1.1rem 0 0;
++}
++.grad {
++  background: var(--grad);
++  -webkit-background-clip: text;
++  background-clip: text;
++  color: transparent;
++}
++.lead {
++  color: var(--muted);
++  font-size: clamp(1.02rem, 1.1vw + .85rem, 1.2rem);
++  max-width: 52ch;
++  margin: 1.2rem 0 1.7rem;
++}
++.hero__actions { display: flex; gap: .75rem; flex-wrap: wrap; }
++.hero__actions--center { justify-content: center; }
++.hero__stats {
++  list-style: none;
++  display: flex;
++  flex-wrap: wrap;
++  gap: clamp(1.2rem, 3vw, 2.5rem);
++  margin: 2.2rem 0 0;
++  padding: 0;
++}
++.hero__stats li { display: flex; flex-direction: column; gap: .15rem; }
++.hero__stats strong { font-size: 1.4rem; font-weight: 700; letter-spacing: -.01em; }
++.hero__stats span { font-size: .8rem; color: var(--faint); }
++
++/* ---------- trace visual ---------- */
++.trace {
++  --label-w: clamp(94px, 22vw, 140px);
++  --lane-gap: .7rem;
++  margin: 0;
++  position: relative;
++  overflow: hidden;
++  background: linear-gradient(180deg, var(--surface), var(--bg-soft));
++  border: 1px solid var(--border);
++  border-radius: 16px;
++  padding: clamp(.95rem, 2vw, 1.3rem);
++  box-shadow: var(--shadow);
++}
++.trace::before {
++  content: "";
++  position: absolute;
++  inset: 0 0 auto 0;
++  height: 1px;
++  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brand) 65%, transparent), transparent);
++}
++.trace__head { display: flex; align-items: center; gap: .6rem; }
++.sev {
++  font: 600 .72rem/1 var(--mono);
++  letter-spacing: .04em;
++  color: #ffd9a8;
++  background: color-mix(in srgb, var(--slow) 18%, transparent);
++  border: 1px solid color-mix(in srgb, var(--slow) 42%, transparent);
++  padding: .3rem .5rem;
++  border-radius: 6px;
++}
++.trace__title { font-weight: 600; font-size: .98rem; }
++.trace__live {
++  margin-left: auto;
++  display: inline-flex;
++  align-items: center;
++  gap: .4rem;
++  font-size: .76rem;
++  color: var(--err);
++}
++.ping { position: relative; width: 7px; height: 7px; border-radius: 50%; background: var(--err); }
++.ping::after {
++  content: "";
++  position: absolute;
++  inset: -4px;
++  border-radius: 50%;
++  border: 1px solid var(--err);
++  animation: ping 1.8s ease-out infinite;
++}
++@keyframes ping { to { transform: scale(2.2); opacity: 0; } }
++.trace__sub {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: .5rem;
++  color: var(--faint);
++  font: 500 .78rem/1.4 var(--mono);
++  margin: .6rem 0 .9rem;
++}
++.trace__sub svg { width: .95em; height: .95em; vertical-align: -2px; margin-right: .3rem; }
++.trace__axis {
++  display: flex;
++  justify-content: space-between;
++  padding-left: calc(var(--label-w) + var(--lane-gap));
++  font: 500 .66rem/1 var(--mono);
++  color: var(--faint);
++  margin-bottom: .55rem;
++}
++.trace__lanes {
++  position: relative;
++  display: flex;
++  flex-direction: column;
++  gap: .5rem;
++  padding-top: 1.4rem;
++}
++.lane {
++  display: grid;
++  grid-template-columns: var(--label-w) 1fr;
++  gap: var(--lane-gap);
++  align-items: center;
++}
++.lane__label { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
++.lane__svc {
++  font: 600 .8rem/1.1 var(--mono);
++  color: var(--text);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++.lane__meta { font: 500 .66rem/1 var(--mono); color: var(--faint); }
++.lane__track {
++  position: relative;
++  height: 26px;
++  border-radius: 7px;
++  background:
++    repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), color-mix(in srgb, var(--border) 55%, transparent) calc(20% - 1px) 20%);
++}
++.span {
++  position: absolute;
++  top: 3px;
++  bottom: 3px;
++  display: flex;
++  align-items: center;
++  padding-inline: .5rem;
++  font: 600 .67rem/1 var(--mono);
++  color: #0a0e16;
++  border-radius: 5px;
++  overflow: hidden;
++  white-space: nowrap;
++  text-overflow: ellipsis;
++  box-shadow: 0 1px 0 rgba(255, 255, 255, .2) inset, 0 4px 10px -6px rgba(0, 0, 0, .6);
++}
++.span--ok { background: linear-gradient(180deg, #5fe0ad, #3cc78f); }
++.span--warn { background: linear-gradient(180deg, #ffe08a, #ffce5c); }
++.span--slow { background: linear-gradient(180deg, #ffb27a, #ff9646); }
++.span--err { background: linear-gradient(180deg, #ff8a9c, #ff5f78); color: #1a0a0e; }
++.marker {
++  position: absolute;
++  top: 1.05rem;
++  bottom: 0;
++  width: 2px;
++  left: calc(var(--label-w) + var(--lane-gap) + (100% - var(--label-w) - var(--lane-gap)) * var(--at));
++  background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--brand) 92%, white) 0 5px, transparent 5px 9px);
++}
++.marker__tag {
++  position: absolute;
++  top: -1.15rem;
++  left: 50%;
++  transform: translateX(-50%);
++  white-space: nowrap;
++  font: 600 .64rem/1 var(--mono);
++  color: var(--brand);
++  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
++  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
++  padding: .2rem .42rem;
++  border-radius: 5px;
++}
++.marker--soft { opacity: .9; background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--err) 80%, transparent) 0 5px, transparent 5px 9px); }
++.marker--soft .marker__tag {
++  color: var(--err);
++  background: color-mix(in srgb, var(--err) 12%, var(--surface));
++  border-color: color-mix(in srgb, var(--err) 35%, transparent);
++}
++.trace__foot {
++  display: flex;
++  align-items: center;
++  gap: .75rem;
++  flex-wrap: wrap;
++  margin-top: 1rem;
++  padding-top: .85rem;
++  border-top: 1px solid var(--border);
++}
++.trace__cause { flex: 1; min-width: 60%; font-size: .82rem; color: var(--muted); }
++.trace__cause strong { color: var(--text); font-weight: 600; margin-right: .3rem; }
++.trace__open {
++  display: inline-flex;
++  align-items: center;
++  gap: .3rem;
++  color: var(--brand);
++  text-decoration: none;
++  font-weight: 600;
++  font-size: .85rem;
++  white-space: nowrap;
++}
++.trace__open:hover { text-decoration: underline; }
++.trace__open svg { width: 1em; height: 1em; }
++
++/* ---------- integration strip ---------- */
++.strip {
++  border-top: 1px solid var(--border);
++  border-bottom: 1px solid var(--border);
++  background: color-mix(in srgb, var(--surface) 40%, transparent);
++}
++.strip__inner {
++  display: flex;
++  align-items: center;
++  gap: clamp(1rem, 3vw, 2rem);
++  flex-wrap: wrap;
++  padding-block: 1.1rem;
++}
++.strip__label { font-size: .82rem; color: var(--faint); }
++.strip__logos {
++  list-style: none;
++  display: flex;
++  flex-wrap: wrap;
++  gap: clamp(.8rem, 2.5vw, 1.8rem);
++  margin: 0;
++  padding: 0;
++}
++.strip__logos li { font: 600 .9rem/1 var(--mono); color: var(--muted); }
++
++/* ---------- sections ---------- */
++.section { padding: clamp(4rem, 9vw, 7rem) 0; }
++.sec-head { max-width: 60ch; margin-bottom: clamp(2rem, 4vw, 3rem); }
++.sec-head .eyebrow { margin-bottom: .95rem; }
++.sec-head h2,
++.deepdive h2,
++.workflow h2 {
++  font-size: clamp(1.6rem, 3vw, 2.3rem);
++  letter-spacing: -.02em;
++  line-height: 1.1;
++  margin: 0 0 .7rem;
++}
++.sec-head p { color: var(--muted); font-size: 1.05rem; margin: 0; }
++
++/* ---------- features ---------- */
++.features {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
++  gap: clamp(.9rem, 2vw, 1.25rem);
++}
++.card {
++  background: linear-gradient(180deg, var(--surface), var(--bg-soft));
++  border: 1px solid var(--border);
++  border-radius: 14px;
++  padding: clamp(1.2rem, 2.2vw, 1.6rem);
++  transition: border-color .15s ease, transform .15s ease;
++}
++.card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
++.card__icon {
++  display: inline-flex;
++  width: 42px;
++  height: 42px;
++  align-items: center;
++  justify-content: center;
++  border-radius: 11px;
++  background: color-mix(in srgb, var(--brand) 14%, transparent);
++  border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent);
++  color: var(--brand);
++  margin-bottom: 1rem;
++}
++.card__icon svg { width: 20px; height: 20px; }
++.card h3 { font-size: 1.05rem; margin: 0 0 .45rem; letter-spacing: -.01em; }
++.card p { color: var(--muted); font-size: .93rem; line-height: 1.55; margin: 0; }
++
++/* ---------- deep dive / query ---------- */
++.deepdive__grid {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
++  gap: clamp(2rem, 4vw, 3.5rem);
++  align-items: center;
++}
++.deepdive .eyebrow { margin-bottom: .95rem; }
++.sec-sub { color: var(--muted); font-size: 1.02rem; margin: 0; }
++.checklist { list-style: none; margin: 1.4rem 0 0; padding: 0; display: grid; gap: .7rem; }
++.checklist li {
++  display: flex;
++  gap: .6rem;
++  align-items: flex-start;
++  color: var(--muted);
++  font-size: .95rem;
++}
++.checklist svg { color: var(--ok); flex: none; width: 1.1em; height: 1.1em; margin-top: .15rem; }
++.qbox {
++  background: linear-gradient(180deg, var(--surface), var(--bg-soft));
++  border: 1px solid var(--border);
++  border-radius: 14px;
++  box-shadow: var(--shadow);
++  overflow: hidden;
++}
++.qbox__bar {
++  display: flex;
++  align-items: center;
++  gap: .6rem;
++  padding: .85rem 1rem;
++  border-bottom: 1px solid var(--border);
++  background: var(--surface-2);
++}
++.qbox__bar svg { color: var(--faint); width: 1.05em; height: 1.05em; flex: none; }
++.qbox__bar code {
++  font: 500 .85rem/1.4 var(--mono);
++  color: var(--text);
++  min-width: 0;
++  overflow-x: auto;
++  white-space: nowrap;
++}
++.qbox__bar em { font-style: normal; color: var(--brand); }
++.qbox__rows { list-style: none; margin: 0; padding: .3rem; }
++.qrow {
++  display: grid;
++  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
++  gap: .7rem;
++  align-items: center;
++  padding: .55rem .7rem;
++  border-radius: 8px;
++  font: 500 .8rem/1 var(--mono);
++}
++.qrow:hover { background: var(--surface-2); }
++.qrow__time { color: var(--faint); }
++.qrow__svc { color: var(--text); }
++.qrow__path { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.qrow__d { color: var(--slow); }
++.qrow__code { font-weight: 600; padding: .16rem .42rem; border-radius: 5px; }
++.qrow__code--err { color: var(--err); background: color-mix(in srgb, var(--err) 14%, transparent); }
++.qrow__code--ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
++
++/* ---------- workflow ---------- */
++.steps {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
++  gap: clamp(1rem, 2.5vw, 1.6rem);
++}
++.step { position: relative; padding-top: 1.3rem; }
++.step::before {
++  content: "";
++  position: absolute;
++  top: .35rem;
++  left: 0;
++  right: 0;
++  height: 1px;
++  background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 55%, transparent), transparent);
++}
++.step__top { display: flex; align-items: center; gap: .6rem; }
++.step__icon {
++  display: inline-flex;
++  width: 34px;
++  height: 34px;
++  align-items: center;
++  justify-content: center;
++  border-radius: 9px;
++  background: color-mix(in srgb, var(--brand) 13%, transparent);
++  border: 1px solid color-mix(in srgb, var(--brand) 26%, transparent);
++  color: var(--brand);
++}
++.step__icon svg { width: 17px; height: 17px; }
++.step__k { font: 700 .8rem/1 var(--mono); color: var(--brand); }
++.step h3 { font-size: 1.08rem; margin: .8rem 0 .4rem; letter-spacing: -.01em; }
++.step p { color: var(--muted); font-size: .92rem; line-height: 1.55; margin: 0; }
++
++/* ---------- cta ---------- */
++.cta { padding: clamp(3rem, 7vw, 5.5rem) 0; }
++.cta__inner {
++  position: relative;
++  overflow: hidden;
++  text-align: center;
++  max-width: 700px;
++  margin-inline: auto;
++  background: linear-gradient(180deg, var(--surface), var(--bg-soft));
++  border: 1px solid var(--border);
++  border-radius: 20px;
++  padding: clamp(2rem, 5vw, 3.2rem);
++}
++.cta__inner::before {
++  content: "";
++  position: absolute;
++  inset: -45% 25% auto;
++  height: 60%;
++  background: radial-gradient(closest-side, color-mix(in srgb, var(--brand) 30%, transparent), transparent);
++  filter: blur(22px);
++}
++.cta__inner > * { position: relative; }
++.cta__inner h2 { font-size: clamp(1.7rem, 3.5vw, 2.5rem); letter-spacing: -.02em; margin: 0 0 .6rem; }
++.cta__inner p { color: var(--muted); font-size: 1.05rem; margin: 0 0 1.6rem; }
++.cta__fine { display: block; margin-top: 1.1rem; font: 500 .8rem/1 var(--mono); color: var(--faint); }
++
++/* ---------- footer ---------- */
++.footer {
++  border-top: 1px solid var(--border);
++  padding: clamp(2.5rem, 5vw, 3.5rem) 0 2rem;
++  margin-top: 2rem;
++}
++.footer__grid {
++  display: grid;
++  grid-template-columns: 1.6fr repeat(3, 1fr);
++  gap: 2rem;
++}
++.footer__brand p { color: var(--faint); font-size: .88rem; margin: .85rem 0 0; max-width: 32ch; }
++.footer__col h3 {
++  font-size: .76rem;
++  text-transform: uppercase;
++  letter-spacing: .07em;
++  color: var(--faint);
++  margin: 0 0 .9rem;
++}
++.footer__col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
++.footer__col a { color: var(--muted); text-decoration: none; font-size: .9rem; }
++.footer__col a:hover { color: var(--text); }
++.footer__bottom {
++  display: flex;
++  justify-content: space-between;
++  gap: 1rem;
++  flex-wrap: wrap;
++  margin-top: 2.5rem;
++  padding-top: 1.4rem;
++  border-top: 1px solid var(--border);
++  color: var(--faint);
++  font-size: .82rem;
++}
++.footer__bottom nav { display: flex; gap: 1.3rem; }
++.footer__bottom a { text-decoration: none; color: var(--faint); }
++.footer__bottom a:hover { color: var(--text); }
++
++/* ---------- responsive ---------- */
++@media (max-width: 980px) {
++  .hero__grid { grid-template-columns: 1fr; }
++  .deepdive__grid { grid-template-columns: 1fr; }
++}
++@media (max-width: 900px) {
++  .nav__links { display: none; }
++  .nav__cta { margin-left: auto; }
++}
++@media (max-width: 760px) {
++  .footer__grid { grid-template-columns: 1fr 1fr; }
++  .footer__brand { grid-column: 1 / -1; }
++}
++@media (max-width: 540px) {
++  .nav__cta .btn--ghost { display: none; }
++  .footer__bottom { flex-direction: column; align-items: flex-start; }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  html { scroll-behavior: auto; }
++  *, *::before, *::after { animation: none !important; transition: none !important; }
++}

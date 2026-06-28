@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-27T20:01:01.623Z",
+  "repoCommit": "ccee22e",
+  "agent": "codex",
+  "model": "gpt-5.5",
+  "effort": "xhigh",
+  "mode": "baseline",
+  "taskId": "landing-civic-booking",
+  "category": "landing-page",
+  "command": "codex --ask-for-approval never exec -C /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/workspace --ignore-user-config --ignore-rules --ephemeral --model gpt-5.5 -c 'model_reasoning_effort=\"xhigh\"' --sandbox workspace-write --json",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/workspace",
+  "exitCode": 0,
+  "durationMs": 619213,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 1553510,
+    "outputTokens": 22234
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 0,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 37.1,
+    "styleCompliance": 75,
+    "skillUplift": 0,
+    "total": 48.7
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__baseline__landing-civic-booking/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "baseline",
+  "skillPath": null,
+  "skillSha256": null,
+  "activation": "prompt-injected"
+}

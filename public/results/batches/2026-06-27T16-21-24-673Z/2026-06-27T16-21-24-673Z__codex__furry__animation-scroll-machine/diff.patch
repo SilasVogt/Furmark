@@ -1,0 +1,1129 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..e6959c9 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,275 @@
+-import React from "react";
++import React, { useEffect, useRef } from "react";
+ import { createRoot } from "react-dom/client";
+ import "./style.css";
+ 
++const stations = [
++  {
++    id: "feed",
++    step: "01",
++    title: "Feed",
++    copy: "Blank housings enter the line on indexed carriers.",
++    x: "8%",
++  },
++  {
++    id: "cut",
++    step: "02",
++    title: "Cut",
++    copy: "A punch trims the profile and opens the center slot.",
++    x: "30%",
++  },
++  {
++    id: "drill",
++    step: "03",
++    title: "Drill",
++    copy: "Twin spindles add mounting holes while the carrier locks.",
++    x: "52%",
++  },
++  {
++    id: "paint",
++    step: "04",
++    title: "Finish",
++    copy: "A spray gantry coats the part and cures the surface.",
++    x: "74%",
++  },
++  {
++    id: "pack",
++    step: "05",
++    title: "Pack",
++    copy: "The finished module drops into a shipping tray.",
++    x: "93%",
++  },
++];
++
++const clamp = (value: number) => Math.min(1, Math.max(0, value));
++
++const ramp = (value: number, start: number, end: number) =>
++  clamp((value - start) / (end - start));
++
++const pulse = (value: number, center: number, width: number) =>
++  clamp(1 - Math.abs(value - center) / width);
++
++function useAssemblyProgress() {
++  const ref = useRef<HTMLElement | null>(null);
++
++  useEffect(() => {
++    const scene = ref.current;
++    if (!scene) return;
++
++    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
++    let frame = 0;
++
++    const writeStaticState = () => {
++      scene.style.setProperty("--progress-width", "100%");
++      scene.style.setProperty("--carrier-left", "93%");
++      scene.style.setProperty("--belt-offset", "0px");
++      scene.style.setProperty("--feed-rotation", "0deg");
++      scene.style.setProperty("--cut-head-y", "0px");
++      scene.style.setProperty("--drill-head-y", "0px");
++      scene.style.setProperty("--pack-jaw-y", "0px");
++      scene.style.setProperty("--cut-done", "1");
++      scene.style.setProperty("--drill-done", "1");
++      scene.style.setProperty("--paint-done", "1");
++      scene.style.setProperty("--pack-done", "1");
++      scene.style.setProperty("--spark-opacity", "0");
++      scene.style.setProperty("--spray-opacity", "0");
++      scene.style.setProperty("--part-scale", "1");
++      scene.dataset.phase = "all";
++    };
++
++    const update = () => {
++      frame = 0;
++
++      if (motionQuery.matches) {
++        writeStaticState();
++        return;
++      }
++
++      const rect = scene.getBoundingClientRect();
++      const viewport = window.innerHeight || 1;
++      const travel = Math.max(rect.height - viewport, 1);
++      const progress = clamp(-rect.top / travel);
++      const cutPulse = pulse(progress, 0.28, 0.08);
++      const drillPulse = pulse(progress, 0.5, 0.08);
++      const paintPulse = pulse(progress, 0.72, 0.1);
++      const packPulse = pulse(progress, 0.9, 0.08);
++      const phase = Math.min(stations.length - 1, Math.floor(progress * stations.length));
++
++      scene.style.setProperty("--progress-width", `${Math.round(progress * 1000) / 10}%`);
++      scene.style.setProperty("--carrier-left", `${8 + progress * 85}%`);
++      scene.style.setProperty("--belt-offset", `${progress * 180}px`);
++      scene.style.setProperty("--feed-rotation", `${progress * 900}deg`);
++      scene.style.setProperty("--cut-head-y", `${cutPulse * 34}px`);
++      scene.style.setProperty("--drill-head-y", `${drillPulse * 32}px`);
++      scene.style.setProperty("--pack-jaw-y", `${packPulse * 18}px`);
++      scene.style.setProperty("--cut-done", `${ramp(progress, 0.28, 0.38)}`);
++      scene.style.setProperty("--drill-done", `${ramp(progress, 0.5, 0.58)}`);
++      scene.style.setProperty("--paint-done", `${ramp(progress, 0.68, 0.78)}`);
++      scene.style.setProperty("--pack-done", `${ramp(progress, 0.88, 0.97)}`);
++      scene.style.setProperty("--spark-opacity", `${Math.max(cutPulse, drillPulse)}`);
++      scene.style.setProperty("--spray-opacity", `${paintPulse}`);
++      scene.style.setProperty("--part-scale", `${1 + packPulse * 0.04}`);
++      scene.dataset.phase = String(phase);
++    };
++
++    const schedule = () => {
++      if (frame) return;
++      frame = window.requestAnimationFrame(update);
++    };
++
++    window.addEventListener("scroll", schedule, { passive: true });
++    window.addEventListener("resize", schedule);
++    motionQuery.addEventListener("change", schedule);
++    schedule();
++
++    return () => {
++      if (frame) window.cancelAnimationFrame(frame);
++      window.removeEventListener("scroll", schedule);
++      window.removeEventListener("resize", schedule);
++      motionQuery.removeEventListener("change", schedule);
++    };
++  }, []);
++
++  return ref;
++}
++
++function StationTool({ station }: { station: (typeof stations)[number] }) {
++  return (
++    <div
++      className={`station-tool station-${station.id}`}
++      style={{ "--station-x": station.x } as React.CSSProperties}
++    >
++      <span className="station-step">{station.step}</span>
++      <div className="tool-column" />
++      <div className="tool-head">
++        <span />
++      </div>
++    </div>
++  );
++}
++
++function PartVisual({ variant = "active" }: { variant?: "active" | "small" }) {
++  return (
++    <div className={`part part-${variant}`}>
++      <span className="part-blank" />
++      <span className="part-slot" />
++      <span className="part-hole part-hole-left" />
++      <span className="part-hole part-hole-right" />
++      <span className="part-coat" />
++      <span className="part-box" />
++    </div>
++  );
++}
++
++function Machine() {
++  return (
++    <section
++      className="machine-panel"
++      aria-label="Assembly machine animation with feed, cut, drill, finish, and pack stations"
++    >
++      <div className="machine-hud">
++        <div>
++          <span className="eyebrow">Line A7</span>
++          <strong>Indexed assembly run</strong>
++        </div>
++        <div className="hud-meter" aria-hidden="true">
++          <span />
++        </div>
++      </div>
++
++      <div className="machine" aria-hidden="true">
++        <div className="overhead-rail" />
++        <div className="station-bank">
++          {stations.map((station) => (
++            <StationTool station={station} key={station.id} />
++          ))}
++        </div>
++
++        <div className="spark-field">
++          <span />
++          <span />
++          <span />
++        </div>
++
++        <div className="spray-field">
++          <span />
++          <span />
++          <span />
++        </div>
++
++        <div className="belt">
++          <div className="belt-slats" />
++          <div className="belt-fill" />
++        </div>
++
++        <div className="carrier">
++          <div className="carrier-bed" />
++          <PartVisual />
++        </div>
++
++        <div className="static-parts">
++          {stations.map((station) => (
++            <div className="static-part" style={{ "--station-x": station.x } as React.CSSProperties} key={station.id}>
++              <PartVisual variant="small" />
++            </div>
++          ))}
++        </div>
++      </div>
++    </section>
++  );
++}
++
++function StationCards() {
++  return (
++    <ol className="stage-list" aria-label="Assembly stations">
++      {stations.map((station) => (
++        <li className="stage-card" key={station.id}>
++          <span>{station.step}</span>
++          <div>
++            <h3>{station.title}</h3>
++            <p>{station.copy}</p>
++          </div>
++        </li>
++      ))}
++    </ol>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const sceneRef = useAssemblyProgress();
++
++  return (
++    <main className="page">
++      <section className="intro">
++        <div className="intro-copy">
++          <span className="eyebrow">Assembly sequence</span>
++          <h1>Machine line in motion</h1>
++          <p>
++            A raw housing rides through feed, cutting, drilling, finishing, and packing stations while the
++            line advances.
++          </p>
++        </div>
++      </section>
++
++      <section className="factory-scroll" ref={sceneRef} data-phase="0">
++        <div className="factory-stage">
++          <div className="factory-grid">
++            <Machine />
++            <StationCards />
++          </div>
++        </div>
++      </section>
++
++      <section className="process-map">
++        <span className="eyebrow">Station map</span>
++        <h2>Same line, static view</h2>
++        <p>
++          Each station keeps the same production step visible, from the first blank housing to the packed
++          finished module.
++        </p>
++        <StationCards />
++      </section>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..3fd62e7 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,841 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color: #171b1f;
++  background: #eef2f3;
++  font-family:
++    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
++  font-synthesis: none;
++  text-rendering: optimizeLegibility;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  background: #eef2f3;
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  overflow-x: hidden;
++}
++
++button,
++input,
++textarea,
++select {
++  font: inherit;
++}
++
++.page {
++  min-height: 100vh;
++  background: #eef2f3;
++}
++
++.intro {
++  min-height: 76svh;
++  display: grid;
++  align-items: end;
++  padding: clamp(32px, 7vw, 96px);
++  color: #f8fbfc;
++  background:
++    linear-gradient(90deg, rgba(244, 184, 70, 0.16) 0 1px, transparent 1px 96px),
++    linear-gradient(0deg, rgba(45, 177, 160, 0.18) 0 1px, transparent 1px 88px),
++    #15191d;
++  border-bottom: 8px solid #f4b846;
++}
++
++.intro-copy {
++  max-width: 900px;
++}
++
++.eyebrow {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  margin-bottom: 14px;
++  color: #d3543f;
++  font-size: 0.76rem;
++  font-weight: 800;
++  letter-spacing: 0.08em;
++  line-height: 1;
++  text-transform: uppercase;
++}
++
++.intro .eyebrow {
++  color: #f4b846;
++}
++
++.eyebrow::before {
++  content: "";
++  width: 22px;
++  height: 8px;
++  background: currentColor;
++  clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
++}
++
++h1,
++h2,
++h3,
++p {
++  margin-top: 0;
++}
++
++h1 {
++  max-width: 870px;
++  margin-bottom: 20px;
++  font-size: clamp(3.2rem, 9vw, 8.2rem);
++  line-height: 0.9;
++  letter-spacing: 0;
++}
++
++h2 {
++  margin-bottom: 12px;
++  font-size: clamp(2rem, 5vw, 4.4rem);
++  line-height: 1;
++  letter-spacing: 0;
++}
++
++h3 {
++  margin-bottom: 4px;
++  font-size: 1rem;
++  line-height: 1.1;
++  letter-spacing: 0;
++}
++
++p {
++  margin-bottom: 0;
++  color: #48545d;
++  line-height: 1.6;
++}
++
++.intro p {
++  max-width: 720px;
++  color: #dce5e9;
++  font-size: clamp(1.05rem, 2vw, 1.38rem);
++}
++
++.factory-scroll {
++  --progress-width: 0%;
++  --carrier-left: 8%;
++  --belt-offset: 0px;
++  --feed-rotation: 0deg;
++  --cut-head-y: 0px;
++  --drill-head-y: 0px;
++  --pack-jaw-y: 0px;
++  --cut-done: 0;
++  --drill-done: 0;
++  --paint-done: 0;
++  --pack-done: 0;
++  --spark-opacity: 0;
++  --spray-opacity: 0;
++  --part-scale: 1;
++  position: relative;
++  min-height: 100svh;
++  height: 430vh;
++  background:
++    linear-gradient(90deg, rgba(23, 27, 31, 0.05) 0 1px, transparent 1px 84px),
++    linear-gradient(0deg, rgba(23, 27, 31, 0.04) 0 1px, transparent 1px 84px),
++    #dbe2e6;
++}
++
++.factory-stage {
++  position: sticky;
++  top: 0;
++  min-height: 100svh;
++  display: grid;
++  align-items: center;
++  padding: clamp(16px, 3vw, 48px);
++}
++
++.factory-grid {
++  width: min(1180px, 100%);
++  margin: 0 auto;
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
++  gap: clamp(16px, 2.4vw, 28px);
++  align-items: center;
++}
++
++.machine-panel {
++  min-width: 0;
++  overflow: hidden;
++  background: #f8fbfc;
++  border: 1px solid #aeb8bf;
++  border-radius: 8px;
++  box-shadow: 0 28px 60px rgba(28, 36, 42, 0.18);
++}
++
++.machine-hud {
++  display: flex;
++  gap: 20px;
++  align-items: center;
++  justify-content: space-between;
++  padding: clamp(14px, 2vw, 22px);
++  color: #f8fbfc;
++  background: #171b1f;
++}
++
++.machine-hud .eyebrow {
++  margin-bottom: 7px;
++  color: #f4b846;
++}
++
++.machine-hud strong {
++  display: block;
++  font-size: clamp(1rem, 2vw, 1.55rem);
++  line-height: 1.1;
++}
++
++.hud-meter {
++  flex: 0 1 260px;
++  height: 12px;
++  overflow: hidden;
++  background: #2a3238;
++  border: 1px solid #56626a;
++  border-radius: 999px;
++}
++
++.hud-meter span {
++  display: block;
++  width: var(--progress-width);
++  height: 100%;
++  background: linear-gradient(90deg, #d3543f, #f4b846 52%, #2db1a0);
++  border-radius: inherit;
++}
++
++.machine {
++  position: relative;
++  min-height: clamp(360px, 50vw, 560px);
++  overflow: hidden;
++  background:
++    linear-gradient(90deg, rgba(68, 85, 96, 0.12) 0 1px, transparent 1px 52px),
++    linear-gradient(0deg, rgba(68, 85, 96, 0.12) 0 1px, transparent 1px 52px),
++    linear-gradient(180deg, #edf2f4 0%, #d8e1e5 64%, #c5d0d6 100%);
++}
++
++.machine::before {
++  content: "";
++  position: absolute;
++  inset: auto 0 0;
++  height: 28%;
++  background:
++    linear-gradient(90deg, transparent 0 18px, rgba(21, 25, 29, 0.08) 18px 21px, transparent 21px 44px),
++    #b8c4ca;
++}
++
++.overhead-rail {
++  position: absolute;
++  top: 17%;
++  left: 5%;
++  right: 5%;
++  height: 20px;
++  background: linear-gradient(180deg, #56626a, #2d343a);
++  border: 1px solid #1d2429;
++  border-radius: 5px;
++  box-shadow: 0 12px 0 rgba(33, 41, 47, 0.16);
++}
++
++.station-bank {
++  position: absolute;
++  inset: 0;
++}
++
++.station-tool {
++  position: absolute;
++  top: 17%;
++  left: var(--station-x);
++  width: clamp(54px, 9vw, 98px);
++  height: 46%;
++  transform: translateX(-50%);
++}
++
++.station-step {
++  position: absolute;
++  top: -38px;
++  left: 50%;
++  transform: translateX(-50%);
++  display: grid;
++  place-items: center;
++  width: 42px;
++  height: 26px;
++  color: #171b1f;
++  font-size: 0.78rem;
++  font-weight: 900;
++  background: #f4b846;
++  border: 1px solid #9f6c17;
++  border-radius: 4px;
++}
++
++.tool-column {
++  position: absolute;
++  top: 12px;
++  left: 50%;
++  width: 16px;
++  height: 62%;
++  transform: translateX(-50%);
++  background: linear-gradient(90deg, #6f7e87, #d0d8dc 44%, #4f5b63);
++  border: 1px solid #38434a;
++  border-radius: 4px;
++}
++
++.tool-head {
++  position: absolute;
++  left: 50%;
++  bottom: 15%;
++  width: 72%;
++  min-width: 44px;
++  height: 44px;
++  transform: translateX(-50%);
++  background: #2d343a;
++  border: 1px solid #11171b;
++  border-radius: 6px;
++  box-shadow: inset 0 0 0 5px #46535c;
++}
++
++.tool-head span {
++  position: absolute;
++  left: 50%;
++  bottom: -19px;
++  width: 20px;
++  height: 24px;
++  transform: translateX(-50%);
++  background: #d3543f;
++  border: 1px solid #842b20;
++  border-radius: 0 0 6px 6px;
++}
++
++.station-feed .tool-head {
++  display: grid;
++  place-items: center;
++  border-radius: 50%;
++  transform: translateX(-50%) rotate(var(--feed-rotation));
++  background:
++    linear-gradient(90deg, transparent 45%, #f4b846 45% 55%, transparent 55%),
++    linear-gradient(0deg, transparent 45%, #f4b846 45% 55%, transparent 55%),
++    #2d343a;
++}
++
++.station-feed .tool-head span {
++  display: none;
++}
++
++.station-cut .tool-head {
++  transform: translateX(-50%) translateY(var(--cut-head-y));
++}
++
++.station-drill .tool-head {
++  transform: translateX(-50%) translateY(var(--drill-head-y));
++}
++
++.station-drill .tool-head span {
++  width: 12px;
++  height: 32px;
++  background: #2db1a0;
++  border-color: #1d6e66;
++}
++
++.station-paint .tool-head {
++  background: #2db1a0;
++  box-shadow: inset 0 0 0 5px #65d4c7;
++}
++
++.station-paint .tool-head span {
++  width: 48px;
++  height: 18px;
++  background: #65d4c7;
++  border-color: #1d6e66;
++}
++
++.station-pack .tool-head {
++  transform: translateX(-50%) translateY(var(--pack-jaw-y));
++  background: #f4b846;
++  box-shadow: inset 0 0 0 5px #d89528;
++}
++
++.station-pack .tool-head span {
++  width: 58px;
++  height: 20px;
++  background: #171b1f;
++  border-color: #171b1f;
++}
++
++.spark-field,
++.spray-field {
++  pointer-events: none;
++  position: absolute;
++  inset: 0;
++}
++
++.spark-field {
++  opacity: var(--spark-opacity);
++}
++
++.spark-field span {
++  position: absolute;
++  width: 12px;
++  height: 2px;
++  background: #f4b846;
++  border-radius: 999px;
++  box-shadow: 0 0 14px #f4b846;
++}
++
++.spark-field span:nth-child(1) {
++  left: 29%;
++  top: 57%;
++  transform: rotate(28deg);
++}
++
++.spark-field span:nth-child(2) {
++  left: 51%;
++  top: 56%;
++  transform: rotate(-24deg);
++}
++
++.spark-field span:nth-child(3) {
++  left: 53%;
++  top: 61%;
++  transform: rotate(14deg);
++}
++
++.spray-field {
++  opacity: var(--spray-opacity);
++}
++
++.spray-field span {
++  position: absolute;
++  top: 52%;
++  width: 12px;
++  height: 88px;
++  background: linear-gradient(180deg, rgba(45, 177, 160, 0.75), rgba(45, 177, 160, 0));
++  border-radius: 999px;
++}
++
++.spray-field span:nth-child(1) {
++  left: 70%;
++  transform: rotate(12deg);
++}
++
++.spray-field span:nth-child(2) {
++  left: 74%;
++}
++
++.spray-field span:nth-child(3) {
++  left: 78%;
++  transform: rotate(-12deg);
++}
++
++.belt {
++  position: absolute;
++  left: 5%;
++  right: 5%;
++  bottom: 20%;
++  height: clamp(72px, 12vw, 112px);
++  overflow: hidden;
++  background: #242b30;
++  border: 1px solid #11171b;
++  border-radius: 8px;
++  box-shadow: 0 18px 0 rgba(23, 27, 31, 0.16);
++}
++
++.belt-slats {
++  position: absolute;
++  inset: 10px;
++  background:
++    repeating-linear-gradient(
++      90deg,
++      #38434a 0 22px,
++      #4d5961 22px 28px,
++      #252d32 28px 46px
++    );
++  background-position-x: var(--belt-offset);
++  border-radius: 4px;
++}
++
++.belt-fill {
++  position: absolute;
++  left: 0;
++  bottom: 0;
++  width: var(--progress-width);
++  height: 7px;
++  background: linear-gradient(90deg, #d3543f, #f4b846 50%, #2db1a0);
++}
++
++.carrier {
++  position: absolute;
++  left: var(--carrier-left);
++  bottom: calc(20% + clamp(72px, 12vw, 112px) - 7px);
++  width: clamp(84px, 12vw, 130px);
++  height: 78px;
++  transform: translateX(-50%) scale(var(--part-scale));
++  transform-origin: 50% 80%;
++}
++
++.carrier-bed {
++  position: absolute;
++  left: 7%;
++  right: 7%;
++  bottom: 0;
++  height: 18px;
++  background: #56626a;
++  border: 1px solid #222a2f;
++  border-radius: 4px;
++}
++
++.part {
++  position: absolute;
++  left: 50%;
++  bottom: 15px;
++  width: 78%;
++  aspect-ratio: 1.8;
++  transform: translateX(-50%);
++}
++
++.part span {
++  position: absolute;
++  display: block;
++}
++
++.part-blank {
++  inset: 0;
++  background: linear-gradient(180deg, #bac6cc, #83919a);
++  border: 2px solid #4f5b63;
++  border-radius: 8px;
++}
++
++.part-slot {
++  left: 22%;
++  right: 22%;
++  top: 34%;
++  height: 32%;
++  opacity: var(--cut-done);
++  background: #313a40;
++  border-radius: 999px;
++}
++
++.part-hole {
++  top: 50%;
++  width: 14%;
++  aspect-ratio: 1;
++  opacity: var(--drill-done);
++  transform: translateY(-50%);
++  background: #edf2f4;
++  border: 2px solid #313a40;
++  border-radius: 50%;
++}
++
++.part-hole-left {
++  left: 10%;
++}
++
++.part-hole-right {
++  right: 10%;
++}
++
++.part-coat {
++  inset: 0;
++  opacity: var(--paint-done);
++  mix-blend-mode: multiply;
++  background: linear-gradient(135deg, #2db1a0, #65d4c7);
++  border: 2px solid #1d6e66;
++  border-radius: 8px;
++}
++
++.part-box {
++  inset: -10px -8px -8px;
++  opacity: var(--pack-done);
++  background:
++    linear-gradient(90deg, transparent 0 44%, rgba(23, 27, 31, 0.18) 44% 48%, transparent 48%),
++    rgba(244, 184, 70, 0.58);
++  border: 2px solid #9f6c17;
++  border-radius: 6px;
++}
++
++.static-parts {
++  display: none;
++}
++
++.stage-list {
++  display: grid;
++  gap: 10px;
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++.stage-card {
++  display: grid;
++  grid-template-columns: 48px minmax(0, 1fr);
++  gap: 12px;
++  align-items: start;
++  min-height: 94px;
++  padding: 14px;
++  color: #171b1f;
++  background: rgba(248, 251, 252, 0.82);
++  border: 1px solid #b7c2c8;
++  border-left: 5px solid #8a989f;
++  border-radius: 8px;
++  opacity: 0.58;
++  transform: translateX(0);
++  transition:
++    opacity 160ms ease,
++    transform 160ms ease,
++    border-color 160ms ease,
++    background-color 160ms ease;
++}
++
++.stage-card > span {
++  display: grid;
++  place-items: center;
++  width: 38px;
++  height: 32px;
++  color: #f8fbfc;
++  font-size: 0.82rem;
++  font-weight: 900;
++  background: #171b1f;
++  border-radius: 5px;
++}
++
++.stage-card p {
++  font-size: 0.92rem;
++  line-height: 1.45;
++}
++
++.factory-scroll[data-phase="0"] .stage-card:nth-child(1),
++.factory-scroll[data-phase="1"] .stage-card:nth-child(2),
++.factory-scroll[data-phase="2"] .stage-card:nth-child(3),
++.factory-scroll[data-phase="3"] .stage-card:nth-child(4),
++.factory-scroll[data-phase="4"] .stage-card:nth-child(5),
++.factory-scroll[data-phase="all"] .stage-card {
++  opacity: 1;
++  transform: translateX(-6px);
++  background: #ffffff;
++  border-left-color: #d3543f;
++}
++
++.factory-scroll[data-phase="2"] .stage-card:nth-child(3),
++.factory-scroll[data-phase="3"] .stage-card:nth-child(4) {
++  border-left-color: #2db1a0;
++}
++
++.factory-scroll[data-phase="4"] .stage-card:nth-child(5),
++.factory-scroll[data-phase="all"] .stage-card {
++  border-left-color: #f4b846;
++}
++
++.process-map {
++  padding: clamp(42px, 8vw, 110px) clamp(20px, 6vw, 80px);
++  background: #f8fbfc;
++}
++
++.process-map > p {
++  max-width: 720px;
++  margin-bottom: 28px;
++  font-size: 1.05rem;
++}
++
++.process-map .stage-list {
++  grid-template-columns: repeat(5, minmax(0, 1fr));
++}
++
++.process-map .stage-card {
++  min-height: 160px;
++  opacity: 1;
++  transform: none;
++}
++
++@media (max-width: 900px) {
++  .intro {
++    min-height: 64svh;
++  }
++
++  .factory-scroll {
++    height: 390vh;
++  }
++
++  .factory-stage {
++    align-items: start;
++    padding-top: 18px;
++  }
++
++  .factory-grid {
++    grid-template-columns: 1fr;
++    gap: 14px;
++  }
++
++  .machine {
++    min-height: clamp(330px, 68vw, 480px);
++  }
++
++  .factory-grid > .stage-list {
++    grid-template-columns: repeat(5, minmax(112px, 1fr));
++    gap: 8px;
++  }
++
++  .factory-grid .stage-card {
++    grid-template-columns: 1fr;
++    min-height: 118px;
++    padding: 10px;
++  }
++
++  .factory-grid .stage-card p {
++    font-size: 0.82rem;
++    line-height: 1.35;
++  }
++
++  .process-map .stage-list {
++    grid-template-columns: repeat(2, minmax(0, 1fr));
++  }
++}
++
++@media (max-width: 620px) {
++  .intro {
++    min-height: 58svh;
++    padding: 28px 18px;
++  }
++
++  .intro p {
++    font-size: 1rem;
++  }
++
++  .factory-scroll {
++    height: 360vh;
++  }
++
++  .factory-stage {
++    min-height: 100svh;
++    padding: 10px;
++  }
++
++  .machine-hud {
++    align-items: flex-start;
++    flex-direction: column;
++  }
++
++  .hud-meter {
++    width: 100%;
++    flex-basis: auto;
++  }
++
++  .machine {
++    min-height: 340px;
++  }
++
++  .station-step {
++    top: -32px;
++    width: 34px;
++    height: 22px;
++    font-size: 0.7rem;
++  }
++
++  .station-tool {
++    width: 48px;
++  }
++
++  .tool-head {
++    height: 36px;
++    min-width: 34px;
++  }
++
++  .tool-head span {
++    width: 15px;
++  }
++
++  .station-paint .tool-head span,
++  .station-pack .tool-head span {
++    width: 34px;
++  }
++
++  .carrier {
++    width: 78px;
++    height: 62px;
++  }
++
++  .factory-grid > .stage-list {
++    grid-template-columns: repeat(5, minmax(92px, 1fr));
++  }
++
++  .factory-grid .stage-card {
++    min-height: 96px;
++  }
++
++  .factory-grid .stage-card p {
++    display: none;
++  }
++
++  .process-map {
++    padding: 44px 16px;
++  }
++
++  .process-map .stage-list {
++    grid-template-columns: 1fr;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    transition-duration: 0.001ms !important;
++    animation-duration: 0.001ms !important;
++    animation-iteration-count: 1 !important;
++  }
++
++  .factory-scroll {
++    height: auto;
++  }
++
++  .factory-stage {
++    position: static;
++    min-height: auto;
++  }
++
++  .factory-grid {
++    grid-template-columns: 1fr;
++  }
++
++  .carrier {
++    display: none;
++  }
++
++  .static-parts {
++    position: absolute;
++    inset: 0;
++    display: block;
++  }
++
++  .static-part {
++    position: absolute;
++    left: var(--station-x);
++    bottom: calc(20% + clamp(72px, 12vw, 112px) + 6px);
++    width: clamp(42px, 7vw, 74px);
++    height: 42px;
++    transform: translateX(-50%);
++  }
++
++  .part-small {
++    width: 100%;
++  }
++
++  .part-small .part-slot,
++  .part-small .part-hole,
++  .part-small .part-coat {
++    opacity: 1;
++  }
++
++  .part-small .part-box {
++    opacity: 0.45;
++  }
++
++  .spark-field,
++  .spray-field {
++    display: none;
++  }
++
++  .factory-scroll .stage-card {
++    opacity: 1;
++    transform: none;
++  }
++}

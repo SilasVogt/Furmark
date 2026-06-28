@@ -1,0 +1,1161 @@
+diff --git a/index.html b/index.html
+index f6dacfc..f84d390 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,19 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta name="theme-color" content="#0a0b0e" />
++    <meta
++      name="description"
++      content="Arcwell — a modular desk lamp with swappable arms, lenses and base finishes. Configure it live."
++    />
++    <link rel="preconnect" href="https://fonts.googleapis.com" />
++    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
++    <title>Arcwell — Modular Desk Lamp</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..d0b9b67 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,394 @@
+-import React from "react";
++import React, { useMemo, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  ArrowRight,
++  Aperture,
++  Check,
++  Layers,
++  RotateCcw,
++  ShieldCheck,
++  Spline,
++  Truck,
++} from "lucide-react";
++import { ARMS, BASE_PRICE, FINISHES, LENSES, SPECS } from "./data";
++import type { Arm, Finish, Lens } from "./data";
++import { Lamp, ModuleGlyph } from "./lamp";
+ import "./style.css";
+ 
++function Wordmark() {
++  return (
++    <span className="brand">
++      <svg className="mark" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
++        <circle cx="11" cy="11" r="9.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
++        <path d="M11 2 A9 9 0 0 1 20 11" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
++        <circle cx="11" cy="11" r="2.4" fill="currentColor" />
++      </svg>
++      ARCWELL
++    </span>
++  );
++}
++
++type Opt = { id: string; name: string };
++
++function OptionGroup<T extends Opt>({
++  items,
++  active,
++  onPick,
++  render,
++  label,
++}: {
++  items: T[];
++  active: string;
++  onPick: (item: T) => void;
++  render: (item: T) => React.ReactNode;
++  label: string;
++}) {
++  return (
++    <div className="opts" role="group" aria-label={label}>
++      {items.map((item) => (
++        <button
++          key={item.id}
++          type="button"
++          className="opt"
++          aria-pressed={active === item.id}
++          aria-label={item.name}
++          onClick={() => onPick(item)}
++        >
++          <Check className="check" size={14} strokeWidth={2.5} />
++          {render(item)}
++        </button>
++      ))}
++    </div>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const [arm, setArm] = useState<Arm>(ARMS[0]);
++  const [lens, setLens] = useState<Lens>(LENSES[0]);
++  const [finish, setFinish] = useState<Finish>(FINISHES[0]);
++
++  const price = useMemo(
++    () => BASE_PRICE + arm.price + lens.price + finish.price,
++    [arm, lens, finish],
++  );
++
++  const glowStyle = { ["--glow" as string]: lens.glow } as React.CSSProperties;
++
++  return (
++    <>
++      {/* ------------------------------------------------ nav */}
++      <header className="nav">
++        <div className="shell nav-inner">
++          <Wordmark />
++          <nav className="nav-links">
++            <a href="#studio">Studio</a>
++            <a href="#specs">Specifications</a>
++            <a href="#system">Modular system</a>
++          </nav>
++          <div className="nav-cta">
++            <span className="nav-price">from ${BASE_PRICE}</span>
++            <a className="btn btn-primary btn-sm" href="#buy">
++              Pre-order
++            </a>
++          </div>
++        </div>
++      </header>
++
++      <main>
++        {/* ------------------------------------------------ hero / studio */}
++        <section className="hero" id="studio">
++          <div className="shell hero-grid">
++            <div className="hero-copy">
++              <span className="eyebrow">Modular desk light</span>
++              <h1>
++                Light, <span className="soft">reconfigured.</span>
++              </h1>
++              <p className="hero-sub">
++                Arcwell is one lamp that becomes the one you need — swap arms, lenses and base
++                finishes in seconds. Build it on the stage, then make it yours.
++              </p>
++              <div className="stats">
++                <div className="stat">
++                  <div className="num">720<span style={{ fontSize: "0.6em" }}> lm</span></div>
++                  <div className="lbl">Output</div>
++                </div>
++                <div className="stat">
++                  <div className="num">CRI 97</div>
++                  <div className="lbl">Colour accuracy</div>
++                </div>
++                <div className="stat">
++                  <div className="num">36</div>
++                  <div className="lbl">Combinations</div>
++                </div>
++              </div>
++            </div>
++
++            <div className="stage-wrap">
++              <div className="stage" style={glowStyle}>
++                <span className="stage-tag">
++                  <span className="dot" /> Live configuration
++                </span>
++                <Lamp arm={arm} lens={lens} finish={finish} />
++              </div>
++
++              {/* configurator */}
++              <div className="config">
++                <div className="config-row">
++                  <div className="config-head">
++                    <span className="label">
++                      <Spline size={14} /> 01 — Arm
++                    </span>
++                    <span className="pick">
++                      <b>{arm.name}</b> · {arm.tag}
++                    </span>
++                  </div>
++                  <OptionGroup
++                    items={ARMS}
++                    active={arm.id}
++                    onPick={setArm}
++                    label="Choose arm"
++                    render={(a) => (
++                      <>
++                        <span className="opt-name">{a.name}</span>
++                        <span className="opt-meta">{a.tag}</span>
++                      </>
++                    )}
++                  />
++                </div>
++
++                <div className="config-row">
++                  <div className="config-head">
++                    <span className="label">
++                      <Aperture size={14} /> 02 — Lens
++                    </span>
++                    <span className="pick">
++                      <b>{lens.name}</b> · {lens.tag}
++                    </span>
++                  </div>
++                  <OptionGroup
++                    items={LENSES}
++                    active={lens.id}
++                    onPick={setLens}
++                    label="Choose lens"
++                    render={(l) => (
++                      <>
++                        <span className="opt-name">
++                          <span
++                            className="swatch"
++                            style={{ background: l.glow, borderColor: "rgba(0,0,0,0.2)" }}
++                          />
++                          {l.name}
++                        </span>
++                        <span className="opt-meta">{l.tag}</span>
++                      </>
++                    )}
++                  />
++                </div>
++
++                <div className="config-row">
++                  <div className="config-head">
++                    <span className="label">
++                      <Layers size={14} /> 03 — Finish
++                    </span>
++                    <span className="pick">
++                      <b>{finish.name}</b> · {finish.tag}
++                    </span>
++                  </div>
++                  <OptionGroup
++                    items={FINISHES}
++                    active={finish.id}
++                    onPick={setFinish}
++                    label="Choose base finish"
++                    render={(f) => (
++                      <>
++                        <span className="opt-name">
++                          <span className="swatch" style={{ background: f.base }} />
++                          {f.name}
++                        </span>
++                        <span className="opt-meta">{f.tag}</span>
++                      </>
++                    )}
++                  />
++                </div>
++              </div>
++
++              {/* buy dock */}
++              <div className="buy-dock">
++                <div className="price">
++                  <span className="amt">${price}</span>
++                  <span className="note">Ships Q3 · free worldwide</span>
++                </div>
++                <div className="actions">
++                  <a className="btn btn-ghost" href="#specs">
++                    View specs
++                  </a>
++                  <a className="btn btn-primary" href="#buy">
++                    Pre-order <ArrowRight size={16} />
++                  </a>
++                </div>
++              </div>
++            </div>
++          </div>
++        </section>
++
++        {/* ------------------------------------------------ specs */}
++        <section className="section" id="specs">
++          <div className="shell">
++            <div className="section-head">
++              <h2>Engineered to disappear into good work.</h2>
++              <p>
++                A high-CRI emitter, stepless dimming and USB-C power in a frame milled from a single
++                run of anodised aluminium.
++              </p>
++            </div>
++            <div className="spec-grid">
++              {SPECS.map(([k, v]) => (
++                <div className="spec-row" key={k}>
++                  <span className="k">{k}</span>
++                  <span className="v">{v}</span>
++                </div>
++              ))}
++            </div>
++          </div>
++        </section>
++
++        {/* ------------------------------------------------ modular system */}
++        <section className="section" id="system">
++          <div className="shell">
++            <div className="section-head">
++              <h2>Three systems. One mount.</h2>
++              <p>
++                Every Arcwell part shares the same magnetic dock, so the lamp grows with the work
++                instead of being replaced by it.
++              </p>
++            </div>
++            <div className="modules">
++              <article className="module">
++                <div className="module-ix">
++                  <span>01 / ARMS</span>
++                  <span>{ARMS.length} options</span>
++                </div>
++                <div className="module-thumb">
++                  <ModuleGlyph kind="arm" finish={finish} />
++                </div>
++                <h3>Arms</h3>
++                <p>From a compact fold to an extended boom — change the lamp's reach without tools.</p>
++                <div className="tokens">
++                  {ARMS.map((a) => (
++                    <span className="token" key={a.id}>
++                      {a.name}
++                    </span>
++                  ))}
++                </div>
++              </article>
++
++              <article className="module">
++                <div className="module-ix">
++                  <span>02 / LENSES</span>
++                  <span>{LENSES.length} options</span>
++                </div>
++                <div className="module-thumb">
++                  <ModuleGlyph kind="lens" finish={finish} />
++                </div>
++                <h3>Lenses</h3>
++                <p>Twist between a tight task spot, a wide flood and a soft ambient wash.</p>
++                <div className="tokens">
++                  {LENSES.map((l) => (
++                    <span className="token" key={l.id}>
++                      {l.name}
++                    </span>
++                  ))}
++                </div>
++              </article>
++
++              <article className="module">
++                <div className="module-ix">
++                  <span>03 / BASES</span>
++                  <span>{FINISHES.length} finishes</span>
++                </div>
++                <div className="module-thumb">
++                  <ModuleGlyph kind="base" finish={finish} />
++                </div>
++                <h3>Finishes</h3>
++                <p>Anodised, lacquered and powder-coated bases to match the room, not fight it.</p>
++                <div className="tokens">
++                  {FINISHES.map((f) => (
++                    <span className="token" key={f.id}>
++                      {f.name}
++                    </span>
++                  ))}
++                </div>
++              </article>
++            </div>
++          </div>
++        </section>
++
++        {/* ------------------------------------------------ closing buy band */}
++        <section className="closer" id="buy" style={glowStyle}>
++          <div className="shell inner">
++            <span className="eyebrow" style={{ justifyContent: "center" }}>
++              Pre-order
++            </span>
++            <h2>Build the one that's yours.</h2>
++            <p className="lead">
++              Reserve your Arcwell today. Finalise the configuration at checkout — every combination
++              ships in the same recyclable case.
++            </p>
++            <div className="summary">
++              <span>
++                <b>{arm.name}</b> arm
++              </span>
++              <span className="sep">/</span>
++              <span>
++                <b>{lens.name}</b> lens
++              </span>
++              <span className="sep">/</span>
++              <span>
++                <b>{finish.name}</b> finish
++              </span>
++              <span className="sep">·</span>
++              <span>
++                <b>${price}</b>
++              </span>
++            </div>
++            <div className="closer-actions">
++              <a className="btn btn-primary" href="#studio">
++                Pre-order — ${price} <ArrowRight size={16} />
++              </a>
++              <a className="btn btn-ghost" href="#studio">
++                <RotateCcw size={15} /> Reconfigure
++              </a>
++            </div>
++            <div className="reassure">
++              <span>
++                <Truck size={16} /> Free worldwide shipping
++              </span>
++              <span>
++                <ShieldCheck size={16} /> 5-year warranty
++              </span>
++              <span>
++                <RotateCcw size={16} /> 30-day returns
++              </span>
++            </div>
++          </div>
++        </section>
++
++        {/* ------------------------------------------------ footer */}
++        <footer className="footer">
++          <div className="shell footer-inner">
++            <Wordmark />
++            <div className="footer-links">
++              <a href="#studio">Studio</a>
++              <a href="#specs">Specifications</a>
++              <a href="#system">Modular system</a>
++              <a href="#buy">Pre-order</a>
++            </div>
++            <span>© 2026 Arcwell Lighting</span>
++          </div>
++        </footer>
++      </main>
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..30ced9c 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,729 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++/* ============================================================
++   Arcwell — modular desk lamp landing page
++   Dark, cinematic product studio. No beige, no brass.
++   ============================================================ */
++
++@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
++
++:root {
++  --bg: #0a0b0e;
++  --bg-2: #0c0e12;
++  --surface: #14171d;
++  --surface-2: #1a1e26;
++  --line: rgba(255, 255, 255, 0.09);
++  --line-soft: rgba(255, 255, 255, 0.05);
++
++  --ink: #f2f4f8;
++  --ink-2: #aab1bd;
++  --ink-3: #6c7280;
++
++  --glow: #fff3da; /* overridden per lens via JS */
++
++  --font-display: "Space Grotesk", system-ui, -apple-system, sans-serif;
++  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
++  --font-mono: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
++
++  --maxw: 1240px;
++  --pad: clamp(20px, 5vw, 64px);
++  --radius: 14px;
++
++  --ease: cubic-bezier(0.22, 1, 0.36, 1);
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body {
++  margin: 0;
++  max-width: 100%;
++  overflow-x: hidden;
++}
++
++body {
++  background: var(--bg);
++  color: var(--ink);
++  font-family: var(--font-sans);
++  font-size: 16px;
++  line-height: 1.6;
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
++}
++
++/* Ambient field — subtle grid + a single glow that tracks the lamp's light */
++body::before {
++  content: "";
++  position: fixed;
++  inset: 0;
++  z-index: 0;
++  pointer-events: none;
++  background-image:
++    linear-gradient(var(--line-soft) 1px, transparent 1px),
++    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
++  background-size: 64px 64px;
++  -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 75%);
++  mask-image: radial-gradient(120% 80% at 50% 0%, #000 30%, transparent 75%);
++  opacity: 0.5;
++}
++
++h1,
++h2,
++h3 {
++  font-family: var(--font-display);
++  font-weight: 500;
++  letter-spacing: -0.02em;
++  line-height: 1.04;
++  margin: 0;
++}
++
++p {
++  margin: 0;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++button {
++  font-family: inherit;
++  cursor: pointer;
++}
++
++img,
++svg {
++  display: block;
++}
++
++.shell {
++  position: relative;
++  z-index: 1;
++  width: 100%;
++  max-width: var(--maxw);
++  margin: 0 auto;
++  padding-inline: var(--pad);
++}
++
++.eyebrow {
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  letter-spacing: 0.22em;
++  text-transform: uppercase;
++  color: var(--ink-3);
++  display: inline-flex;
++  align-items: center;
++  gap: 0.6em;
++}
++.eyebrow::before {
++  content: "";
++  width: 26px;
++  height: 1px;
++  background: var(--ink-3);
++}
++
++/* ---------------------------------------------------------- nav */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  backdrop-filter: blur(14px);
++  background: color-mix(in srgb, var(--bg) 72%, transparent);
++  border-bottom: 1px solid var(--line-soft);
++}
++.nav-inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  height: 64px;
++}
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  font-family: var(--font-display);
++  font-weight: 600;
++  letter-spacing: 0.04em;
++  font-size: 1.02rem;
++}
++.brand .mark {
++  color: var(--ink);
++}
++.nav-links {
++  display: flex;
++  gap: 30px;
++  font-size: 0.9rem;
++  color: var(--ink-2);
++}
++.nav-links a {
++  transition: color 0.2s;
++}
++.nav-links a:hover {
++  color: var(--ink);
++}
++.nav-cta {
++  display: inline-flex;
++  align-items: center;
++  gap: 14px;
++  font-family: var(--font-mono);
++  font-size: 0.8rem;
++}
++.nav-price {
++  color: var(--ink-2);
++}
++
++/* ---------------------------------------------------------- buttons */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 0.55em;
++  border: 1px solid transparent;
++  border-radius: 999px;
++  padding: 0.85em 1.4em;
++  font-size: 0.92rem;
++  font-weight: 500;
++  letter-spacing: 0.01em;
++  transition: transform 0.25s var(--ease), background 0.25s, border-color 0.25s, opacity 0.25s;
++  white-space: nowrap;
++}
++.btn:active {
++  transform: translateY(1px);
++}
++.btn-primary {
++  background: var(--ink);
++  color: #0a0b0e;
++}
++.btn-primary:hover {
++  background: #fff;
++}
++.btn-ghost {
++  background: transparent;
++  color: var(--ink);
++  border-color: var(--line);
++}
++.btn-ghost:hover {
++  border-color: var(--ink-2);
++  background: rgba(255, 255, 255, 0.03);
++}
++.btn-sm {
++  padding: 0.6em 1.05em;
++  font-size: 0.82rem;
++}
++
++/* ---------------------------------------------------------- hero */
++.hero {
++  position: relative;
++  padding-top: clamp(36px, 6vw, 72px);
++  padding-bottom: clamp(48px, 7vw, 96px);
++}
++.hero-grid {
++  display: grid;
++  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr);
++  gap: clamp(28px, 4vw, 64px);
++  align-items: center;
++}
++.hero-copy {
++  max-width: 30ch;
++}
++.hero h1 {
++  font-size: clamp(2.7rem, 6vw, 4.7rem);
++  margin: 0.5em 0 0;
++}
++.hero h1 .soft {
++  color: var(--ink-3);
++}
++.hero-sub {
++  color: var(--ink-2);
++  font-size: clamp(1rem, 1.3vw, 1.12rem);
++  margin-top: 1.3em;
++  max-width: 42ch;
++}
++.stats {
++  display: flex;
++  flex-wrap: wrap;
++  gap: clamp(20px, 3vw, 40px);
++  margin-top: 2.4em;
++}
++.stat .num {
++  font-family: var(--font-display);
++  font-size: 1.7rem;
++  font-weight: 500;
++  letter-spacing: -0.01em;
++}
++.stat .lbl {
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  letter-spacing: 0.16em;
++  text-transform: uppercase;
++  color: var(--ink-3);
++  margin-top: 0.2em;
++}
++
++/* ---------------------------------------------------------- stage + lamp */
++.stage-wrap {
++  min-width: 0;
++}
++.stage {
++  position: relative;
++  border: 1px solid var(--line);
++  border-radius: 20px;
++  background:
++    radial-gradient(120% 90% at 64% 26%, color-mix(in srgb, var(--glow) 16%, transparent), transparent 60%),
++    linear-gradient(180deg, var(--surface-2), var(--bg-2));
++  overflow: hidden;
++  transition: background 0.6s ease;
++}
++.stage::after {
++  /* desk reflection band */
++  content: "";
++  position: absolute;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  height: 34%;
++  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.45));
++  pointer-events: none;
++}
++.stage-tag {
++  position: absolute;
++  top: 16px;
++  left: 18px;
++  z-index: 2;
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  letter-spacing: 0.16em;
++  text-transform: uppercase;
++  color: var(--ink-3);
++  display: flex;
++  align-items: center;
++  gap: 8px;
++}
++.stage-tag .dot {
++  width: 6px;
++  height: 6px;
++  border-radius: 50%;
++  background: var(--glow);
++  box-shadow: 0 0 10px var(--glow);
++  transition: background 0.5s, box-shadow 0.5s;
++}
++.lamp-svg {
++  position: relative;
++  z-index: 1;
++  width: 100%;
++  height: auto;
++  display: block;
++}
++.lamp-body {
++  animation: rise 0.7s var(--ease) both;
++}
++@keyframes rise {
++  from {
++    opacity: 0;
++    transform: translateY(10px);
++  }
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++/* finish colour glides; arm geometry snaps (a module swap) */
++.metal {
++  transition: fill 0.5s ease, stroke 0.5s ease;
++}
++.glow-fill {
++  transition: fill 0.5s ease, opacity 0.5s ease;
++}
++
++/* configurator */
++.config {
++  margin-top: 22px;
++  display: grid;
++  gap: 18px;
++}
++.config-row {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr);
++  gap: 10px;
++}
++.config-head {
++  display: flex;
++  align-items: baseline;
++  justify-content: space-between;
++  gap: 12px;
++}
++.config-head .label {
++  display: inline-flex;
++  align-items: center;
++  gap: 9px;
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  letter-spacing: 0.16em;
++  text-transform: uppercase;
++  color: var(--ink-2);
++}
++.config-head .label svg {
++  color: var(--ink-3);
++}
++.config-head .pick {
++  font-size: 0.82rem;
++  color: var(--ink-3);
++}
++.config-head .pick b {
++  color: var(--ink);
++  font-weight: 500;
++}
++.opts {
++  display: grid;
++  grid-auto-flow: column;
++  grid-auto-columns: 1fr;
++  gap: 8px;
++}
++.opt {
++  position: relative;
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  text-align: left;
++  padding: 11px 12px;
++  border-radius: 11px;
++  border: 1px solid var(--line);
++  background: rgba(255, 255, 255, 0.015);
++  color: var(--ink-2);
++  transition: border-color 0.2s, background 0.2s, color 0.2s;
++  min-width: 0;
++}
++.opt:hover {
++  border-color: var(--ink-3);
++  color: var(--ink);
++}
++.opt[aria-pressed="true"] {
++  border-color: color-mix(in srgb, var(--ink) 60%, transparent);
++  background: rgba(255, 255, 255, 0.06);
++  color: var(--ink);
++}
++.opt .opt-name {
++  font-size: 0.9rem;
++  font-weight: 500;
++  display: flex;
++  align-items: center;
++  gap: 7px;
++}
++.opt .opt-meta {
++  font-family: var(--font-mono);
++  font-size: 0.66rem;
++  letter-spacing: 0.04em;
++  color: var(--ink-3);
++}
++.opt .swatch {
++  width: 13px;
++  height: 13px;
++  border-radius: 4px;
++  border: 1px solid rgba(255, 255, 255, 0.25);
++  flex: none;
++}
++.opt .check {
++  position: absolute;
++  top: 9px;
++  right: 9px;
++  opacity: 0;
++  color: var(--ink);
++  transition: opacity 0.2s;
++}
++.opt[aria-pressed="true"] .check {
++  opacity: 1;
++}
++
++/* price + buy dock */
++.buy-dock {
++  margin-top: 22px;
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 16px 22px;
++  padding-top: 22px;
++  border-top: 1px solid var(--line);
++}
++.price {
++  display: flex;
++  flex-direction: column;
++}
++.price .amt {
++  font-family: var(--font-display);
++  font-size: 2rem;
++  font-weight: 500;
++  line-height: 1;
++  font-variant-numeric: tabular-nums;
++}
++.price .note {
++  font-family: var(--font-mono);
++  font-size: 0.66rem;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++  color: var(--ink-3);
++  margin-top: 0.55em;
++}
++.buy-dock .actions {
++  display: flex;
++  gap: 10px;
++  margin-left: auto;
++  flex-wrap: wrap;
++}
++
++/* ---------------------------------------------------------- section frame */
++.section {
++  padding-block: clamp(64px, 9vw, 128px);
++  border-top: 1px solid var(--line-soft);
++}
++.section-head {
++  display: flex;
++  align-items: flex-end;
++  justify-content: space-between;
++  gap: 24px;
++  flex-wrap: wrap;
++  margin-bottom: clamp(36px, 5vw, 64px);
++}
++.section-head h2 {
++  font-size: clamp(1.9rem, 4vw, 3rem);
++  max-width: 18ch;
++}
++.section-head p {
++  color: var(--ink-2);
++  max-width: 38ch;
++}
++
++/* specs */
++.spec-grid {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  column-gap: clamp(40px, 7vw, 96px);
++}
++.spec-row {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto;
++  align-items: baseline;
++  gap: 16px;
++  padding: 17px 0;
++  border-bottom: 1px solid var(--line-soft);
++}
++.spec-row .k {
++  color: var(--ink-2);
++  font-size: 0.95rem;
++}
++.spec-row .v {
++  font-family: var(--font-mono);
++  font-size: 0.9rem;
++  color: var(--ink);
++  text-align: right;
++}
++
++/* modular system */
++.modules {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: clamp(16px, 2.5vw, 28px);
++}
++.module {
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: linear-gradient(180deg, var(--surface), var(--bg-2));
++  padding: 22px;
++  display: flex;
++  flex-direction: column;
++  gap: 14px;
++  transition: border-color 0.25s, transform 0.25s var(--ease);
++}
++.module:hover {
++  border-color: var(--ink-3);
++  transform: translateY(-3px);
++}
++.module-thumb {
++  border-radius: 10px;
++  background: radial-gradient(90% 80% at 50% 30%, rgba(255, 255, 255, 0.05), transparent 70%),
++    var(--bg-2);
++  border: 1px solid var(--line-soft);
++  aspect-ratio: 16 / 10;
++  display: grid;
++  place-items: center;
++  overflow: hidden;
++}
++.module-thumb svg {
++  width: 100%;
++  height: 100%;
++}
++.module-ix {
++  font-family: var(--font-mono);
++  font-size: 0.7rem;
++  letter-spacing: 0.14em;
++  color: var(--ink-3);
++  display: flex;
++  justify-content: space-between;
++}
++.module h3 {
++  font-size: 1.25rem;
++  font-weight: 500;
++}
++.module p {
++  color: var(--ink-2);
++  font-size: 0.92rem;
++}
++.module .tokens {
++  margin-top: auto;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++}
++.token {
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  color: var(--ink-2);
++  border: 1px solid var(--line);
++  border-radius: 6px;
++  padding: 3px 8px;
++}
++
++/* closing buy band */
++.closer {
++  text-align: center;
++  border-top: 1px solid var(--line-soft);
++  padding-block: clamp(72px, 10vw, 140px);
++  position: relative;
++  overflow: hidden;
++}
++.closer::before {
++  content: "";
++  position: absolute;
++  left: 50%;
++  top: -10%;
++  width: 720px;
++  max-width: 120%;
++  aspect-ratio: 1;
++  transform: translateX(-50%);
++  background: radial-gradient(circle, color-mix(in srgb, var(--glow) 18%, transparent), transparent 62%);
++  pointer-events: none;
++  transition: background 0.6s ease;
++}
++.closer .inner {
++  position: relative;
++}
++.closer h2 {
++  font-size: clamp(2.2rem, 5.5vw, 4rem);
++  margin-bottom: 0.4em;
++}
++.closer .lead {
++  color: var(--ink-2);
++  max-width: 46ch;
++  margin: 0 auto 2em;
++  font-size: 1.05rem;
++}
++.summary {
++  display: inline-flex;
++  flex-wrap: wrap;
++  justify-content: center;
++  align-items: center;
++  gap: 10px 14px;
++  font-family: var(--font-mono);
++  font-size: 0.8rem;
++  color: var(--ink-2);
++  border: 1px solid var(--line);
++  border-radius: 999px;
++  padding: 10px 20px;
++  margin-bottom: 26px;
++}
++.summary .sep {
++  color: var(--ink-3);
++}
++.summary b {
++  color: var(--ink);
++  font-weight: 400;
++}
++.closer-actions {
++  display: flex;
++  gap: 12px;
++  justify-content: center;
++  flex-wrap: wrap;
++}
++.reassure {
++  display: flex;
++  gap: clamp(20px, 4vw, 48px);
++  justify-content: center;
++  flex-wrap: wrap;
++  margin-top: 44px;
++  font-size: 0.86rem;
++  color: var(--ink-2);
++}
++.reassure span {
++  display: inline-flex;
++  align-items: center;
++  gap: 9px;
++}
++.reassure svg {
++  color: var(--ink-3);
++}
++
++/* footer */
++.footer {
++  border-top: 1px solid var(--line-soft);
++  padding-block: 40px 56px;
++  color: var(--ink-3);
++}
++.footer-inner {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  gap: 20px;
++  flex-wrap: wrap;
++  font-size: 0.85rem;
++}
++.footer .brand {
++  color: var(--ink-2);
++}
++.footer-links {
++  display: flex;
++  gap: 22px;
++  flex-wrap: wrap;
++}
++.footer-links a:hover {
++  color: var(--ink);
++}
++
++/* ---------------------------------------------------------- responsive */
++@media (max-width: 960px) {
++  .hero-grid {
++    grid-template-columns: minmax(0, 1fr);
++  }
++  .hero-copy {
++    max-width: 100%;
++  }
++  .nav-links {
++    display: none;
++  }
++  .spec-grid {
++    grid-template-columns: minmax(0, 1fr);
++  }
++  .modules {
++    grid-template-columns: minmax(0, 1fr);
++  }
++}
++
++@media (max-width: 560px) {
++  .opts {
++    grid-auto-flow: row;
++  }
++  .buy-dock .actions {
++    width: 100%;
++  }
++  .buy-dock .actions .btn {
++    flex: 1;
++  }
++  .stat .num {
++    font-size: 1.45rem;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  * {
++    animation-duration: 0.001ms !important;
++    transition-duration: 0.001ms !important;
++  }
++}

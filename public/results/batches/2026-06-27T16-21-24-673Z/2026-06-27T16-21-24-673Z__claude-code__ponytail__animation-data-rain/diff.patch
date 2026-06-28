@@ -1,0 +1,218 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..8626209 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,190 @@
+-import React from "react";
++import { useEffect, useRef, useState } from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  createState,
++  spawn,
++  step,
++  land,
++  resetLane,
++  type Shape,
++  type SimState,
++} from "./sim";
+ import "./style.css";
+ 
++const METRICS: { key: string; color: string; shape: Shape }[] = [
++  { key: "CPU", color: "#e6194b", shape: "circle" },
++  { key: "MEM", color: "#3cb44b", shape: "square" },
++  { key: "NET", color: "#4363d8", shape: "triangle" },
++  { key: "DISK", color: "#f58231", shape: "diamond" },
++  { key: "REQ", color: "#911eb4", shape: "cross" },
++];
++
++const W = 760;
++const H = 460;
++const AXIS = 22;
++const FLOOR = H - AXIS;
++const LANE_W = W / METRICS.length;
++const VEL = 340; // px/sec
++const FEED_MS = 320; // simulated event interval
++
++// Shape glyph so each metric reads without relying on colour.
++function drawShape(c: CanvasRenderingContext2D, shape: Shape, x: number, y: number, r: number) {
++  c.save();
++  c.strokeStyle = "#fff";
++  c.lineWidth = 1.5;
++  c.beginPath();
++  if (shape === "circle") {
++    c.arc(x, y, r, 0, Math.PI * 2);
++    c.stroke();
++  } else if (shape === "square") {
++    c.strokeRect(x - r, y - r, 2 * r, 2 * r);
++  } else if (shape === "triangle") {
++    c.moveTo(x, y - r);
++    c.lineTo(x + r, y + r);
++    c.lineTo(x - r, y + r);
++    c.closePath();
++    c.stroke();
++  } else if (shape === "diamond") {
++    c.moveTo(x, y - r);
++    c.lineTo(x + r, y);
++    c.lineTo(x, y + r);
++    c.lineTo(x - r, y);
++    c.closePath();
++    c.stroke();
++  } else {
++    c.moveTo(x - r, y - r);
++    c.lineTo(x + r, y + r);
++    c.moveTo(x + r, y - r);
++    c.lineTo(x - r, y + r);
++    c.stroke();
++  }
++  c.restore();
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const canvasRef = useRef<HTMLCanvasElement>(null);
++  const stateRef = useRef<SimState>(createState(METRICS.length, FLOOR));
++  const statusRef = useRef<HTMLDivElement>(null);
++  const frameRef = useRef<HTMLSpanElement>(null);
++  const framesRef = useRef(0);
++  const [running, setRunning] = useState(true);
++  const [reduced, setReduced] = useState(
++    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
++  );
++
++  useEffect(() => {
++    const ctx = canvasRef.current!.getContext("2d")!;
++    const state = stateRef.current;
++    let raf = 0;
++    let last = performance.now();
++
++    const draw = () => {
++      ctx.clearRect(0, 0, W, H);
++      ctx.textAlign = "center";
++      ctx.font = "12px monospace";
++      for (let i = 0; i < METRICS.length; i++) {
++        const x = i * LANE_W;
++        ctx.strokeStyle = "#2a2a33";
++        ctx.strokeRect(x, 0, LANE_W, FLOOR);
++        ctx.fillStyle = "#aaa";
++        ctx.fillText(METRICS[i].key, x + LANE_W / 2, FLOOR + 16);
++      }
++      for (const b of state.bars) {
++        const x = b.lane * LANE_W + 3;
++        const w = LANE_W - 6;
++        ctx.fillStyle = b.color;
++        ctx.fillRect(x, b.y, w, b.height);
++        ctx.strokeStyle = "rgba(0,0,0,.45)";
++        ctx.strokeRect(x, b.y, w, b.height);
++        drawShape(ctx, b.shape, x + 11, b.y + b.height / 2, Math.min(6, b.height / 3));
++        ctx.fillStyle = "#fff";
++        ctx.textAlign = "left";
++        ctx.font = "11px monospace";
++        ctx.fillText(`${b.label} ${b.value}`, x + 22, b.y + b.height / 2 + 4);
++        ctx.textAlign = "center";
++      }
++      if (frameRef.current) frameRef.current.textContent = String(framesRef.current);
++    };
++
++    const emit = () => {
++      if (!running) return;
++      const i = Math.floor(Math.random() * METRICS.length);
++      const m = METRICS[i];
++      const value = 1 + Math.floor(Math.random() * 100);
++      const height = 14 + (value / 100) * 56;
++      if (state.stackTops[i] < AXIS + 10) resetLane(state, i); // pile overflowed
++      spawn(state, { lane: i, value, label: m.key, color: m.color, shape: m.shape, height }, reduced);
++      if (statusRef.current) statusRef.current.textContent = `${m.key} = ${value}`;
++      if (reduced) {
++        framesRef.current++;
++        draw();
++      }
++    };
++
++    const loop = (t: number) => {
++      const dt = Math.min((t - last) / 1000, 0.05);
++      last = t;
++      if (running && !reduced) {
++        step(state, dt, VEL);
++        framesRef.current++;
++        draw();
++      }
++      raf = requestAnimationFrame(loop);
++    };
++
++    // Switching to reduced motion: settle any in-flight bars (lowest first) so
++    // none are left frozen mid-air.
++    if (reduced) {
++      state.bars
++        .filter((b) => !b.landed)
++        .sort((a, b) => b.y - a.y)
++        .forEach((b) => land(state, b));
++    }
++
++    draw();
++    if (running && !reduced) raf = requestAnimationFrame(loop);
++    const feed = window.setInterval(emit, FEED_MS);
++    return () => {
++      if (raf) cancelAnimationFrame(raf);
++      clearInterval(feed);
++    };
++  }, [running, reduced]);
++
++  return (
++    <main>
++      <h1>Metrics Data Rain</h1>
++      <p className="sub">Incoming metric events fall as labelled bars and stack on collision.</p>
++      <div className="controls">
++        <button onClick={() => setRunning((r) => !r)} aria-pressed={!running}>
++          {running ? "Pause" : "Resume"}
++        </button>
++        <label>
++          <input type="checkbox" checked={reduced} onChange={(e) => setReduced(e.target.checked)} />
++          Reduced motion
++        </label>
++        <span className="meta">
++          frames: <span ref={frameRef}>0</span>
++        </span>
++      </div>
++      <canvas
++        ref={canvasRef}
++        width={W}
++        height={H}
++        role="img"
++        aria-label="Falling metric bars stacking by lane"
++      />
++      <div ref={statusRef} className="status" aria-live="polite">
++        waiting…
++      </div>
++      <ul className="legend">
++        {METRICS.map((m) => (
++          <li key={m.key}>
++            <span className="sw" style={{ background: m.color }} /> {m.shape} = {m.key}
++          </li>
++        ))}
++      </ul>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..1ed075f 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,15 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root { color-scheme: dark; }
++body { margin: 0; font-family: system-ui, sans-serif; background: #14141a; color: #e8e8ef; }
++main { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
++h1 { font-size: 1.4rem; margin: 0 0 4px; }
++.sub { margin: 0 0 16px; color: #9a9aa8; font-size: .9rem; }
++.controls { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
++button { background: #2d2d3a; color: #fff; border: 1px solid #44445a; border-radius: 6px; padding: 6px 14px; font-size: .9rem; cursor: pointer; }
++button:hover { background: #3a3a4d; }
++label { display: flex; align-items: center; gap: 6px; font-size: .9rem; }
++.meta { margin-left: auto; color: #9a9aa8; font-size: .85rem; font-variant-numeric: tabular-nums; }
++canvas { display: block; width: 100%; background: #0c0c11; border: 1px solid #2a2a33; border-radius: 8px; }
++.status { margin-top: 8px; font-family: monospace; font-size: .85rem; color: #cfcfe0; }
++.legend { display: flex; flex-wrap: wrap; gap: 14px; list-style: none; padding: 0; margin: 12px 0 0; font-size: .82rem; color: #b8b8c8; }
++.legend li { display: flex; align-items: center; gap: 6px; }
++.sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }

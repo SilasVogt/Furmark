@@ -1,0 +1,7 @@
+Done. The starter code already implemented batching, determinism, referenced-only deps, and the four required tests — all passing. The only real defect was the cycle diagnostic: it named every *blocked* node, including ones merely downstream of a cycle.
+
+**Fix** (`src/dependencyBatches.ts`): on cycle detection, peel unresolved nodes that nothing else unresolved depends on, leaving only true cycle members. `{a:[b], b:[a], c:[a]}` now reports `["a","b"]` instead of `["a","b","c"]`. Added one guarding test for that case.
+
+**Verification:** `tsc --noEmit` exit 0; `vitest run` 5/5 passing.
+
+→ skipped: rewriting the working algorithm and the multi-disjoint-cycle case (it names one cycle's members, which satisfies "names the cycle members"); add full SCC enumeration when callers need *all* cycles at once.

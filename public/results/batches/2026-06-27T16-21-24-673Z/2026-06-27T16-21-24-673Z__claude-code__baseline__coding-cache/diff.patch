@@ -1,0 +1,383 @@
+diff --git a/src/lruCache.ts b/src/lruCache.ts
+index fad505a..be6d3e2 100644
+--- a/src/lruCache.ts
++++ b/src/lruCache.ts
+@@ -11,11 +11,26 @@ type Entry<Value> = {
+ };
+ 
+ export type LruCacheOptions = {
++  /** Maximum number of live entries. Must be a positive integer. */
+   maxSize: number;
++  /** Default time-to-live in milliseconds applied to every entry. Omit for no expiry. */
+   ttlMs?: number;
++  /** Clock injection point; defaults to {@link Date.now}. Useful for deterministic tests. */
+   now?: () => number;
+ };
+ 
++/**
++ * A typed, fixed-capacity cache with least-recently-used eviction and optional
++ * per-entry time-to-live (TTL).
++ *
++ * Recency is tracked via insertion order in the backing {@link Map}: a successful
++ * `get` and any `set` move the key to the most-recently-used position, so the
++ * least-recently-used key is always the first one the iterator yields. `has` is a
++ * non-mutating peek and deliberately does NOT refresh recency.
++ *
++ * Expiration is lazy: expired entries are detected and dropped on `get`, `has`,
++ * and `size`, and each expiry is counted exactly once in {@link CacheStats.expired}.
++ */
+ export class LruCache<Key, Value> {
+   readonly #maxSize: number;
+   readonly #ttlMs: number | null;
+@@ -40,15 +55,22 @@ export class LruCache<Key, Value> {
+     this.#now = options.now ?? Date.now;
+   }
+ 
++  /** Number of live (non-expired) entries. Reading this lazily prunes expired entries. */
+   get size(): number {
+     this.#pruneExpired();
+     return this.#entries.size;
+   }
+ 
++  /** A snapshot of the counters. Mutating the returned object does not affect the cache. */
+   get stats(): CacheStats {
+     return { ...this.#stats };
+   }
+ 
++  /**
++   * Return the value for `key`, or `undefined` if it is absent or expired.
++   * A live hit refreshes the key's recency and increments `hits`; an absent key
++   * increments `misses`; an expired key increments both `expired` and `misses`.
++   */
+   get(key: Key): Value | undefined {
+     const entry = this.#entries.get(key);
+     if (!entry) {
+@@ -61,12 +83,17 @@ export class LruCache<Key, Value> {
+       this.#stats.misses += 1;
+       return undefined;
+     }
++    // Move to the most-recently-used position.
+     this.#entries.delete(key);
+     this.#entries.set(key, entry);
+     this.#stats.hits += 1;
+     return entry.value;
+   }
+ 
++  /**
++   * Report whether a live entry exists for `key` without affecting recency or
++   * hit/miss stats. An expired entry is dropped and counted as `expired`.
++   */
+   has(key: Key): boolean {
+     const entry = this.#entries.get(key);
+     if (!entry) return false;
+@@ -78,10 +105,16 @@ export class LruCache<Key, Value> {
+     return true;
+   }
+ 
++  /**
++   * Insert or update `key`. Updating an existing key refreshes both its value and
++   * its recency (so it becomes most-recently-used) without evicting other entries.
++   * `ttlMs` overrides the cache default for this entry; pass `null` for no expiry.
++   */
+   set(key: Key, value: Value, ttlMs = this.#ttlMs): void {
+     if (ttlMs !== null && (!Number.isFinite(ttlMs) || ttlMs <= 0)) {
+       throw new Error("ttlMs must be a positive number");
+     }
++    // Delete first so a re-set lands at the most-recently-used end of the Map.
+     if (this.#entries.has(key)) this.#entries.delete(key);
+     this.#entries.set(key, {
+       value,
+@@ -90,14 +123,17 @@ export class LruCache<Key, Value> {
+     this.#evictOverflow();
+   }
+ 
++  /** Remove `key`. Returns `true` if an entry was present. Does not touch stats. */
+   delete(key: Key): boolean {
+     return this.#entries.delete(key);
+   }
+ 
++  /** Remove every entry. Accumulated stats are intentionally preserved. */
+   clear(): void {
+     this.#entries.clear();
+   }
+ 
++  /** Evict least-recently-used entries until the cache is within capacity. */
+   #evictOverflow(): void {
+     while (this.#entries.size > this.#maxSize) {
+       const oldestKey = this.#entries.keys().next().value as Key | undefined;
+@@ -107,6 +143,7 @@ export class LruCache<Key, Value> {
+     }
+   }
+ 
++  /** Drop and count every currently-expired entry. */
+   #pruneExpired(): void {
+     for (const [key, entry] of this.#entries) {
+       if (this.#isExpired(entry)) {
+@@ -120,4 +157,3 @@ export class LruCache<Key, Value> {
+     return entry.expiresAt !== null && entry.expiresAt <= this.#now();
+   }
+ }
+-
+diff --git a/tests/lruCache.test.ts b/tests/lruCache.test.ts
+index ff3e352..9b8c00c 100644
+--- a/tests/lruCache.test.ts
++++ b/tests/lruCache.test.ts
+@@ -2,35 +2,232 @@ import { describe, expect, it } from "vitest";
+ import { LruCache } from "../src/lruCache";
+ 
+ describe("LruCache", () => {
+-  it("evicts the least recently used entry", () => {
+-    const cache = new LruCache<string, number>({ maxSize: 2 });
+-    cache.set("a", 1);
+-    cache.set("b", 2);
+-    expect(cache.get("a")).toBe(1);
+-    cache.set("c", 3);
+-    expect(cache.get("b")).toBeUndefined();
+-    expect(cache.get("a")).toBe(1);
+-    expect(cache.stats.evictions).toBe(1);
++  describe("capacity eviction", () => {
++    it("evicts the least recently used entry when over capacity", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      cache.set("c", 3); // overflow -> evict "a" (LRU)
++      expect(cache.has("a")).toBe(false);
++      expect(cache.get("b")).toBe(2);
++      expect(cache.get("c")).toBe(3);
++      expect(cache.size).toBe(2);
++      expect(cache.stats.evictions).toBe(1);
++    });
++
++    it("evicts deterministically in LRU order across repeated overflows", () => {
++      const cache = new LruCache<string, number>({ maxSize: 3 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      cache.set("c", 3);
++      cache.set("d", 4); // evict "a"
++      cache.set("e", 5); // evict "b"
++      expect(cache.has("a")).toBe(false);
++      expect(cache.has("b")).toBe(false);
++      expect(cache.get("c")).toBe(3);
++      expect(cache.get("d")).toBe(4);
++      expect(cache.get("e")).toBe(5);
++      expect(cache.stats.evictions).toBe(2);
++    });
++  });
++
++  describe("recency refresh", () => {
++    it("get() refreshes recency so the touched key survives the next eviction", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      expect(cache.get("a")).toBe(1); // "a" is now most-recently-used
++      cache.set("c", 3); // evict "b" (now the LRU)
++      expect(cache.get("b")).toBeUndefined();
++      expect(cache.get("a")).toBe(1);
++      expect(cache.stats.evictions).toBe(1);
++    });
++
++    it("has() is a peek and does not refresh recency", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      expect(cache.has("a")).toBe(true); // peek only; "a" stays LRU
++      cache.set("c", 3); // evict "a"
++      expect(cache.has("a")).toBe(false);
++      expect(cache.has("b")).toBe(true);
++      expect(cache.has("c")).toBe(true);
++    });
+   });
+ 
+-  it("expires entries and counts expired misses", () => {
+-    let now = 1000;
+-    const cache = new LruCache<string, string>({ maxSize: 2, ttlMs: 50, now: () => now });
+-    cache.set("token", "abc");
+-    now = 1051;
+-    expect(cache.get("token")).toBeUndefined();
+-    expect(cache.stats.expired).toBe(1);
+-    expect(cache.stats.misses).toBe(1);
++  describe("TTL behavior", () => {
++    it("does not return expired entries and counts them as expired misses", () => {
++      let now = 1000;
++      const cache = new LruCache<string, string>({ maxSize: 2, ttlMs: 50, now: () => now });
++      cache.set("token", "abc");
++      now = 1049;
++      expect(cache.get("token")).toBe("abc"); // still within TTL -> hit
++      now = 1051;
++      expect(cache.get("token")).toBeUndefined(); // expired
++      expect(cache.stats.hits).toBe(1);
++      expect(cache.stats.expired).toBe(1);
++      expect(cache.stats.misses).toBe(1);
++    });
++
++    it("expires exactly at the TTL boundary (ttl is exclusive)", () => {
++      let now = 0;
++      const cache = new LruCache<string, number>({ maxSize: 4, ttlMs: 10, now: () => now });
++      cache.set("k", 1);
++      now = 10; // expiresAt (10) <= now (10) -> expired
++      expect(cache.has("k")).toBe(false);
++      expect(cache.stats.expired).toBe(1);
++      expect(cache.size).toBe(0);
++    });
++
++    it("honors a per-entry TTL that overrides the cache default", () => {
++      let now = 0;
++      const cache = new LruCache<string, number>({ maxSize: 4, ttlMs: 100, now: () => now });
++      cache.set("short", 1, 10); // override -> expires at 10
++      cache.set("default", 2); // uses default -> expires at 100
++      now = 20;
++      expect(cache.get("short")).toBeUndefined();
++      expect(cache.get("default")).toBe(2);
++      expect(cache.stats.expired).toBe(1);
++    });
++
++    it("never expires entries without a TTL", () => {
++      let now = 0;
++      const cache = new LruCache<string, number>({ maxSize: 4, now: () => now });
++      cache.set("persistent", 7);
++      now = Number.MAX_SAFE_INTEGER;
++      expect(cache.get("persistent")).toBe(7);
++      expect(cache.stats.expired).toBe(0);
++    });
++
++    it("prunes expired entries when size is read and counts each once", () => {
++      let now = 0;
++      const cache = new LruCache<string, number>({ maxSize: 4, ttlMs: 5, now: () => now });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      now = 6;
++      expect(cache.size).toBe(0);
++      expect(cache.size).toBe(0); // second read must not double-count
++      expect(cache.stats.expired).toBe(2);
++    });
+   });
+ 
+-  it("updates values and clears entries without resetting stats", () => {
+-    const cache = new LruCache<string, number>({ maxSize: 1 });
+-    cache.set("a", 1);
+-    cache.set("a", 2);
+-    expect(cache.get("a")).toBe(2);
+-    cache.clear();
+-    expect(cache.size).toBe(0);
+-    expect(cache.stats.hits).toBe(1);
++  describe("updates", () => {
++    it("overwrites the value of an existing key without growing the cache", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("a", 2);
++      expect(cache.get("a")).toBe(2);
++      expect(cache.size).toBe(1);
++    });
++
++    it("treats an update as a recency refresh", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      cache.set("a", 10); // update "a" -> most-recently-used
++      cache.set("c", 3); // evict "b" (LRU)
++      expect(cache.get("b")).toBeUndefined();
++      expect(cache.get("a")).toBe(10);
++      expect(cache.get("c")).toBe(3);
++    });
++
++    it("does not evict other entries when updating an existing key", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      cache.set("a", 100); // still two entries
++      expect(cache.stats.evictions).toBe(0);
++      expect(cache.size).toBe(2);
++    });
++
++    it("refreshes the TTL when a key is updated", () => {
++      let now = 0;
++      const cache = new LruCache<string, number>({ maxSize: 2, ttlMs: 10, now: () => now });
++      cache.set("a", 1); // expires at 10
++      now = 8;
++      cache.set("a", 2); // refreshed -> expires at 18
++      now = 15;
++      expect(cache.get("a")).toBe(2); // would have expired at 10 without refresh
++      expect(cache.stats.expired).toBe(0);
++    });
+   });
+-});
+ 
++  describe("deletes", () => {
++    it("removes an entry and reports whether it was present", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      expect(cache.delete("a")).toBe(true);
++      expect(cache.delete("a")).toBe(false); // already gone
++      expect(cache.has("a")).toBe(false);
++      expect(cache.size).toBe(0);
++    });
++
++    it("does not record a hit, miss, eviction, or expiry", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      cache.delete("a");
++      expect(cache.stats).toEqual({ hits: 0, misses: 0, evictions: 0, expired: 0 });
++    });
++
++    it("frees capacity so a following set does not evict", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.set("b", 2);
++      cache.delete("a");
++      cache.set("c", 3); // fits into the freed slot
++      expect(cache.stats.evictions).toBe(0);
++      expect(cache.has("b")).toBe(true);
++      expect(cache.has("c")).toBe(true);
++    });
++  });
++
++  describe("stats accuracy", () => {
++    it("tracks hits and misses across get() calls", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.get("a"); // hit
++      cache.get("a"); // hit
++      cache.get("missing"); // miss
++      expect(cache.stats.hits).toBe(2);
++      expect(cache.stats.misses).toBe(1);
++    });
++
++    it("clear() empties the cache but preserves accumulated stats", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      cache.set("a", 1);
++      cache.get("a"); // hit
++      cache.get("x"); // miss
++      cache.clear();
++      expect(cache.size).toBe(0);
++      expect(cache.has("a")).toBe(false);
++      expect(cache.stats).toEqual({ hits: 1, misses: 1, evictions: 0, expired: 0 });
++    });
++
++    it("returns a stats snapshot that cannot mutate the internal counters", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      const snapshot = cache.stats;
++      snapshot.hits = 999;
++      expect(cache.stats.hits).toBe(0);
++    });
++  });
++
++  describe("options validation", () => {
++    it("rejects a non-positive or non-integer maxSize", () => {
++      expect(() => new LruCache<string, number>({ maxSize: 0 })).toThrow();
++      expect(() => new LruCache<string, number>({ maxSize: -1 })).toThrow();
++      expect(() => new LruCache<string, number>({ maxSize: 1.5 })).toThrow();
++    });
++
++    it("rejects a non-positive default ttl", () => {
++      expect(() => new LruCache<string, number>({ maxSize: 1, ttlMs: 0 })).toThrow();
++      expect(() => new LruCache<string, number>({ maxSize: 1, ttlMs: -5 })).toThrow();
++    });
++
++    it("rejects a non-positive per-entry ttl passed to set()", () => {
++      const cache = new LruCache<string, number>({ maxSize: 2 });
++      expect(() => cache.set("a", 1, 0)).toThrow();
++      expect(() => cache.set("a", 1, -10)).toThrow();
++    });
++  });
++});

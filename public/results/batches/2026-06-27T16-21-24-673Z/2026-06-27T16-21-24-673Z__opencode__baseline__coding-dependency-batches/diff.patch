@@ -1,0 +1,308 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..b102f9e 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -4,27 +4,78 @@ export class DependencyCycleError extends Error {
+   readonly cycle: string[];
+ 
+   constructor(cycle: string[]) {
+-    super(`Dependency cycle detected: ${cycle.join(", ")}`);
++    super(`Dependency cycle detected: ${cycle.join(" -> ")} -> ${cycle[0]}`);
+     this.name = "DependencyCycleError";
+     this.cycle = cycle;
+   }
+ }
+ 
+-export function dependencyBatches(graph: DependencyGraph): string[][] {
++const collectNodes = (graph: DependencyGraph): string[] => {
+   const nodes = new Set<string>();
+   for (const [node, dependencies] of Object.entries(graph)) {
+     nodes.add(node);
+     for (const dependency of dependencies) nodes.add(dependency);
+   }
++  return [...nodes].sort();
++};
++
++const normalizeCycle = (cycle: string[]): string[] => {
++  const smallest = [...cycle].sort()[0];
++  const start = cycle.indexOf(smallest);
++  return [...cycle.slice(start), ...cycle.slice(0, start)];
++};
++
++const findCycle = (nodes: readonly string[], depsOf: (node: string) => string[]): string[] | null => {
++  const WHITE = 0;
++  const GRAY = 1;
++  const BLACK = 2;
++  const color = new Map<string, number>(nodes.map((node) => [node, WHITE]));
++  const stack: string[] = [];
++
++  const visit = (node: string): string[] | null => {
++    color.set(node, GRAY);
++    stack.push(node);
++    for (const dep of depsOf(node)) {
++      if (!color.has(dep)) continue;
++      const state = color.get(dep);
++      if (state === GRAY) {
++        const start = stack.indexOf(dep);
++        return normalizeCycle(stack.slice(start));
++      }
++      if (state === WHITE) {
++        const result = visit(dep);
++        if (result) return result;
++      }
++    }
++    stack.pop();
++    color.set(node, BLACK);
++    return null;
++  };
++
++  for (const node of nodes) {
++    if (color.get(node) === WHITE) {
++      const result = visit(node);
++      if (result) return result;
++    }
++  }
++  return null;
++};
++
++export function dependencyBatches(graph: DependencyGraph): string[][] {
++  const nodes = collectNodes(graph);
++  const depsOf = (node: string): string[] => [...(graph[node] ?? [])].sort();
++
++  const cycle = findCycle(nodes, depsOf);
++  if (cycle) throw new DependencyCycleError(cycle);
+ 
+   const remainingDeps = new Map<string, Set<string>>();
+   const dependents = new Map<string, Set<string>>();
+-  for (const node of [...nodes].sort()) {
+-    const deps = new Set(graph[node] ?? []);
++  for (const node of nodes) {
++    const deps = new Set(depsOf(node));
+     remainingDeps.set(node, deps);
+-    for (const dependency of deps) {
+-      if (!dependents.has(dependency)) dependents.set(dependency, new Set());
+-      dependents.get(dependency)!.add(node);
++    for (const dep of deps) {
++      if (!dependents.has(dep)) dependents.set(dep, new Set());
++      dependents.get(dep)!.add(node);
+     }
+   }
+ 
+@@ -49,11 +100,5 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+     ready = [...nextReady].sort();
+   }
+ 
+-  if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
+-    throw new DependencyCycleError(cycle);
+-  }
+-
+   return batches;
+ }
+-
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..cf909ec 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -2,33 +2,179 @@ import { describe, expect, it } from "vitest";
+ import { DependencyCycleError, dependencyBatches } from "../src/dependencyBatches";
+ 
+ describe("dependencyBatches", () => {
+-  it("batches a diamond graph", () => {
+-    expect(
+-      dependencyBatches({
+-        app: ["api", "ui"],
+-        api: ["core"],
+-        ui: ["core"],
+-        core: [],
+-      }),
+-    ).toEqual([["core"], ["api", "ui"], ["app"]]);
++  describe("ordering", () => {
++    it("batches a diamond graph", () => {
++      expect(
++        dependencyBatches({
++          app: ["api", "ui"],
++          api: ["core"],
++          ui: ["core"],
++          core: [],
++        }),
++      ).toEqual([["core"], ["api", "ui"], ["app"]]);
++    });
++
++    it("batches a nested diamond", () => {
++      expect(
++        dependencyBatches({
++          root: ["left", "right"],
++          left: ["shared", "leftOnly"],
++          right: ["shared", "rightOnly"],
++          shared: ["base"],
++          leftOnly: ["base"],
++          rightOnly: ["base"],
++          base: [],
++        }),
++      ).toEqual([
++        ["base"],
++        ["leftOnly", "rightOnly", "shared"],
++        ["left", "right"],
++        ["root"],
++      ]);
++    });
++
++    it("produces deterministic alphabetical ordering within a batch", () => {
++      const result = dependencyBatches({
++        zeta: ["root"],
++        alpha: ["root"],
++        mike: ["root"],
++        root: [],
++      });
++      expect(result).toEqual([["root"], ["alpha", "mike", "zeta"]]);
++    });
+   });
+ 
+-  it("includes dependencies that are only referenced", () => {
+-    expect(dependencyBatches({ app: ["runtime"] })).toEqual([["runtime"], ["app"]]);
++  describe("disconnected graphs", () => {
++    it("keeps disconnected nodes deterministic", () => {
++      expect(dependencyBatches({ zebra: [], alpha: [], app: ["alpha"] })).toEqual([
++        ["alpha", "zebra"],
++        ["app"],
++      ]);
++    });
++
++    it("batches independent subgraphs in parallel", () => {
++      expect(
++        dependencyBatches({
++          lib1: [],
++          lib2: [],
++          app1: ["lib1"],
++          app2: ["lib2"],
++        }),
++      ).toEqual([
++        ["lib1", "lib2"],
++        ["app1", "app2"],
++      ]);
++    });
++
++    it("handles a fully isolated single node", () => {
++      expect(dependencyBatches({ solo: [] })).toEqual([["solo"]]);
++    });
++
++    it("handles an empty graph", () => {
++      expect(dependencyBatches({})).toEqual([]);
++    });
+   });
+ 
+-  it("keeps disconnected nodes deterministic", () => {
+-    expect(dependencyBatches({ zebra: [], alpha: [], app: ["alpha"] })).toEqual([["alpha", "zebra"], ["app"]]);
++  describe("referenced-only dependencies", () => {
++    it("includes dependencies that are only referenced", () => {
++      expect(dependencyBatches({ app: ["runtime"] })).toEqual([["runtime"], ["app"]]);
++    });
++
++    it("handles transitive referenced-only dependencies", () => {
++      expect(dependencyBatches({ app: ["runtime"], runtime: ["sdk"] })).toEqual([
++        ["sdk"],
++        ["runtime"],
++        ["app"],
++      ]);
++    });
++
++    it("places multiple referenced-only deps in the first batch", () => {
++      expect(
++        dependencyBatches({ app: ["alpha", "beta"] }),
++      ).toEqual([["alpha", "beta"], ["app"]]);
++    });
+   });
+ 
+-  it("throws cycle diagnostics", () => {
+-    expect(() => dependencyBatches({ a: ["b"], b: ["a"] })).toThrow(DependencyCycleError);
+-    try {
+-      dependencyBatches({ a: ["b"], b: ["a"] });
+-    } catch (error) {
+-      expect(error).toBeInstanceOf(DependencyCycleError);
+-      expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
+-    }
++  describe("cycles", () => {
++    it("throws a DependencyCycleError for a simple cycle", () => {
++      expect(() => dependencyBatches({ a: ["b"], b: ["a"] })).toThrow(DependencyCycleError);
++    });
++
++    it("names cycle members in the message and the .cycle property", () => {
++      try {
++        dependencyBatches({ a: ["b"], b: ["a"] });
++        throw new Error("expected throw");
++      } catch (error) {
++        expect(error).toBeInstanceOf(DependencyCycleError);
++        const cycleError = error as DependencyCycleError;
++        expect(cycleError.cycle).toEqual(["a", "b"]);
++        expect(cycleError.message).toContain("a");
++        expect(cycleError.message).toContain("b");
++      }
++    });
++
++    it("names all members of a longer cycle", () => {
++      try {
++        dependencyBatches({ a: ["b"], b: ["c"], c: ["a"] });
++        throw new Error("expected throw");
++      } catch (error) {
++        expect(error).toBeInstanceOf(DependencyCycleError);
++        expect((error as DependencyCycleError).cycle).toEqual(["a", "b", "c"]);
++      }
++    });
++
++    it("isolates the cycle from non-cycle members", () => {
++      // a depends on the b<->c cycle but is not itself in the cycle
++      try {
++        dependencyBatches({ a: ["b"], b: ["c"], c: ["b"] });
++        throw new Error("expected throw");
++      } catch (error) {
++        expect(error).toBeInstanceOf(DependencyCycleError);
++        expect((error as DependencyCycleError).cycle).toEqual(["b", "c"]);
++      }
++    });
++
++    it("detects self-loops", () => {
++      try {
++        dependencyBatches({ a: ["a"] });
++        throw new Error("expected throw");
++      } catch (error) {
++        expect(error).toBeInstanceOf(DependencyCycleError);
++        expect((error as DependencyCycleError).cycle).toEqual(["a"]);
++      }
++    });
++
++    it("normalizes cycle members deterministically regardless of declaration order", () => {
++      const graph1 = { b: ["a"], a: ["b"] };
++      const graph2 = { a: ["b"], b: ["a"] };
++      const cycleFrom1 = (() => {
++        try {
++          dependencyBatches(graph1);
++          return null;
++        } catch (e) {
++          return (e as DependencyCycleError).cycle;
++        }
++      })();
++      const cycleFrom2 = (() => {
++        try {
++          dependencyBatches(graph2);
++          return null;
++        } catch (e) {
++          return (e as DependencyCycleError).cycle;
++        }
++      })();
++      expect(cycleFrom1).toEqual(["a", "b"]);
++      expect(cycleFrom1).toEqual(cycleFrom2);
++    });
++
++    it("still throws when a cycle exists alongside independent subgraphs", () => {
++      expect(() =>
++        dependencyBatches({
++          independent: [],
++          a: ["b"],
++          b: ["a"],
++        }),
++      ).toThrow(DependencyCycleError);
++    });
+   });
+ });
+-

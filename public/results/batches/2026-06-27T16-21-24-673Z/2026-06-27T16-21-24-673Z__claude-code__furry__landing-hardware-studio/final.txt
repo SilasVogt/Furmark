@@ -1,0 +1,12 @@
+Done. The Arcwell landing page is built and verified.
+
+**What's there**
+- `src/Lamp.tsx` — a generated SVG product visual that re-renders live from the current build. Arm geometry (single sweep / articulated / counterweight), beam spread per lens, and metal finish all change; the head aim and light pool are computed so the beam always lands on the desk.
+- `src/App.tsx` — first-viewport hero pairs the live lamp with the configurator. Controls are native radio groups in `<fieldset>`/`<legend>` (arrow-key nav, focus rings, finish swatches), price is in an `aria-live` region, and the lamp carries a descriptive `role="img"` label. Below: a stat band, an editorial module-system section (no generic feature cards), a spec definition list, and a buy CTA.
+- `src/config.ts` + `src/config.test.ts` — pricing/summary logic kept pure and unit-tested.
+- Palette is cool graphite surfaces with a single warm light accent (the lamp's glow), Inter type. No beige, no brass.
+
+**Verification**
+- `pnpm build` (tsc --noEmit && vite build): passed.
+- `pnpm test` (vitest): 5/5 passed.
+- Headless Chromium at 1280 / 390 / 360 px: lamp shows in the first viewport, configurator drives both visual and price, and `contentWidth == viewport` at every width, so no horizontal overflow or text overlap. :3

@@ -1,0 +1,20 @@
+Both verification commands pass. Here's a summary of the work.
+
+## What changed
+
+**`src/intervals.ts` — fixed the merge bug + hardening**
+- **Root-cause fix:** the touching condition had an off-by-one. It used `interval.start <= last.end`, which fails to merge adjacent integer ranges. The provided test `[-1,4]` + `[-3,-2]` → `[-3,4]` requires adjacency-merge (the gap between `-2` and `-1` contains no integer). Corrected to `next.start <= current.end + 1`, so "touching" now covers both shared endpoints (`[1,2]`+`[2,3]`) and integer adjacency (`[1,2]`+`[3,4]`).
+- `mergeTouching: false` keeps the strict-overlap rule (`next.start < current.end`), so touching/adjacent intervals stay separate while genuine overlaps still merge.
+- Extracted the decision into a documented `shouldMerge` helper and added doc comments explaining the integer-range semantics (so the `+1` isn't mistaken for a bug later).
+- Improved the validation error to name the offending value (`must be a finite number, received NaN`), still rejecting `NaN`/`±Infinity`.
+- Confirmed existing guarantees hold: deterministic sort (order-independent), inputs never mutated, empty/single-item inputs handled.
+
+**`tests/intervals.edge.test.ts` — new edge-case suite (15 tests)**
+Covers empty input, single + reversed single, exact duplicates, fully-contained absorption, negative overlaps, multiple reversed endpoints, configurable touching (shared-endpoint merge, adjacency merge, adjacency kept separate with `mergeTouching: false`, strict overlap still merging when false), real-gap non-merge, input-order independence, `±Infinity` rejection, and input immutability.
+
+The four provided tests were left untouched and all pass.
+
+## Verification
+
+- `npm test` (`vitest run`) → **19 tests passed** across 2 files
+- `npm run build` (`tsc --noEmit`) → **exit 0, no type errors**

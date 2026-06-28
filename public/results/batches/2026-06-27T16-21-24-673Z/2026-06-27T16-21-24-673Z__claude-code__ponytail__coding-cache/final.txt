@@ -1,0 +1,5 @@
+The fixture already contained a complete, correct `LruCache<Key, Value>` satisfying every success criterion (generic, deterministic LRU eviction, TTL expiry counted, accurate stats). I left it untouched and filled the one real gap in the requested test coverage.
+
+Added to `tests/lruCache.test.ts`: a standalone **recency-refresh** test and a **deletes** test (verifying `delete` return values, post-delete miss, and stats accuracy). Verified with `npx tsc --noEmit` (clean) and `npx vitest run` — **5/5 pass**.
+
+skipped: rewriting the working cache and re-bundling existing tests; add when the implementation actually changes.

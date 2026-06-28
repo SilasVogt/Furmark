@@ -1,0 +1,1557 @@
+diff --git a/index.html b/index.html
+index f6dacfc..fb07dab 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,13 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta name="description" content="Traceboard is the incident timeline debugger for engineering teams. Reconstruct what happened, when, and why — across every service." />
++    <title>Traceboard — Incident Timeline Debugger for Engineering Teams</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..c32ddd5 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,10 @@
+ import React from "react";
+ import { createRoot } from "react-dom/client";
++import App from "./App";
+ import "./style.css";
+ 
+-function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
+-}
+-
+-createRoot(document.getElementById("root")!).render(<App />);
++createRoot(document.getElementById("root")!).render(
++  <React.StrictMode>
++    <App />
++  </React.StrictMode>
++);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..aea81a2 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,1512 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++/* ============================================================
++   Traceboard — design system
++   ============================================================ */
++
++:root {
++  /* surfaces */
++  --bg: #08090c;
++  --bg-elev: #0d0f13;
++  --panel: #111319;
++  --panel-2: #161922;
++  --panel-3: #1c2029;
++  --hairline: rgba(255, 255, 255, 0.07);
++  --hairline-strong: rgba(255, 255, 255, 0.12);
++
++  /* text */
++  --text: #e7e8ec;
++  --text-2: #a7abb6;
++  --text-3: #6b7080;
++  --text-4: #4a4f5c;
++
++  /* brand */
++  --brand: #c4f04c;
++  --brand-dim: #9bc23a;
++  --brand-soft: rgba(196, 240, 76, 0.12);
++  --brand-glow: rgba(196, 240, 76, 0.35);
++
++  /* severity / signal */
++  --crit: #fb5e7e;
++  --crit-soft: rgba(251, 94, 126, 0.14);
++  --warn: #f5a524;
++  --warn-soft: rgba(245, 165, 36, 0.14);
++  --info: #5b9eff;
++  --info-soft: rgba(91, 158, 255, 0.14);
++  --ok: #4ade80;
++  --ok-soft: rgba(74, 222, 128, 0.14);
++  --violet: #b794ff;
++
++  /* layout */
++  --maxw: 1200px;
++  --radius: 12px;
++  --radius-sm: 8px;
++  --radius-lg: 18px;
++
++  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset,
++    0 1px 2px rgba(0, 0, 0, 0.4);
++  --shadow-2: 0 24px 60px -20px rgba(0, 0, 0, 0.7),
++    0 8px 24px -12px rgba(0, 0, 0, 0.6);
++
++  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo,
++    Consolas, monospace;
++  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
++    "Helvetica Neue", Arial, sans-serif;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body {
++  margin: 0;
++  padding: 0;
++  background: var(--bg);
++  color: var(--text);
++  font-family: var(--sans);
++  font-size: 16px;
++  line-height: 1.5;
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
++  overflow-x: hidden;
++}
++
++body {
++  background:
++    radial-gradient(
++      900px 600px at 78% -8%,
++      rgba(196, 240, 76, 0.08),
++      transparent 60%
++    ),
++    radial-gradient(
++      700px 500px at 8% 4%,
++      rgba(91, 158, 255, 0.06),
++      transparent 55%
++    ),
++    var(--bg);
++  background-attachment: fixed;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++button {
++  font: inherit;
++  cursor: pointer;
++}
++
++img {
++  max-width: 100%;
++  display: block;
++}
++
++:focus-visible {
++  outline: 2px solid var(--brand);
++  outline-offset: 2px;
++  border-radius: 4px;
++}
++
++/* ---------- typography helpers ---------- */
++.mono {
++  font-family: var(--mono);
++  font-feature-settings: "tnum" 1, "cv01" 1;
++}
++.eyebrow {
++  font-family: var(--mono);
++  font-size: 11.5px;
++  letter-spacing: 0.14em;
++  text-transform: uppercase;
++  color: var(--text-3);
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++}
++.eyebrow::before {
++  content: "";
++  width: 6px;
++  height: 6px;
++  border-radius: 50%;
++  background: var(--brand);
++  box-shadow: 0 0 10px var(--brand-glow);
++}
++
++h1,
++h2,
++h3 {
++  margin: 0;
++  letter-spacing: -0.02em;
++  line-height: 1.05;
++  font-weight: 600;
++}
++
++p {
++  margin: 0;
++}
++
++code {
++  font-family: var(--mono);
++  font-size: 0.92em;
++  background: var(--panel-3);
++  padding: 1px 6px;
++  border-radius: 4px;
++  border: 1px solid var(--hairline);
++  color: var(--text);
++}
++
++/* ---------- layout container ---------- */
++.container {
++  max-width: var(--maxw);
++  margin: 0 auto;
++  padding: 0 24px;
++}
++
++section {
++  position: relative;
++}
++
++/* ============================================================
++   Buttons
++   ============================================================ */
++.btn {
++  --btn-bg: var(--panel-2);
++  --btn-fg: var(--text);
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 8px;
++  height: 40px;
++  padding: 0 16px;
++  border-radius: 10px;
++  border: 1px solid var(--hairline-strong);
++  background: var(--btn-bg);
++  color: var(--btn-fg);
++  font-weight: 540;
++  font-size: 14px;
++  white-space: nowrap;
++  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease,
++    box-shadow 0.15s ease;
++  text-decoration: none;
++}
++.btn:hover {
++  transform: translateY(-1px);
++  border-color: rgba(255, 255, 255, 0.2);
++}
++.btn:active {
++  transform: translateY(0);
++}
++.btn svg {
++  width: 16px;
++  height: 16px;
++}
++
++.btn-primary {
++  --btn-bg: var(--brand);
++  --btn-fg: #0a0c08;
++  border-color: transparent;
++  box-shadow: 0 0 0 1px var(--brand-dim), 0 8px 24px -10px var(--brand-glow);
++  font-weight: 620;
++}
++.btn-primary:hover {
++  border-color: transparent;
++  box-shadow: 0 0 0 1px var(--brand), 0 12px 30px -10px var(--brand-glow);
++}
++
++.btn-ghost {
++  background: transparent;
++  border-color: var(--hairline-strong);
++  color: var(--text-2);
++}
++.btn-ghost:hover {
++  color: var(--text);
++  background: var(--panel);
++}
++
++.btn-lg {
++  height: 46px;
++  padding: 0 20px;
++  font-size: 15px;
++  border-radius: 11px;
++}
++
++/* ============================================================
++   Nav
++   ============================================================ */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  background: rgba(8, 9, 12, 0.72);
++  backdrop-filter: saturate(160%) blur(14px);
++  -webkit-backdrop-filter: saturate(160%) blur(14px);
++  border-bottom: 1px solid var(--hairline);
++}
++.nav-inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  height: 60px;
++  gap: 16px;
++}
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  font-weight: 640;
++  letter-spacing: -0.01em;
++  font-size: 15.5px;
++  color: var(--text);
++}
++.brand-mark {
++  width: 26px;
++  height: 26px;
++  display: grid;
++  place-items: center;
++  border-radius: 7px;
++  background: linear-gradient(180deg, #d9f57a, var(--brand));
++  color: #0a0c08;
++  box-shadow: 0 0 0 1px var(--brand-dim), 0 6px 18px -8px var(--brand-glow);
++}
++.brand-mark svg {
++  width: 15px;
++  height: 15px;
++}
++
++.nav-links {
++  display: flex;
++  align-items: center;
++  gap: 4px;
++  list-style: none;
++  margin: 0;
++  padding: 0;
++}
++.nav-links a {
++  display: inline-flex;
++  align-items: center;
++  height: 34px;
++  padding: 0 12px;
++  border-radius: 8px;
++  color: var(--text-2);
++  font-size: 14px;
++  font-weight: 500;
++  transition: color 0.15s ease, background 0.15s ease;
++}
++.nav-links a:hover {
++  color: var(--text);
++  background: var(--panel);
++}
++.nav-cta {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++}
++.nav-signin {
++  color: var(--text-2);
++  font-size: 14px;
++  padding: 0 10px;
++  height: 36px;
++  display: inline-flex;
++  align-items: center;
++  border-radius: 8px;
++}
++.nav-signin:hover {
++  color: var(--text);
++}
++
++.nav-toggle {
++  display: none;
++  width: 38px;
++  height: 38px;
++  border-radius: 8px;
++  border: 1px solid var(--hairline-strong);
++  background: var(--panel);
++  color: var(--text);
++  align-items: center;
++  justify-content: center;
++}
++.nav-toggle svg {
++  width: 18px;
++  height: 18px;
++}
++
++/* ============================================================
++   Hero
++   ============================================================ */
++.hero {
++  padding: 64px 0 56px;
++  position: relative;
++}
++.hero-grid {
++  display: grid;
++  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
++  gap: 56px;
++  align-items: center;
++}
++.hero h1 {
++  font-size: clamp(38px, 5.6vw, 62px);
++  font-weight: 620;
++  letter-spacing: -0.035em;
++}
++.hero h1 .grad {
++  background: linear-gradient(180deg, #e7e8ec 30%, #8b909c);
++  -webkit-background-clip: text;
++  background-clip: text;
++  -webkit-text-fill-color: transparent;
++}
++.hero h1 .accent {
++  color: var(--brand);
++}
++.hero .lede {
++  margin-top: 20px;
++  font-size: 18px;
++  line-height: 1.55;
++  color: var(--text-2);
++  max-width: 540px;
++}
++.hero-cta {
++  margin-top: 28px;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 10px;
++  align-items: center;
++}
++.hero-meta {
++  margin-top: 22px;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 18px 22px;
++  color: var(--text-3);
++  font-size: 13px;
++}
++.hero-meta-item {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++}
++.hero-meta-item svg {
++  width: 14px;
++  height: 14px;
++  color: var(--ok);
++}
++
++/* ============================================================
++   Console mockup (app-like visual)
++   ============================================================ */
++.console-shell {
++  position: relative;
++  border-radius: 14px;
++  background: linear-gradient(180deg, var(--panel-2), var(--panel));
++  border: 1px solid var(--hairline-strong);
++  box-shadow: var(--shadow-2);
++  overflow: hidden;
++}
++.console-shell::before {
++  /* faint top sheen */
++  content: "";
++  position: absolute;
++  inset: 0 0 auto 0;
++  height: 1px;
++  background: linear-gradient(
++    90deg,
++    transparent,
++    rgba(255, 255, 255, 0.18),
++    transparent
++  );
++}
++
++.con-titlebar {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  height: 36px;
++  padding: 0 12px;
++  border-bottom: 1px solid var(--hairline);
++  background: rgba(0, 0, 0, 0.25);
++}
++.con-dots {
++  display: flex;
++  gap: 6px;
++}
++.con-dots span {
++  width: 11px;
++  height: 11px;
++  border-radius: 50%;
++  background: #2a2d36;
++}
++.con-dots span:nth-child(1) {
++  background: #ff5f57;
++}
++.con-dots span:nth-child(2) {
++  background: #febc2e;
++}
++.con-dots span:nth-child(3) {
++  background: #28c840;
++}
++.con-crumb {
++  font-family: var(--mono);
++  font-size: 11.5px;
++  color: var(--text-3);
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  margin-left: 6px;
++}
++.con-crumb .sep {
++  color: var(--text-4);
++}
++.con-crumb .live {
++  color: var(--text-2);
++}
++.con-tabs {
++  margin-left: auto;
++  display: flex;
++  gap: 2px;
++  font-size: 11px;
++}
++.con-tab {
++  padding: 4px 9px;
++  border-radius: 6px;
++  color: var(--text-3);
++}
++.con-tab.active {
++  color: var(--text);
++  background: var(--panel-3);
++}
++
++.con-body {
++  display: grid;
++  grid-template-columns: 168px minmax(0, 1fr) 224px;
++  min-height: 460px;
++}
++
++.con-side {
++  border-right: 1px solid var(--hairline);
++  padding: 12px 10px;
++  background: rgba(0, 0, 0, 0.18);
++  font-size: 12px;
++}
++.con-side h4 {
++  margin: 6px 8px 8px;
++  font-size: 10px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--text-4);
++  font-weight: 600;
++}
++.con-side ul {
++  list-style: none;
++  margin: 0 0 14px;
++  padding: 0;
++}
++.con-side li {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 5px 8px;
++  border-radius: 6px;
++  color: var(--text-2);
++}
++.con-side li.active {
++  background: var(--brand-soft);
++  color: var(--text);
++}
++.con-side li.active .dot {
++  background: var(--brand);
++}
++.con-side li .count {
++  margin-left: auto;
++  font-family: var(--mono);
++  font-size: 10.5px;
++  color: var(--text-4);
++}
++.dot {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: var(--ok);
++  flex-shrink: 0;
++}
++.dot.warn {
++  background: var(--warn);
++}
++.dot.crit {
++  background: var(--crit);
++}
++.dot.info {
++  background: var(--info);
++}
++.dot.idle {
++  background: var(--text-4);
++}
++
++.con-main {
++  display: flex;
++  flex-direction: column;
++  min-width: 0;
++}
++.con-incident {
++  padding: 14px 16px;
++  border-bottom: 1px solid var(--hairline);
++  display: flex;
++  flex-direction: column;
++  gap: 10px;
++}
++.con-incident-top {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  flex-wrap: wrap;
++}
++.sev {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  height: 22px;
++  padding: 0 9px;
++  border-radius: 6px;
++  font-size: 11px;
++  font-weight: 620;
++  letter-spacing: 0.02em;
++  font-family: var(--mono);
++  border: 1px solid transparent;
++}
++.sev.crit {
++  background: var(--crit-soft);
++  color: var(--crit);
++  border-color: rgba(251, 94, 126, 0.3);
++}
++.sev.warn {
++  background: var(--warn-soft);
++  color: var(--warn);
++  border-color: rgba(245, 165, 36, 0.3);
++}
++.sev.ok {
++  background: var(--ok-soft);
++  color: var(--ok);
++  border-color: rgba(74, 222, 128, 0.3);
++}
++.sev.info {
++  background: var(--info-soft);
++  color: var(--info);
++  border-color: rgba(91, 158, 255, 0.3);
++}
++.con-incident h3 {
++  font-size: 15px;
++  font-weight: 600;
++  letter-spacing: -0.01em;
++}
++.con-incident-meta {
++  display: flex;
++  gap: 14px;
++  font-size: 11.5px;
++  color: var(--text-3);
++  font-family: var(--mono);
++  flex-wrap: wrap;
++}
++.con-incident-meta b {
++  color: var(--text-2);
++  font-weight: 500;
++}
++
++.con-toolbar {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 8px 16px;
++  border-bottom: 1px solid var(--hairline);
++  font-size: 11.5px;
++  color: var(--text-3);
++  font-family: var(--mono);
++}
++.con-chip {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  height: 24px;
++  padding: 0 9px;
++  border-radius: 6px;
++  background: var(--panel-3);
++  border: 1px solid var(--hairline);
++  color: var(--text-2);
++}
++.con-chip kbd {
++  font-family: var(--mono);
++  font-size: 10px;
++  background: rgba(0, 0, 0, 0.3);
++  border: 1px solid var(--hairline);
++  border-radius: 3px;
++  padding: 0 4px;
++  color: var(--text-3);
++}
++.con-search {
++  margin-left: auto;
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  height: 26px;
++  padding: 0 10px;
++  border-radius: 6px;
++  background: var(--bg-elev);
++  border: 1px solid var(--hairline);
++  color: var(--text-3);
++  min-width: 140px;
++}
++.con-search svg {
++  width: 12px;
++  height: 12px;
++}
++
++/* timeline */
++.timeline {
++  position: relative;
++  padding: 14px 16px 18px 16px;
++  font-size: 12.5px;
++}
++.timeline::before {
++  content: "";
++  position: absolute;
++  left: 83px;
++  top: 26px;
++  bottom: 18px;
++  width: 1px;
++  background: var(--hairline);
++}
++.tl-axis {
++  display: flex;
++  justify-content: space-between;
++  padding: 0 16px 12px 74px;
++  font-family: var(--mono);
++  font-size: 10px;
++  color: var(--text-4);
++  letter-spacing: 0.04em;
++}
++.tl-event {
++  position: relative;
++  display: grid;
++  grid-template-columns: 48px 18px minmax(0, 1fr);
++  gap: 10px;
++  padding: 7px 0;
++  align-items: flex-start;
++}
++.tl-time {
++  font-family: var(--mono);
++  font-size: 11px;
++  color: var(--text-3);
++  padding-top: 2px;
++  text-align: right;
++}
++.tl-marker {
++  position: relative;
++  width: 18px;
++  height: 18px;
++  display: grid;
++  place-items: center;
++  margin-top: 1px;
++}
++.tl-marker .node {
++  width: 10px;
++  height: 10px;
++  border-radius: 50%;
++  background: var(--panel);
++  border: 2px solid var(--text-3);
++  z-index: 1;
++}
++.tl-event.crit .node {
++  border-color: var(--crit);
++  background: var(--crit);
++  box-shadow: 0 0 0 4px var(--crit-soft);
++}
++.tl-event.warn .node {
++  border-color: var(--warn);
++  background: var(--warn);
++  box-shadow: 0 0 0 4px var(--warn-soft);
++}
++.tl-event.info .node {
++  border-color: var(--info);
++}
++.tl-event.ok .node {
++  border-color: var(--ok);
++  background: var(--ok);
++}
++.tl-event.deploy .node {
++  border-color: var(--violet);
++  background: var(--violet);
++}
++
++.tl-body {
++  min-width: 0;
++}
++.tl-title {
++  color: var(--text);
++  font-weight: 540;
++  font-size: 12.5px;
++  line-height: 1.35;
++}
++.tl-sub {
++  margin-top: 3px;
++  color: var(--text-3);
++  font-size: 11.5px;
++  font-family: var(--mono);
++  display: flex;
++  gap: 8px;
++  flex-wrap: wrap;
++  align-items: center;
++}
++.tl-tag {
++  display: inline-flex;
++  align-items: center;
++  gap: 4px;
++  padding: 1px 6px;
++  border-radius: 4px;
++  background: var(--panel-3);
++  border: 1px solid var(--hairline);
++  color: var(--text-2);
++  font-size: 10.5px;
++}
++.tl-event.selected {
++  background: linear-gradient(
++    90deg,
++    var(--brand-soft),
++    transparent 70%
++  );
++  margin: 0 -16px;
++  padding-left: 16px;
++  padding-right: 16px;
++  border-radius: 8px;
++}
++.tl-event.selected .tl-title {
++  color: var(--text);
++}
++.tl-event.selected::after {
++  content: "";
++  position: absolute;
++  left: 0;
++  top: 6px;
++  bottom: 6px;
++  width: 2px;
++  background: var(--brand);
++  border-radius: 2px;
++}
++.tl-trace {
++  margin-top: 6px;
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  font-family: var(--mono);
++  font-size: 10.5px;
++  color: var(--text-3);
++}
++.tracebar {
++  position: relative;
++  flex: 1;
++  height: 6px;
++  background: var(--panel-3);
++  border-radius: 3px;
++  overflow: hidden;
++}
++.tracebar > i {
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  background: linear-gradient(90deg, var(--info), var(--brand));
++  border-radius: 3px;
++}
++
++/* right panel */
++.con-right {
++  border-left: 1px solid var(--hairline);
++  background: rgba(0, 0, 0, 0.18);
++  padding: 14px;
++  display: flex;
++  flex-direction: column;
++  gap: 14px;
++  font-size: 12px;
++}
++.con-right h4 {
++  margin: 0 0 8px;
++  font-size: 10px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--text-4);
++  font-weight: 600;
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++}
++.con-right h4 span {
++  color: var(--brand);
++  font-family: var(--mono);
++}
++.kv {
++  display: grid;
++  grid-template-columns: auto 1fr;
++  gap: 6px 10px;
++  font-size: 11.5px;
++}
++.kv dt {
++  color: var(--text-3);
++  font-family: var(--mono);
++}
++.kv dd {
++  margin: 0;
++  color: var(--text);
++  font-family: var(--mono);
++  text-align: right;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++.spark {
++  display: flex;
++  align-items: flex-end;
++  gap: 2px;
++  height: 40px;
++}
++.spark i {
++  flex: 1;
++  background: linear-gradient(180deg, var(--brand), var(--brand-dim));
++  border-radius: 2px 2px 0 0;
++  opacity: 0.85;
++}
++.spark i.peak {
++  background: linear-gradient(180deg, var(--crit), #c03550);
++}
++.contributors {
++  display: flex;
++  align-items: center;
++}
++.contributors .avatar {
++  width: 22px;
++  height: 22px;
++  border-radius: 50%;
++  border: 2px solid var(--panel-2);
++  margin-left: -6px;
++  display: grid;
++  place-items: center;
++  font-size: 9px;
++  font-weight: 700;
++  color: #0a0c08;
++}
++.contributors .avatar:first-child {
++  margin-left: 0;
++}
++
++/* ============================================================
++   Logo strip
++   ============================================================ */
++.logos {
++  padding: 8px 0 4px;
++  border-top: 1px solid var(--hairline);
++  border-bottom: 1px solid var(--hairline);
++  background: rgba(0, 0, 0, 0.18);
++}
++.logos-inner {
++  display: flex;
++  align-items: center;
++  gap: 36px;
++  flex-wrap: wrap;
++  padding: 18px 0;
++  justify-content: space-between;
++}
++.logos-label {
++  font-family: var(--mono);
++  font-size: 11px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--text-4);
++}
++.logos-row {
++  display: flex;
++  align-items: center;
++  gap: 30px;
++  flex-wrap: wrap;
++  opacity: 0.85;
++}
++.logos-row .logo {
++  font-weight: 640;
++  letter-spacing: -0.01em;
++  color: var(--text-2);
++  font-size: 15px;
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++}
++.logos-row .logo svg {
++  width: 16px;
++  height: 16px;
++}
++
++/* ============================================================
++   Section heads
++   ============================================================ */
++.section {
++  padding: 88px 0;
++}
++.section-head {
++  max-width: 640px;
++  margin-bottom: 48px;
++}
++.section-head.center {
++  margin-left: auto;
++  margin-right: auto;
++  text-align: center;
++}
++.section-head h2 {
++  font-size: clamp(28px, 3.6vw, 40px);
++  font-weight: 620;
++  letter-spacing: -0.03em;
++  margin-top: 14px;
++}
++.section-head p {
++  margin-top: 14px;
++  color: var(--text-2);
++  font-size: 17px;
++  line-height: 1.55;
++}
++
++/* ============================================================
++   Features (bento)
++   ============================================================ */
++.bento {
++  display: grid;
++  grid-template-columns: repeat(6, 1fr);
++  gap: 14px;
++}
++.card {
++  background: var(--panel);
++  border: 1px solid var(--hairline);
++  border-radius: var(--radius-lg);
++  padding: 22px;
++  position: relative;
++  overflow: hidden;
++  transition: border-color 0.18s ease, transform 0.18s ease;
++}
++.card:hover {
++  border-color: var(--hairline-strong);
++}
++.card h3 {
++  font-size: 17px;
++  font-weight: 600;
++  letter-spacing: -0.015em;
++  margin-bottom: 8px;
++}
++.card p {
++  color: var(--text-2);
++  font-size: 14px;
++  line-height: 1.55;
++}
++.card .ico {
++  width: 34px;
++  height: 34px;
++  border-radius: 9px;
++  display: grid;
++  place-items: center;
++  background: var(--brand-soft);
++  color: var(--brand);
++  margin-bottom: 16px;
++  border: 1px solid rgba(196, 240, 76, 0.2);
++}
++.card .ico svg {
++  width: 17px;
++  height: 17px;
++}
++
++.card.span-3 {
++  grid-column: span 3;
++}
++.card.span-2 {
++  grid-column: span 2;
++}
++.card.span-4 {
++  grid-column: span 4;
++}
++.card.span-6 {
++  grid-column: span 6;
++}
++
++/* feature card mini-visuals */
++.mini-trace {
++  margin-top: 18px;
++  border-top: 1px solid var(--hairline);
++  padding-top: 16px;
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++}
++.mini-trace .row {
++  display: grid;
++  grid-template-columns: 90px 1fr auto;
++  gap: 10px;
++  align-items: center;
++  font-family: var(--mono);
++  font-size: 11px;
++}
++.mini-trace .row .svc {
++  color: var(--text-3);
++}
++.mini-trace .row .bar {
++  position: relative;
++  height: 10px;
++  background: var(--panel-3);
++  border-radius: 5px;
++  overflow: hidden;
++}
++.mini-trace .row .bar i {
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  border-radius: 5px;
++}
++.mini-trace .row .ms {
++  color: var(--text-2);
++  text-align: right;
++}
++
++.mini-logs {
++  margin-top: 18px;
++  border-top: 1px solid var(--hairline);
++  padding-top: 14px;
++  font-family: var(--mono);
++  font-size: 11px;
++  line-height: 1.7;
++  color: var(--text-3);
++}
++.mini-logs .ln {
++  display: grid;
++  grid-template-columns: 60px auto 1fr;
++  gap: 8px;
++}
++.mini-logs .lv-e {
++  color: var(--crit);
++}
++.mini-logs .lv-w {
++  color: var(--warn);
++}
++.mini-logs .lv-i {
++  color: var(--info);
++}
++
++.mini-correlate {
++  margin-top: 18px;
++  border-top: 1px solid var(--hairline);
++  padding-top: 16px;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++}
++.mini-correlate .pill {
++  font-family: var(--mono);
++  font-size: 11px;
++  padding: 3px 8px;
++  border-radius: 999px;
++  background: var(--panel-3);
++  border: 1px solid var(--hairline);
++  color: var(--text-2);
++}
++.mini-correlate .pill.link {
++  color: var(--brand);
++  border-color: rgba(196, 240, 76, 0.3);
++  background: var(--brand-soft);
++}
++
++.mini-rule {
++  margin-top: 18px;
++  border-top: 1px solid var(--hairline);
++  padding-top: 14px;
++  font-family: var(--mono);
++  font-size: 11.5px;
++  line-height: 1.7;
++  color: var(--text-2);
++}
++.mini-rule .kw {
++  color: var(--violet);
++}
++.mini-rule .str {
++  color: var(--ok);
++}
++.mini-rule .cmt {
++  color: var(--text-4);
++}
++
++/* ============================================================
++   Workflow
++   ============================================================ */
++.workflow-grid {
++  display: grid;
++  grid-template-columns: 0.9fr 1.1fr;
++  gap: 56px;
++  align-items: start;
++}
++.steps {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  counter-reset: step;
++}
++.steps li {
++  position: relative;
++  padding: 4px 0 28px 44px;
++  border-left: 1px solid var(--hairline);
++  margin-left: 14px;
++}
++.steps li:last-child {
++  border-left-color: transparent;
++  padding-bottom: 0;
++}
++.steps li::before {
++  counter-increment: step;
++  content: counter(step, decimal-leading-zero);
++  position: absolute;
++  left: -16px;
++  top: 0;
++  width: 32px;
++  height: 32px;
++  border-radius: 50%;
++  background: var(--panel-2);
++  border: 1px solid var(--hairline-strong);
++  color: var(--brand);
++  font-family: var(--mono);
++  font-size: 11px;
++  font-weight: 600;
++  display: grid;
++  place-items: center;
++  box-shadow: 0 0 0 4px var(--bg);
++}
++.steps h3 {
++  font-size: 17px;
++  font-weight: 600;
++  letter-spacing: -0.01em;
++  margin-bottom: 6px;
++}
++.steps p {
++  color: var(--text-2);
++  font-size: 14px;
++  line-height: 1.55;
++}
++.steps .step-tag {
++  display: inline-block;
++  margin-top: 8px;
++  font-family: var(--mono);
++  font-size: 11px;
++  color: var(--text-3);
++}
++
++.workflow-visual {
++  position: sticky;
++  top: 84px;
++}
++
++/* ============================================================
++   Metrics band
++   ============================================================ */
++.metrics {
++  border-top: 1px solid var(--hairline);
++  border-bottom: 1px solid var(--hairline);
++  background: linear-gradient(180deg, rgba(0, 0, 0, 0.25), transparent);
++}
++.metrics-grid {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 24px;
++  padding: 48px 0;
++}
++.metric .n {
++  font-size: clamp(32px, 4vw, 44px);
++  font-weight: 620;
++  letter-spacing: -0.04em;
++  color: var(--text);
++  font-feature-settings: "tnum" 1;
++}
++.metric .n .u {
++  color: var(--brand);
++}
++.metric .l {
++  margin-top: 6px;
++  color: var(--text-3);
++  font-size: 13px;
++  max-width: 200px;
++}
++
++/* ============================================================
++   CTA
++   ============================================================ */
++.cta {
++  padding: 88px 0;
++}
++.cta-card {
++  position: relative;
++  border-radius: 22px;
++  border: 1px solid var(--hairline-strong);
++  background:
++    radial-gradient(
++      600px 300px at 80% 0%,
++      rgba(196, 240, 76, 0.1),
++      transparent 60%
++    ),
++    linear-gradient(180deg, var(--panel-2), var(--panel));
++  padding: 56px;
++  overflow: hidden;
++  display: grid;
++  grid-template-columns: 1.2fr 0.8fr;
++  gap: 40px;
++  align-items: center;
++}
++.cta-card h2 {
++  font-size: clamp(28px, 3.4vw, 38px);
++  font-weight: 620;
++  letter-spacing: -0.03em;
++}
++.cta-card p {
++  margin-top: 14px;
++  color: var(--text-2);
++  font-size: 16px;
++  max-width: 460px;
++}
++.cta-actions {
++  display: flex;
++  flex-direction: column;
++  gap: 10px;
++  align-items: flex-start;
++}
++.cta-note {
++  font-size: 12px;
++  color: var(--text-3);
++  font-family: var(--mono);
++}
++
++/* ============================================================
++   Footer
++   ============================================================ */
++.footer {
++  border-top: 1px solid var(--hairline);
++  padding: 48px 0 36px;
++  background: rgba(0, 0, 0, 0.2);
++}
++.footer-top {
++  display: grid;
++  grid-template-columns: 1.4fr repeat(3, 1fr);
++  gap: 32px;
++  padding-bottom: 32px;
++  border-bottom: 1px solid var(--hairline);
++}
++.footer-brand p {
++  margin-top: 12px;
++  color: var(--text-3);
++  font-size: 13px;
++  max-width: 280px;
++}
++.footer-col h5 {
++  margin: 0 0 14px;
++  font-size: 11px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--text-4);
++  font-weight: 600;
++}
++.footer-col ul {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: flex;
++  flex-direction: column;
++  gap: 9px;
++}
++.footer-col a {
++  color: var(--text-2);
++  font-size: 13.5px;
++}
++.footer-col a:hover {
++  color: var(--text);
++}
++.footer-bottom {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  padding-top: 20px;
++  font-size: 12px;
++  color: var(--text-4);
++  font-family: var(--mono);
++  flex-wrap: wrap;
++  gap: 12px;
++}
++.footer-bottom .status {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  color: var(--text-3);
++}
++.footer-bottom .status .dot {
++  background: var(--ok);
++}
++
++/* visually hidden but accessible */
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++
++/* skip link */
++.skip-link {
++  position: absolute;
++  left: 12px;
++  top: -48px;
++  background: var(--brand);
++  color: #0a0c08;
++  padding: 8px 14px;
++  border-radius: 8px;
++  font-weight: 600;
++  font-size: 13px;
++  z-index: 100;
++  transition: top 0.15s ease;
++}
++.skip-link:focus {
++  top: 12px;
++}
++
++/* ============================================================
++   Responsive
++   ============================================================ */
++@media (max-width: 1024px) {
++  .hero-grid {
++    grid-template-columns: 1fr;
++    gap: 40px;
++  }
++  .con-body {
++    grid-template-columns: 140px minmax(0, 1fr);
++  }
++  .con-right {
++    display: none;
++  }
++  .workflow-grid {
++    grid-template-columns: 1fr;
++    gap: 36px;
++  }
++  .workflow-visual {
++    position: static;
++  }
++  .bento {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .card.span-3,
++  .card.span-2,
++  .card.span-4,
++  .card.span-6 {
++    grid-column: span 2;
++  }
++  .cta-card {
++    grid-template-columns: 1fr;
++    padding: 40px;
++  }
++  .footer-top {
++    grid-template-columns: 1fr 1fr;
++  }
++}
++
++@media (max-width: 760px) {
++  .nav-links,
++  .nav-signin {
++    display: none;
++  }
++  .nav-toggle {
++    display: inline-flex;
++  }
++  .nav-cta .btn-primary {
++    display: none;
++  }
++  .section {
++    padding: 64px 0;
++  }
++  .metrics-grid {
++    grid-template-columns: repeat(2, 1fr);
++    gap: 28px 16px;
++  }
++  .footer-top {
++    grid-template-columns: 1fr;
++    gap: 24px;
++  }
++  .hero {
++    padding: 40px 0 40px;
++  }
++}
++
++@media (max-width: 560px) {
++  .container {
++    padding: 0 16px;
++  }
++  .con-body {
++    grid-template-columns: 1fr;
++  }
++  .con-side {
++    display: none;
++  }
++  .con-search {
++    display: none;
++  }
++  .con-incident-meta {
++    font-size: 10.5px;
++    gap: 10px;
++  }
++  .timeline {
++    padding: 12px 12px 14px;
++  }
++  .timeline::before {
++    left: 66px;
++  }
++  .tl-axis {
++    padding-left: 58px;
++    padding-right: 12px;
++  }
++  .tl-event {
++    grid-template-columns: 38px 16px minmax(0, 1fr);
++    gap: 8px;
++  }
++  .bento {
++    grid-template-columns: 1fr;
++  }
++  .card.span-3,
++  .card.span-2,
++  .card.span-4,
++  .card.span-6 {
++    grid-column: span 1;
++  }
++  .cta-card {
++    padding: 28px;
++    border-radius: 16px;
++  }
++  .hero h1 {
++    font-size: 38px;
++  }
++  .hero .lede {
++    font-size: 16px;
++  }
++  .nav-inner {
++    height: 54px;
++  }
++}
++
++@media (max-width: 380px) {
++  .container {
++    padding: 0 12px;
++  }
++  .con-incident-meta {
++    font-size: 10px;
++  }
++  .hero-cta .btn {
++    flex: 1 1 100%;
++  }
++}
++
++/* reduced motion */
++@media (prefers-reduced-motion: reduce) {
++  * {
++    transition: none !important;
++    animation: none !important;
++  }
++}

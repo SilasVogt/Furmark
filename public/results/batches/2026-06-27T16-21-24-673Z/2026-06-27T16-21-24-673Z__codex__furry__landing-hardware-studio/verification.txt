@@ -1,0 +1,37 @@
+$ pnpm test
+
+> @ test /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__furry__landing-hardware-studio/workspace
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90m/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__furry__landing-hardware-studio/workspace[39m
+
+ [32m✓[39m src/main.test.tsx [2m([22m[2m1 test[22m[2m)[22m[32m 15[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 09:28:25
+[2m   Duration [22m 315ms[2m (transform 65ms, setup 0ms, import 192ms, tests 15ms, environment 0ms)[22m
+
+
+
+exit 0
+
+$ pnpm build
+
+> @ build /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__codex__furry__landing-hardware-studio/workspace
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1700 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                            0.37 kB │ gzip:  0.28 kB
+dist/assets/arcwell-hero-BlC5pC8X.png  1,753.00 kB
+dist/assets/index-p9HpuoGY.css            10.26 kB │ gzip:  3.10 kB
+dist/assets/index-Dh038UkL.js            202.60 kB │ gzip: 64.68 kB
+✓ built in 1.51s
+
+
+exit 0

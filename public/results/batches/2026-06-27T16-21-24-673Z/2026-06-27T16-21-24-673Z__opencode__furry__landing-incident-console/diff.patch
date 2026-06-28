@@ -1,0 +1,1236 @@
+diff --git a/index.html b/index.html
+index f6dacfc..4e42750 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,17 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta
++      name="description"
++      content="Traceboard is the incident timeline debugger for engineering teams. It fuses deploys, metrics, logs, traces, and pages into one second-by-second timeline so on-call engineers find root cause fast."
++    />
++    <meta name="theme-color" content="#07090d" />
++    <title>Traceboard · Incident timeline debugger</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..cb65a83 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,5 @@
+-import React from "react";
+ import { createRoot } from "react-dom/client";
++import App from "./App";
+ import "./style.css";
+ 
+-function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
+-}
+-
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..9a09cce 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,1192 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #07090d;
++  --bg-1: #0b0e14;
++  --bg-2: #10151f;
++  --bg-3: #151b27;
++  --border: #1e2633;
++  --border-2: #2a3444;
++  --text: #e6edf6;
++  --text-dim: #9aa6b8;
++  --text-faint: #5e6878;
++  --brand: #ffb020;
++  --brand-2: #ff8a3d;
++  --brand-soft: rgba(255, 176, 32, 0.12);
++  --crit: #ff5470;
++  --warn: #ffb020;
++  --ok: #34d399;
++  --info: #5cc8ff;
++  --violet: #a78bfa;
++  --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
++  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
++  --radius: 12px;
++  --radius-sm: 8px;
++  --maxw: 1200px;
++  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 24px 60px -20px rgba(0, 0, 0, 0.7);
++  color-scheme: dark;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html,
++body {
++  margin: 0;
++  padding: 0;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  background: var(--bg);
++  color: var(--text);
++  font-family: var(--sans);
++  font-size: 16px;
++  line-height: 1.55;
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
++  overflow-x: hidden;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++button {
++  font: inherit;
++  cursor: pointer;
++}
++
++h1,
++h2,
++h3,
++h4 {
++  margin: 0;
++  letter-spacing: -0.02em;
++  line-height: 1.08;
++  font-weight: 600;
++}
++
++p {
++  margin: 0;
++}
++
++:focus-visible {
++  outline: 2px solid var(--brand);
++  outline-offset: 2px;
++  border-radius: 4px;
++}
++
++.wrap {
++  width: 100%;
++  max-width: var(--maxw);
++  margin-inline: auto;
++  padding-inline: 24px;
++}
++
++.eyebrow {
++  font-family: var(--mono);
++  font-size: 12px;
++  letter-spacing: 0.12em;
++  text-transform: uppercase;
++  color: var(--brand);
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++}
++
++.eyebrow::before {
++  content: "";
++  width: 18px;
++  height: 1px;
++  background: var(--brand);
++  opacity: 0.7;
++}
++
++.mono {
++  font-family: var(--mono);
++}
++
++/* ---------- Buttons ---------- */
++.btn {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 8px;
++  padding: 11px 18px;
++  border-radius: var(--radius-sm);
++  border: 1px solid transparent;
++  font-weight: 560;
++  font-size: 14.5px;
++  transition: transform 0.12s ease, background 0.18s ease, border-color 0.18s ease,
++    box-shadow 0.18s ease;
++  white-space: nowrap;
++}
++
++.btn:active {
++  transform: translateY(1px);
++}
++
++.btn-primary {
++  background: linear-gradient(180deg, var(--brand) 0, var(--brand-2) 100%);
++  color: #1a1206;
++  box-shadow: 0 8px 24px -10px rgba(255, 138, 61, 0.7), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
++}
++
++.btn-primary:hover {
++  box-shadow: 0 10px 30px -8px rgba(255, 138, 61, 0.85), 0 1px 0 rgba(255, 255, 255, 0.3) inset;
++}
++
++.btn-ghost {
++  background: rgba(255, 255, 255, 0.02);
++  color: var(--text);
++  border-color: var(--border-2);
++}
++
++.btn-ghost:hover {
++  background: rgba(255, 255, 255, 0.05);
++  border-color: #3a4658;
++}
++
++.btn-sm {
++  padding: 8px 14px;
++  font-size: 13.5px;
++}
++
++/* ---------- Nav ---------- */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 50;
++  background: rgba(7, 9, 13, 0.72);
++  backdrop-filter: blur(14px) saturate(140%);
++  -webkit-backdrop-filter: blur(14px) saturate(140%);
++  border-bottom: 1px solid var(--border);
++}
++
++.nav-inner {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  height: 64px;
++  gap: 24px;
++}
++
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  font-weight: 700;
++  letter-spacing: -0.02em;
++  font-size: 17px;
++}
++
++.brand-mark {
++  width: 28px;
++  height: 28px;
++  border-radius: 7px;
++  background: linear-gradient(140deg, var(--brand) 0, var(--brand-2) 100%);
++  display: grid;
++  place-items: center;
++  color: #1a1206;
++  box-shadow: 0 6px 18px -6px rgba(255, 138, 61, 0.7);
++}
++
++.nav-links {
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  margin-inline: auto;
++}
++
++.nav-links a {
++  padding: 8px 12px;
++  font-size: 14px;
++  color: var(--text-dim);
++  border-radius: var(--radius-sm);
++  transition: color 0.15s ease, background 0.15s ease;
++}
++
++.nav-links a:hover {
++  color: var(--text);
++  background: rgba(255, 255, 255, 0.04);
++}
++
++.nav-cta {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++}
++
++.nav-toggle {
++  display: none;
++  width: 40px;
++  height: 40px;
++  border-radius: var(--radius-sm);
++  border: 1px solid var(--border-2);
++  background: var(--bg-2);
++  color: var(--text);
++  align-items: center;
++  justify-content: center;
++}
++
++.mobile-menu {
++  display: none;
++  border-top: 1px solid var(--border);
++  background: var(--bg-1);
++  padding: 10px 0 16px;
++}
++
++.mobile-menu.open {
++  display: block;
++}
++
++.mobile-menu a {
++  display: block;
++  padding: 12px 8px;
++  color: var(--text-dim);
++  border-bottom: 1px solid var(--border);
++}
++
++.mobile-menu a:last-child {
++  border-bottom: none;
++}
++
++.mobile-menu .btn {
++  width: 100%;
++  margin-top: 10px;
++}
++
++/* ---------- Hero ---------- */
++.hero {
++  position: relative;
++  padding: 64px 0 56px;
++  overflow: hidden;
++}
++
++.hero-bg {
++  position: absolute;
++  inset: 0;
++  z-index: -1;
++  background:
++    radial-gradient(900px 500px at 78% -8%, rgba(255, 138, 61, 0.12), transparent 60%),
++    radial-gradient(700px 500px at 12% 0%, rgba(92, 200, 255, 0.07), transparent 55%),
++    linear-gradient(180deg, var(--bg) 0, var(--bg-1) 100%);
++}
++
++.hero-bg::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  background-image:
++    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
++    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
++  background-size: 44px 44px;
++  -webkit-mask-image: radial-gradient(800px 420px at 60% 18%, #000 0%, transparent 75%);
++  mask-image: radial-gradient(800px 420px at 60% 18%, #000 0%, transparent 75%);
++}
++
++.hero-grid {
++  display: grid;
++  grid-template-columns: 1.05fr 1fr;
++  gap: 48px;
++  align-items: center;
++}
++
++.hero h1 {
++  font-size: clamp(34px, 5.2vw, 58px);
++  margin-top: 22px;
++  font-weight: 650;
++}
++
++.hero h1 .hl {
++  background: linear-gradient(180deg, var(--brand) 0, var(--brand-2) 100%);
++  -webkit-background-clip: text;
++  background-clip: text;
++  color: transparent;
++}
++
++.hero p.lede {
++  margin-top: 22px;
++  font-size: clamp(16px, 1.5vw, 18px);
++  color: var(--text-dim);
++  max-width: 54ch;
++}
++
++.hero-ctas {
++  margin-top: 30px;
++  display: flex;
++  gap: 12px;
++  flex-wrap: wrap;
++}
++
++.hero-meta {
++  margin-top: 26px;
++  display: flex;
++  gap: 22px;
++  flex-wrap: wrap;
++  font-family: var(--mono);
++  font-size: 12.5px;
++  color: var(--text-faint);
++}
++
++.hero-meta b {
++  color: var(--text);
++  font-weight: 600;
++}
++
++.dot {
++  display: inline-block;
++  width: 8px;
++  height: 8px;
++  border-radius: 50%;
++  background: var(--ok);
++  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
++}
++
++/* ---------- Incident Console (hero visual) ---------- */
++.console {
++  position: relative;
++  border-radius: 14px;
++  border: 1px solid var(--border-2);
++  background: linear-gradient(180deg, #0c111a 0, #090d14 100%);
++  box-shadow: var(--shadow);
++  overflow: hidden;
++}
++
++.console-bar {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++  padding: 11px 14px;
++  border-bottom: 1px solid var(--border);
++  background: linear-gradient(180deg, #11161f, #0d121a);
++}
++
++.traffic {
++  display: flex;
++  gap: 6px;
++}
++
++.traffic i {
++  width: 11px;
++  height: 11px;
++  border-radius: 50%;
++  display: block;
++}
++
++.console-title {
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--text-dim);
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  min-width: 0;
++}
++
++.console-title .sep {
++  color: var(--text-faint);
++}
++
++.sev {
++  font-family: var(--mono);
++  font-size: 10.5px;
++  font-weight: 700;
++  padding: 2px 7px;
++  border-radius: 4px;
++  letter-spacing: 0.04em;
++  border: 1px solid var(--crit);
++  color: var(--crit);
++  background: rgba(255, 84, 112, 0.08);
++}
++
++.console-tabs {
++  display: flex;
++  gap: 2px;
++  padding: 0 12px;
++  border-bottom: 1px solid var(--border);
++  background: #0a0e15;
++  overflow-x: auto;
++  scrollbar-width: none;
++}
++
++.console-tabs::-webkit-scrollbar {
++  display: none;
++}
++
++.console-tabs button {
++  background: none;
++  border: none;
++  color: var(--text-faint);
++  font-family: var(--mono);
++  font-size: 12px;
++  padding: 10px 12px;
++  border-bottom: 2px solid transparent;
++  white-space: nowrap;
++}
++
++.console-tabs button.active {
++  color: var(--text);
++  border-bottom-color: var(--brand);
++}
++
++.console-body {
++  padding: 16px 16px 18px;
++}
++
++.incident-head {
++  display: flex;
++  align-items: flex-start;
++  justify-content: space-between;
++  gap: 12px;
++  flex-wrap: wrap;
++  margin-bottom: 14px;
++}
++
++.incident-head .label {
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--text-dim);
++}
++
++.incident-head .value {
++  font-family: var(--mono);
++  font-size: 13.5px;
++  color: var(--text);
++  font-weight: 600;
++}
++
++.kpis {
++  display: flex;
++  gap: 18px;
++  flex-wrap: wrap;
++}
++
++.kpi {
++  min-width: 0;
++}
++
++.kpi-val {
++  font-family: var(--mono);
++  font-size: 18px;
++  font-weight: 700;
++  letter-spacing: -0.01em;
++}
++
++.kpi-val.bad {
++  color: var(--crit);
++}
++
++.kpi-val.ok {
++  color: var(--ok);
++}
++
++.kpi-lbl {
++  font-family: var(--mono);
++  font-size: 10.5px;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--text-faint);
++}
++
++.correlation {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 9px 12px;
++  border-radius: var(--radius-sm);
++  background: rgba(255, 176, 32, 0.08);
++  border: 1px solid rgba(255, 176, 32, 0.28);
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--text);
++  margin-bottom: 14px;
++}
++
++.correlation .arrow {
++  color: var(--brand);
++  font-weight: 700;
++}
++
++.correlation .delta {
++  color: var(--crit);
++  margin-left: auto;
++  font-weight: 700;
++}
++
++/* timeline chart */
++.timeline {
++  position: relative;
++  border: 1px solid var(--border);
++  border-radius: var(--radius-sm);
++  background: #070a10;
++  background-image:
++    linear-gradient(to right, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
++  background-size: 12.5% 100%;
++}
++
++.tl-axis {
++  display: flex;
++  justify-content: space-between;
++  padding: 6px 12px 8px;
++  border-bottom: 1px solid var(--border);
++  font-family: var(--mono);
++  font-size: 10px;
++  color: var(--text-faint);
++}
++
++.lanes {
++  position: relative;
++  display: grid;
++  grid-template-columns: 96px 1fr;
++}
++
++.lane-label {
++  display: flex;
++  align-items: center;
++  gap: 7px;
++  padding: 9px 10px;
++  font-family: var(--mono);
++  font-size: 10.5px;
++  color: var(--text-dim);
++  border-top: 1px dashed rgba(255, 255, 255, 0.05);
++  background: rgba(255, 255, 255, 0.012);
++}
++
++.lane-label:first-child {
++  border-top: none;
++}
++
++.lane-label .sw {
++  width: 7px;
++  height: 7px;
++  border-radius: 2px;
++}
++
++.lane {
++  position: relative;
++  height: 42px;
++  border-top: 1px dashed rgba(255, 255, 255, 0.05);
++  min-width: 0;
++}
++
++.lane:first-child {
++  border-top: none;
++}
++
++.tl-correlation-band {
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  border-left: 1px dashed rgba(255, 176, 32, 0.45);
++  border-right: 1px dashed rgba(255, 176, 32, 0.45);
++  background: linear-gradient(90deg, rgba(255, 176, 32, 0.07), rgba(255, 84, 112, 0.07));
++  pointer-events: none;
++}
++
++/* deploy markers */
++.marker {
++  position: absolute;
++  top: 50%;
++  transform: translate(-50%, -50%);
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++}
++
++.marker .gem {
++  width: 12px;
++  height: 12px;
++  transform: rotate(45deg);
++  border: 1.5px solid;
++}
++
++.marker.deploy .gem {
++  border-color: var(--info);
++  background: rgba(92, 200, 255, 0.25);
++}
++
++.marker.rollback .gem {
++  border-color: var(--violet);
++  background: rgba(167, 139, 250, 0.25);
++}
++
++.marker .tag {
++  position: absolute;
++  top: 14px;
++  font-family: var(--mono);
++  font-size: 9px;
++  white-space: nowrap;
++  color: var(--text-dim);
++  background: #0d121a;
++  border: 1px solid var(--border-2);
++  padding: 1px 4px;
++  border-radius: 3px;
++}
++
++/* error bars */
++.bars {
++  position: absolute;
++  inset: 0;
++  display: flex;
++  align-items: flex-end;
++  gap: 1px;
++  padding: 4px 0;
++}
++
++.bars span {
++  flex: 1;
++  background: linear-gradient(180deg, var(--crit), rgba(255, 84, 112, 0.25));
++  border-radius: 1px 1px 0 0;
++  min-width: 0;
++}
++
++/* latency svg fills lane */
++.spark {
++  position: absolute;
++  inset: 0;
++}
++
++/* saturation cells */
++.sat {
++  position: absolute;
++  inset: 0;
++  display: flex;
++  gap: 1px;
++  align-items: stretch;
++  padding: 6px 0;
++}
++
++.sat span {
++  flex: 1;
++  border-radius: 1px;
++}
++
++/* alert pills */
++.pill {
++  position: absolute;
++  top: 50%;
++  transform: translate(-50%, -50%);
++  display: inline-flex;
++  align-items: center;
++  gap: 5px;
++  font-family: var(--mono);
++  font-size: 9.5px;
++  padding: 2px 6px;
++  border-radius: 10px;
++  border: 1px solid;
++  background: #0d121a;
++  white-space: nowrap;
++}
++
++.pill.fire {
++  color: var(--crit);
++  border-color: rgba(255, 84, 112, 0.5);
++}
++
++.pill.ack {
++  color: var(--warn);
++  border-color: rgba(255, 176, 32, 0.5);
++}
++
++.console-foot {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 10px;
++  margin-top: 12px;
++  font-family: var(--mono);
++  font-size: 11px;
++  color: var(--text-faint);
++  flex-wrap: wrap;
++}
++
++.console-foot .live {
++  color: var(--ok);
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++}
++
++/* ---------- Logo strip ---------- */
++.strip {
++  border-top: 1px solid var(--border);
++  border-bottom: 1px solid var(--border);
++  background: var(--bg-1);
++}
++
++.strip-inner {
++  display: flex;
++  align-items: center;
++  gap: 36px;
++  flex-wrap: wrap;
++  padding: 22px 0;
++  justify-content: space-between;
++}
++
++.strip .lbl {
++  font-family: var(--mono);
++  font-size: 11px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--text-faint);
++}
++
++.strip .logos {
++  display: flex;
++  gap: 30px;
++  flex-wrap: wrap;
++  align-items: center;
++  opacity: 0.85;
++}
++
++.strip .logos span {
++  font-family: var(--mono);
++  font-weight: 600;
++  font-size: 14px;
++  color: var(--text-dim);
++  letter-spacing: -0.01em;
++}
++
++/* ---------- Sections ---------- */
++section.block {
++  padding: 88px 0;
++  border-top: 1px solid var(--border);
++}
++
++.section-head {
++  max-width: 640px;
++  margin-bottom: 52px;
++}
++
++.section-head h2 {
++  font-size: clamp(26px, 3.4vw, 38px);
++  margin-top: 14px;
++}
++
++.section-head p {
++  margin-top: 14px;
++  color: var(--text-dim);
++  font-size: 16px;
++}
++
++.section-head.center {
++  margin-inline: auto;
++  text-align: center;
++}
++
++.section-head.center .eyebrow::before {
++  display: none;
++}
++
++/* ---------- Features ---------- */
++.feature-grid {
++  display: grid;
++  grid-template-columns: repeat(3, 1fr);
++  gap: 18px;
++}
++
++.feature {
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  background: linear-gradient(180deg, var(--bg-1), var(--bg));
++  padding: 22px;
++  position: relative;
++  transition: border-color 0.18s ease, transform 0.18s ease;
++  min-width: 0;
++}
++
++.feature:hover {
++  border-color: var(--border-2);
++  transform: translateY(-2px);
++}
++
++.feature .ico {
++  width: 36px;
++  height: 36px;
++  border-radius: 9px;
++  display: grid;
++  place-items: center;
++  background: var(--brand-soft);
++  color: var(--brand);
++  border: 1px solid rgba(255, 176, 32, 0.25);
++  margin-bottom: 16px;
++}
++
++.feature h3 {
++  font-size: 17px;
++  margin-bottom: 8px;
++}
++
++.feature p {
++  color: var(--text-dim);
++  font-size: 14.5px;
++}
++
++.feature .tag {
++  margin-top: 16px;
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  font-family: var(--mono);
++  font-size: 11px;
++  color: var(--text-faint);
++}
++
++.feature .tag code {
++  background: var(--bg-3);
++  border: 1px solid var(--border);
++  padding: 2px 6px;
++  border-radius: 4px;
++  color: var(--text-dim);
++}
++
++/* large feature */
++.feature.wide {
++  grid-column: span 3;
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 28px;
++  align-items: center;
++}
++
++/* ---------- Workflow ---------- */
++.workflow {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 0;
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  overflow: hidden;
++  background: var(--bg-1);
++}
++
++.step {
++  padding: 28px 24px;
++  border-right: 1px solid var(--border);
++  position: relative;
++  min-width: 0;
++}
++
++.step:last-child {
++  border-right: none;
++}
++
++.step .num {
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--brand);
++  letter-spacing: 0.1em;
++}
++
++.step h3 {
++  margin: 12px 0 8px;
++  font-size: 17px;
++}
++
++.step p {
++  color: var(--text-dim);
++  font-size: 14px;
++}
++
++.step .conn {
++  position: absolute;
++  top: 40px;
++  right: -10px;
++  color: var(--border-2);
++  z-index: 2;
++  background: var(--bg-1);
++}
++
++/* ---------- Metrics ---------- */
++.metrics {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 1px;
++  background: var(--border);
++  border: 1px solid var(--border);
++  border-radius: var(--radius);
++  overflow: hidden;
++}
++
++.metric {
++  background: var(--bg-1);
++  padding: 30px 24px;
++}
++
++.metric .big {
++  font-family: var(--mono);
++  font-size: clamp(28px, 3.4vw, 38px);
++  font-weight: 700;
++  letter-spacing: -0.02em;
++  background: linear-gradient(180deg, #fff, var(--text-dim));
++  -webkit-background-clip: text;
++  background-clip: text;
++  color: transparent;
++}
++
++.metric .big.brand {
++  background: linear-gradient(180deg, var(--brand), var(--brand-2));
++  -webkit-background-clip: text;
++  background-clip: text;
++}
++
++.metric .desc {
++  margin-top: 8px;
++  color: var(--text-dim);
++  font-size: 13.5px;
++}
++
++/* ---------- CTA ---------- */
++.cta-card {
++  position: relative;
++  border-radius: 16px;
++  border: 1px solid var(--border-2);
++  background:
++    radial-gradient(600px 300px at 80% -20%, rgba(255, 138, 61, 0.18), transparent 60%),
++    linear-gradient(180deg, #0d121b, #090d14);
++  padding: 56px 40px;
++  text-align: center;
++  overflow: hidden;
++}
++
++.cta-card::before {
++  content: "";
++  position: absolute;
++  inset: 0;
++  background-image:
++    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
++    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
++  background-size: 40px 40px;
++  -webkit-mask-image: radial-gradient(500px 280px at 50% 0%, #000, transparent 70%);
++  mask-image: radial-gradient(500px 280px at 50% 0%, #000, transparent 70%);
++}
++
++.cta-card > * {
++  position: relative;
++}
++
++.cta-card h2 {
++  font-size: clamp(26px, 3.6vw, 40px);
++}
++
++.cta-card p {
++  margin: 14px auto 0;
++  max-width: 52ch;
++  color: var(--text-dim);
++}
++
++.cta-card .hero-ctas {
++  justify-content: center;
++}
++
++/* ---------- Footer ---------- */
++footer {
++  border-top: 1px solid var(--border);
++  padding: 48px 0 32px;
++  background: var(--bg-1);
++}
++
++.foot-grid {
++  display: grid;
++  grid-template-columns: 1.6fr repeat(3, 1fr);
++  gap: 36px;
++}
++
++.foot-about p {
++  color: var(--text-dim);
++  font-size: 13.5px;
++  margin-top: 14px;
++  max-width: 34ch;
++}
++
++.foot-col h4 {
++  font-family: var(--mono);
++  font-size: 11px;
++  letter-spacing: 0.1em;
++  text-transform: uppercase;
++  color: var(--text-faint);
++  margin-bottom: 14px;
++}
++
++.foot-col a {
++  display: block;
++  color: var(--text-dim);
++  font-size: 14px;
++  padding: 5px 0;
++}
++
++.foot-col a:hover {
++  color: var(--text);
++}
++
++.foot-bottom {
++  margin-top: 40px;
++  padding-top: 20px;
++  border-top: 1px solid var(--border);
++  display: flex;
++  justify-content: space-between;
++  gap: 14px;
++  flex-wrap: wrap;
++  font-family: var(--mono);
++  font-size: 12px;
++  color: var(--text-faint);
++}
++
++/* ---------- Responsive ---------- */
++@media (max-width: 980px) {
++  .hero-grid {
++    grid-template-columns: 1fr;
++    gap: 40px;
++  }
++  .feature.wide {
++    grid-template-columns: 1fr;
++  }
++}
++
++@media (max-width: 860px) {
++  .nav-links,
++  .nav-cta .btn-ghost,
++  .nav-cta .btn-primary span.signin {
++    display: none;
++  }
++  .nav-toggle {
++    display: inline-flex;
++  }
++  .nav-cta .btn-primary {
++    padding: 9px 14px;
++  }
++  .feature-grid {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .feature.wide {
++    grid-column: span 2;
++  }
++  .workflow {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .step:nth-child(2) {
++    border-right: none;
++  }
++  .step:nth-child(-n + 2) {
++    border-bottom: 1px solid var(--border);
++  }
++  .step .conn {
++    display: none;
++  }
++  .metrics {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .foot-grid {
++    grid-template-columns: 1fr 1fr;
++  }
++  .foot-about {
++    grid-column: 1 / -1;
++  }
++}
++
++@media (max-width: 560px) {
++.skip-link {
++  position: absolute;
++  left: -999px;
++  top: 8px;
++  z-index: 100;
++  background: var(--brand);
++  color: #1a1206;
++  padding: 10px 16px;
++  border-radius: 6px;
++  font-weight: 600;
++  font-size: 14px;
++}
++
++.skip-link:focus {
++  left: 12px;
++}
++
++.wrap {
++    padding-inline: 18px;
++  }
++  .hero {
++    padding: 40px 0 40px;
++  }
++  section.block {
++    padding: 64px 0;
++  }
++  .feature-grid {
++    grid-template-columns: 1fr;
++  }
++  .feature.wide {
++    grid-column: span 1;
++  }
++  .workflow {
++    grid-template-columns: 1fr;
++  }
++  .step {
++    border-right: none;
++    border-bottom: 1px solid var(--border);
++  }
++  .step:last-child {
++    border-bottom: none;
++  }
++  .metrics {
++    grid-template-columns: 1fr 1fr;
++  }
++  .cta-card {
++    padding: 40px 22px;
++  }
++  .foot-grid {
++    grid-template-columns: 1fr;
++  }
++  .lanes {
++    grid-template-columns: 78px 1fr;
++  }
++  .lane-label {
++    font-size: 9.5px;
++    padding: 9px 6px;
++    gap: 5px;
++  }
++  .kpis {
++    gap: 14px;
++  }
++  .console-bar {
++    padding: 10px 12px;
++    gap: 8px;
++  }
++  .console-title {
++    font-size: 11px;
++    gap: 7px;
++    overflow: hidden;
++    text-overflow: ellipsis;
++    white-space: nowrap;
++  }
++  .console-body {
++    padding: 14px 12px 16px;
++  }
++  .tl-axis {
++    font-size: 9px;
++    padding: 5px 8px 6px;
++  }
++  .marker .tag {
++    font-size: 8.5px;
++    padding: 1px 3px;
++  }
++  .pill {
++    font-size: 9px;
++    padding: 2px 5px;
++  }
++  .kpi-val {
++    font-size: 16px;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  * {
++    transition: none !important;
++    animation: none !important;
++    scroll-behavior: auto !important;
++  }
++}

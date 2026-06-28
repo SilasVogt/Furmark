@@ -1,0 +1,36 @@
+$ pnpm test
+
+> @ test /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-civic-booking/workspace
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90m/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-civic-booking/workspace[39m
+
+ [32m✓[39m src/forms.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 07:52:16
+[2m   Duration [22m 157ms[2m (transform 30ms, setup 0ms, import 41ms, tests 5ms, environment 0ms)[22m
+
+
+
+exit 0
+
+$ pnpm build
+
+> @ build /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-civic-booking/workspace
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1701 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.62 kB │ gzip:  0.38 kB
+dist/assets/index-lpd5ohZe.css    7.58 kB │ gzip:  2.20 kB
+dist/assets/index-BKW80p7F.js   213.65 kB │ gzip: 67.74 kB
+✓ built in 1.50s
+
+
+exit 0

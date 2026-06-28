@@ -1,0 +1,202 @@
+diff --git a/src/lruCache.ts b/src/lruCache.ts
+index fad505a..7d8af4c 100644
+--- a/src/lruCache.ts
++++ b/src/lruCache.ts
+@@ -12,7 +12,7 @@ type Entry<Value> = {
+ 
+ export type LruCacheOptions = {
+   maxSize: number;
+-  ttlMs?: number;
++  ttlMs?: number | null;
+   now?: () => number;
+ };
+ 
+@@ -32,9 +32,7 @@ export class LruCache<Key, Value> {
+     if (!Number.isInteger(options.maxSize) || options.maxSize < 1) {
+       throw new Error("maxSize must be a positive integer");
+     }
+-    if (options.ttlMs !== undefined && (!Number.isFinite(options.ttlMs) || options.ttlMs <= 0)) {
+-      throw new Error("ttlMs must be a positive number");
+-    }
++    this.#assertTtl(options.ttlMs ?? null);
+     this.#maxSize = options.maxSize;
+     this.#ttlMs = options.ttlMs ?? null;
+     this.#now = options.now ?? Date.now;
+@@ -78,14 +76,15 @@ export class LruCache<Key, Value> {
+     return true;
+   }
+ 
+-  set(key: Key, value: Value, ttlMs = this.#ttlMs): void {
+-    if (ttlMs !== null && (!Number.isFinite(ttlMs) || ttlMs <= 0)) {
+-      throw new Error("ttlMs must be a positive number");
+-    }
++  set(key: Key, value: Value, ttlMs?: number | null): void {
++    const effectiveTtlMs = ttlMs === undefined ? this.#ttlMs : ttlMs;
++    this.#assertTtl(effectiveTtlMs);
++
++    this.#pruneExpired();
+     if (this.#entries.has(key)) this.#entries.delete(key);
+     this.#entries.set(key, {
+       value,
+-      expiresAt: ttlMs === null ? null : this.#now() + ttlMs,
++      expiresAt: effectiveTtlMs === null ? null : this.#now() + effectiveTtlMs,
+     });
+     this.#evictOverflow();
+   }
+@@ -100,9 +99,9 @@ export class LruCache<Key, Value> {
+ 
+   #evictOverflow(): void {
+     while (this.#entries.size > this.#maxSize) {
+-      const oldestKey = this.#entries.keys().next().value as Key | undefined;
+-      if (oldestKey === undefined) return;
+-      this.#entries.delete(oldestKey);
++      const oldest = this.#entries.keys().next();
++      if (oldest.done) return;
++      this.#entries.delete(oldest.value);
+       this.#stats.evictions += 1;
+     }
+   }
+@@ -119,5 +118,10 @@ export class LruCache<Key, Value> {
+   #isExpired(entry: Entry<Value>): boolean {
+     return entry.expiresAt !== null && entry.expiresAt <= this.#now();
+   }
+-}
+ 
++  #assertTtl(ttlMs: number | null): void {
++    if (ttlMs !== null && (!Number.isFinite(ttlMs) || ttlMs <= 0)) {
++      throw new Error("ttlMs must be a positive number");
++    }
++  }
++}
+diff --git a/tests/lruCache.test.ts b/tests/lruCache.test.ts
+index ff3e352..bfc5a7c 100644
+--- a/tests/lruCache.test.ts
++++ b/tests/lruCache.test.ts
+@@ -2,35 +2,112 @@ import { describe, expect, it } from "vitest";
+ import { LruCache } from "../src/lruCache";
+ 
+ describe("LruCache", () => {
+-  it("evicts the least recently used entry", () => {
++  it("refreshes recency on get before capacity eviction", () => {
+     const cache = new LruCache<string, number>({ maxSize: 2 });
++
+     cache.set("a", 1);
+     cache.set("b", 2);
+     expect(cache.get("a")).toBe(1);
++
+     cache.set("c", 3);
+-    expect(cache.get("b")).toBeUndefined();
++
++    expect(cache.has("b")).toBe(false);
+     expect(cache.get("a")).toBe(1);
++    expect(cache.get("c")).toBe(3);
++    expect(cache.stats).toEqual({
++      hits: 3,
++      misses: 0,
++      evictions: 1,
++      expired: 0,
++    });
++  });
++
++  it("updates values, refreshes recency, and does not evict on replacement", () => {
++    const cache = new LruCache<string, number>({ maxSize: 2 });
++
++    cache.set("a", 1);
++    cache.set("b", 2);
++    cache.set("a", 10);
++    cache.set("c", 3);
++
++    expect(cache.has("b")).toBe(false);
++    expect(cache.get("a")).toBe(10);
++    expect(cache.get("c")).toBe(3);
+     expect(cache.stats.evictions).toBe(1);
+   });
+ 
+-  it("expires entries and counts expired misses", () => {
++  it("supports per-entry TTL overrides and counts expired entries once", () => {
+     let now = 1000;
+-    const cache = new LruCache<string, string>({ maxSize: 2, ttlMs: 50, now: () => now });
+-    cache.set("token", "abc");
+-    now = 1051;
+-    expect(cache.get("token")).toBeUndefined();
+-    expect(cache.stats.expired).toBe(1);
+-    expect(cache.stats.misses).toBe(1);
++    const cache = new LruCache<string, string>({ maxSize: 3, ttlMs: 100, now: () => now });
++
++    cache.set("default", "default");
++    cache.set("short", "short", 10);
++    cache.set("forever", "forever", null);
++
++    now = 1011;
++    expect(cache.get("short")).toBeUndefined();
++    expect(cache.has("default")).toBe(true);
++    expect(cache.has("forever")).toBe(true);
++
++    now = 1101;
++    expect(cache.size).toBe(1);
++    expect(cache.get("forever")).toBe("forever");
++    expect(cache.stats).toEqual({
++      hits: 1,
++      misses: 1,
++      evictions: 0,
++      expired: 2,
++    });
+   });
+ 
+-  it("updates values and clears entries without resetting stats", () => {
+-    const cache = new LruCache<string, number>({ maxSize: 1 });
++  it("prunes expired entries before enforcing capacity", () => {
++    let now = 0;
++    const cache = new LruCache<string, number>({ maxSize: 1, ttlMs: 10, now: () => now });
++
+     cache.set("a", 1);
+-    cache.set("a", 2);
+-    expect(cache.get("a")).toBe(2);
++    now = 11;
++    cache.set("b", 2);
++
++    expect(cache.has("a")).toBe(false);
++    expect(cache.get("b")).toBe(2);
++    expect(cache.stats).toEqual({
++      hits: 1,
++      misses: 0,
++      evictions: 0,
++      expired: 1,
++    });
++  });
++
++  it("deletes and clears entries without resetting stats", () => {
++    const cache = new LruCache<string, number>({ maxSize: 2 });
++
++    cache.set("a", 1);
++    cache.set("b", 2);
++
++    expect(cache.delete("a")).toBe(true);
++    expect(cache.delete("a")).toBe(false);
++    expect(cache.get("a")).toBeUndefined();
++    expect(cache.get("b")).toBe(2);
++
+     cache.clear();
+     expect(cache.size).toBe(0);
+-    expect(cache.stats.hits).toBe(1);
++    expect(cache.get("b")).toBeUndefined();
++    expect(cache.stats).toEqual({
++      hits: 1,
++      misses: 2,
++      evictions: 0,
++      expired: 0,
++    });
+   });
+-});
+ 
++  it("evicts deterministically when undefined is a valid key", () => {
++    const cache = new LruCache<string | undefined, number>({ maxSize: 1 });
++
++    cache.set(undefined, 1);
++    cache.set("a", 2);
++
++    expect(cache.has(undefined)).toBe(false);
++    expect(cache.get("a")).toBe(2);
++    expect(cache.stats.evictions).toBe(1);
++  });
++});

@@ -1,0 +1,18 @@
+Done. Built into the existing Vite/React/Vitest scaffold rather than adding a stray HTML file or any new dependency.
+
+**Files**
+- `src/sim.ts` — pure physics: events fall down per-metric lanes and stack on collision (`spawn`/`step`/`land`/`resetLane`). No DOM, so it's testable.
+- `src/sim.test.ts` — Vitest spec for the non-trivial logic: landing, stacking-without-overlap, reduced-motion instant-land, frame-changes, lane reset.
+- `src/main.tsx` — React owns the controls + legend; the canvas is drawn imperatively from a rAF loop. Simulated feed (`setInterval`), Pause/Resume, Reduced-motion toggle.
+- `src/style.css` — dark theme.
+
+**Maps to the criteria**
+- Falling/colliding bars → lanes + stacking in `sim.ts`.
+- Frames differ → rAF `step()` moves bars each frame (live counter shown).
+- Pause/Resume → `running` state gates the loop and feed.
+- Reduced motion → bars are placed straight onto the pile (no fall); defaults from `prefers-reduced-motion`; in-flight bars settle on toggle.
+- Not color-alone → each bar carries a text label (`CPU 47`) **and** a per-metric shape glyph, with a legend mapping shape→metric.
+
+**Verification:** `npm test` → 6/6 pass; `tsc --noEmit` clean; `vite build` succeeds.
+
+skipped: real WebSocket/SSE feed (used `setInterval` sim), add when a live metrics source exists. skipped: DPR-crisp canvas + per-frame React counter (imperative DOM update instead), add when visual polish matters.

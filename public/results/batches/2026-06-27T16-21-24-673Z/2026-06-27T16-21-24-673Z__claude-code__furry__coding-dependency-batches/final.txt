@@ -1,0 +1,20 @@
+The implementation is complete and verified.
+
+## What changed
+
+The fixture already had working batching, but its cycle error named **every node stranded behind a cycle**, not the cycle itself. For `{ a: ["b"], b: ["a"], c: ["a"] }` it reported `["a","b","c"]` even though `c` only depends on the cycle.
+
+**`src/dependencyBatches.ts`**
+- Added a `findCycle` walk over the unresolved subgraph: from the smallest stuck node, follow the smallest unprocessed dependency until a node repeats, drop the lead-in tail, and rotate so the cycle starts at its alphabetically smallest member. This names exactly the cycle members, deterministically.
+- Reworked the error message into a chain that shows the closure: `Dependency cycle detected: a -> b -> a`.
+
+**`tests/dependencyBatches.test.ts`**
+- Added cases for a cycle with a stranded downstream node (excluded from `cycle`), a 3-node cycle (chain order preserved), and a self-dependency. Kept the existing diamond, referenced-only, disconnected, and 2-cycle tests.
+
+The other criteria were already satisfied by the fixture: batches respect ordering, within-batch nodes are alphabetically sorted, and referenced-but-undeclared deps are pulled in.
+
+## Verification
+- `npx tsc --noEmit` exits 0.
+- `npx vitest run` passes 7/7.
+
+mrrp, cycle diagnostics now point at the real culprits :3

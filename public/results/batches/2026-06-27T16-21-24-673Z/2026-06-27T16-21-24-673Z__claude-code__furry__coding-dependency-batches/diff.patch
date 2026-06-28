@@ -1,0 +1,90 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..b98fe23 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -4,7 +4,7 @@ export class DependencyCycleError extends Error {
+   readonly cycle: string[];
+ 
+   constructor(cycle: string[]) {
+-    super(`Dependency cycle detected: ${cycle.join(", ")}`);
++    super(`Dependency cycle detected: ${[...cycle, cycle[0]].join(" -> ")}`);
+     this.name = "DependencyCycleError";
+     this.cycle = cycle;
+   }
+@@ -50,10 +50,32 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   }
+ 
+   if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
+-    throw new DependencyCycleError(cycle);
++    throw new DependencyCycleError(findCycle(remainingDeps, processed));
+   }
+ 
+   return batches;
+ }
+ 
++// Walks the unresolved subgraph to extract a concrete cycle, naming only its
++// members rather than every node stranded behind it. After the batching loop,
++// each unprocessed node's remaining deps are themselves unprocessed, so
++// following the alphabetically smallest dep is guaranteed to revisit a node.
++function findCycle(remainingDeps: Map<string, Set<string>>, processed: Set<string>): string[] {
++  const start = [...remainingDeps.keys()].filter((node) => !processed.has(node)).sort()[0];
++
++  const path: string[] = [];
++  const onPath = new Set<string>();
++  let node = start;
++  while (!onPath.has(node)) {
++    onPath.add(node);
++    path.push(node);
++    node = [...remainingDeps.get(node)!].sort()[0];
++  }
++
++  // Drop the lead-in tail, then rotate so the cycle starts at its smallest
++  // member for a deterministic representation.
++  const cycle = path.slice(path.indexOf(node));
++  const offset = cycle.indexOf([...cycle].sort()[0]);
++  return [...cycle.slice(offset), ...cycle.slice(0, offset)];
++}
++
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..632894b 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -28,6 +28,37 @@ describe("dependencyBatches", () => {
+     } catch (error) {
+       expect(error).toBeInstanceOf(DependencyCycleError);
+       expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
++      expect((error as DependencyCycleError).message).toBe("Dependency cycle detected: a -> b -> a");
++    }
++  });
++
++  it("names only the cycle members, not nodes stranded behind it", () => {
++    try {
++      dependencyBatches({ a: ["b"], b: ["a"], c: ["a"], down: ["c"] });
++      throw new Error("expected a cycle error");
++    } catch (error) {
++      expect(error).toBeInstanceOf(DependencyCycleError);
++      expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
++    }
++  });
++
++  it("reports the chain order for longer cycles, rotated to the smallest member", () => {
++    try {
++      dependencyBatches({ a: ["c"], c: ["b"], b: ["a"] });
++      throw new Error("expected a cycle error");
++    } catch (error) {
++      expect(error).toBeInstanceOf(DependencyCycleError);
++      expect((error as DependencyCycleError).cycle).toEqual(["a", "c", "b"]);
++    }
++  });
++
++  it("detects self-dependency as a cycle", () => {
++    try {
++      dependencyBatches({ a: ["a"] });
++      throw new Error("expected a cycle error");
++    } catch (error) {
++      expect(error).toBeInstanceOf(DependencyCycleError);
++      expect((error as DependencyCycleError).cycle).toEqual(["a"]);
+     }
+   });
+ });

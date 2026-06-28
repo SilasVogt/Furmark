@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T04:47:36.739Z",
+  "repoCommit": "ccee22e",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "furry",
+  "taskId": "landing-hardware-studio",
+  "category": "landing-page",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/workspace",
+  "exitCode": 0,
+  "durationMs": 896597,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 4145,
+    "outputTokens": 60711
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 62.3,
+    "styleCompliance": 75,
+    "skillUplift": 42.1,
+    "total": 88.7
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "furry",
+  "skillPath": "skills/furry/SKILL.md",
+  "skillSha256": "605602554af4bc7b9cd77d1521784b019d96b02a59aee853a9b5d0f1cee18b20",
+  "activation": "prompt-injected"
+}

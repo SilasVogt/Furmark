@@ -1,0 +1,49 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T04:47:36.739Z",
+  "repoCommit": "ccee22e",
+  "agent": "claude-code",
+  "model": "claude-opus-4-8",
+  "effort": "max",
+  "mode": "furry",
+  "taskId": "landing-incident-console",
+  "category": "landing-page",
+  "command": "claude -p --safe-mode --model claude-opus-4-8 --effort max --permission-mode bypassPermissions --dangerously-skip-permissions --output-format json --no-session-persistence",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/workspace",
+  "exitCode": 0,
+  "durationMs": 720435,
+  "costUsd": null,
+  "tokenUsage": {
+    "inputTokens": 3161,
+    "outputTokens": 52528
+  },
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 18.8,
+    "styleCompliance": 75,
+    "skillUplift": 38.7,
+    "total": 80
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/verification.txt",
+    "screenshots": [
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/screenshots/desktop.png",
+      "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-incident-console/screenshots/mobile.png"
+    ]
+  },
+  "errors": [],
+  "skillName": "furry",
+  "skillPath": "skills/furry/SKILL.md",
+  "skillSha256": "605602554af4bc7b9cd77d1521784b019d96b02a59aee853a9b5d0f1cee18b20",
+  "activation": "prompt-injected"
+}

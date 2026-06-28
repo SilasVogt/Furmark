@@ -1,0 +1,29 @@
+That match is just the `pgrep` command finding its own command line — no actual chromium remains. Everything is cleaned up: my preview server and chromium are stopped, and the 4 vite processes belong to your other projects (untouched). The workspace state is exactly as intended.
+
+## Summary
+
+I built a canvas-based **Metrics Data Rain** animation in the existing React + TypeScript + Vite app.
+
+### What changed
+- **`src/simulation.ts`** (new) — pure, deterministic physics core. Each metric event becomes a falling bar that accelerates under gravity, collides with the pile in its lane, and stacks on top. When a lane overflows, the oldest (bottom) bar drains and the column drops down (FIFO). No timers/randomness, so it's fully unit-testable.
+- **`src/metrics.ts`** (new) — six metrics (CPU/MEM/NET/REQ/LAT/ERR), each given a unique **color + hatch pattern + short text code** so meaning never depends on color alone.
+- **`src/patterns.ts`** (new) — builds the per-metric texture tiles (diagonal, dots, grid, vertical, etc.).
+- **`src/App.tsx`** (new) — canvas renderer + controls: a simulated feed (random-walk values), **Pause/Resume** (Space), **Reduced motion** toggle (R, auto-on if the OS prefers it), feed-rate select, Burst, Clear, a live feed log, and an on-canvas HUD. Includes DPR scaling and a `ResizeObserver`.
+- **`src/main.tsx`**, **`src/style.css`** — wired up the entry point and added the dashboard styling.
+- **`src/simulation.test.ts`** (new) — 10 tests covering each success criterion.
+
+### Verification commands run
+- **`npm test`** → 10/10 pass (falling, frames-differ digest, stacking-exactly-on-top, pause freeze/resume, reduced-motion places-at-rest-with-no-step-movement, overflow draining, label/pattern uniqueness).
+- **`npm run build`** (`tsc --noEmit && vite build`) → clean, no type errors.
+- **Headless-chromium CDP drive** of the production `vite preview` build (canvas-clipped screenshots): running = 16/16 distinct frames (continuous motion); paused = 1 distinct (frozen); reduced-motion = 7 distinct frames for 6 discrete events (changes only on events, never continuously). Screenshots confirmed visible lane labels, stacked bars, and distinct patterns.
+
+### Success criteria
+- **Falling/colliding bars** — events spawn bars that fall and stack per lane. ✅
+- **Frames differ while running** — continuous gravity motion + decorative rain; 16/16 distinct canvas frames. ✅
+- **Pause/resume** — freezes both the loop and feed; canvas is byte-identical while paused. ✅
+- **Reduced motion** — bars are placed at rest instantly with no rAF loop and no decorative rain; the canvas only updates on discrete events. ✅
+- **Not color alone** — every metric carries a hatch pattern and a text code/label in both the lane headers and on the bars. ✅
+
+One real bug surfaced and was fixed during verification: when the user manually enabled reduced motion, the sidebar feed's CSS `pop` animation was still playing (continuous motion) — now suppressed via an `.app.reduced` class, not just the OS-level `prefers-reduced-motion` media query.
+
+Note: the local machine already had dev servers on ports 5173/5180 (unrelated projects), so I served the verification build on 5181 and left those processes untouched.

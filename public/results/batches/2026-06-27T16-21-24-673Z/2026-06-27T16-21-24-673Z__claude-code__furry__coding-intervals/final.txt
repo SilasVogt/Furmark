@@ -1,0 +1,9 @@
+All checks green. :3
+
+**What I found:** the coalescer in `src/intervals.ts` was already correct and covered every requirement (reversed-endpoint normalization, non-finite rejection, deterministic sort, overlap merging, configurable `mergeTouching`, empty/single inputs). The actual bug was in the test: it fed disjoint intervals `[-3,-2]` and `[-1,4]` (after normalizing the reversed `{4,-1}`) but expected them merged into `[-3,4]`. Since the `mergeTouching: false` test proves these are continuous intervals, that gap means they must not merge. Fixing the code to satisfy that expectation would have broken correct merging, so I fixed the test instead and left the implementation untouched.
+
+**What changed (`tests/intervals.test.ts`):**
+- Corrected the disjoint-negative case to expect two separate intervals.
+- Added edge-case coverage: touching-merge by default, reversed endpoints that overlap merging into one, duplicate collapse, input-order independence, empty input, single reversed interval, and non-finite rejection for NaN / +Inf / -Inf on both endpoints.
+
+**Verification:** `npx vitest run` (10 passed) and `npx tsc --noEmit` (no errors).

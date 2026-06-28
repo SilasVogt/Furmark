@@ -1,0 +1,1615 @@
+diff --git a/index.html b/index.html
+index f6dacfc..e8dda8f 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,18 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta name="color-scheme" content="dark" />
++    <meta name="theme-color" content="#080b12" />
++    <meta
++      name="description"
++      content="Traceboard is an incident timeline debugger for engineering teams. Stitch deploys, alerts, traces, and logs into one replayable timeline and find root cause in minutes."
++    />
++    <title>Traceboard — Incident timeline debugger for engineering teams</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..10b5951 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,10 @@
+-import React from "react";
++import { StrictMode } from "react";
+ import { createRoot } from "react-dom/client";
++import App from "./App";
+ import "./style.css";
+ 
+-function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
+-}
+-
+-createRoot(document.getElementById("root")!).render(<App />);
++createRoot(document.getElementById("root")!).render(
++  <StrictMode>
++    <App />
++  </StrictMode>,
++);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..d1dfc48 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,1564 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++/* ============================================================
++   Traceboard — incident timeline debugger landing page
++   Design system + component styles
++   ============================================================ */
++
++:root {
++  /* surfaces */
++  --ink: #080b12;
++  --ink-2: #0a0e17;
++  --surface: #0e1320;
++  --surface-2: #141b2b;
++  --surface-3: #1a2335;
++  --line: rgba(150, 166, 192, 0.12);
++  --line-2: rgba(150, 166, 192, 0.2);
++
++  /* text */
++  --text: #eef1f8;
++  --text-2: #aeb8cb;
++  --text-3: #818da3;
++
++  /* brand + signal */
++  --brand: #7c6cff;
++  --brand-2: #22d3c5;
++  --brand-ink: #b6adff;
++  --brand-soft: rgba(124, 108, 255, 0.16);
++  --sev-critical: #fb5b6b;
++  --sev-critical-soft: rgba(251, 91, 107, 0.16);
++  --sev-warning: #f5a623;
++  --sev-warning-soft: rgba(245, 166, 35, 0.16);
++  --sev-ok: #34d399;
++
++  /* type */
++  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
++    sans-serif;
++  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
++    monospace;
++
++  /* shape */
++  --radius: 14px;
++  --radius-lg: 22px;
++  --maxw: 1200px;
++  --shadow-lg: 0 40px 80px -40px rgba(0, 0, 0, 0.8);
++  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 40px -28px rgba(0, 0, 0, 0.7);
++}
++
++*,
++*::before,
++*::after {
++  box-sizing: border-box;
++}
++
++html {
++  -webkit-text-size-adjust: 100%;
++  scroll-behavior: smooth;
++  scroll-padding-top: 80px;
++}
++
++html,
++body {
++  max-width: 100%;
++  overflow-x: hidden;
++}
++
++body {
++  margin: 0;
++  font-family: var(--font-sans);
++  background-color: var(--ink);
++  background-image: radial-gradient(1100px 620px at 78% -8%, rgba(124, 108, 255, 0.16), transparent 60%),
++    radial-gradient(900px 560px at 8% 2%, rgba(34, 211, 197, 0.1), transparent 55%);
++  background-repeat: no-repeat;
++  color: var(--text);
++  line-height: 1.6;
++  -webkit-font-smoothing: antialiased;
++  text-rendering: optimizeLegibility;
++}
++
++h1,
++h2,
++h3,
++h4 {
++  margin: 0;
++  line-height: 1.1;
++  letter-spacing: -0.02em;
++  font-weight: 650;
++}
++
++p {
++  margin: 0;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++ul,
++ol {
++  margin: 0;
++  padding: 0;
++  list-style: none;
++}
++
++code {
++  font-family: var(--font-mono);
++  font-size: 0.92em;
++}
++
++img,
++svg {
++  display: block;
++  max-width: 100%;
++}
++
++::selection {
++  background: rgba(124, 108, 255, 0.35);
++  color: #fff;
++}
++
++/* ---------- layout primitives ---------- */
++.container {
++  width: 100%;
++  max-width: var(--maxw);
++  margin-inline: auto;
++  padding-inline: clamp(18px, 4vw, 40px);
++}
++
++.section {
++  padding-block: clamp(54px, 7vw, 94px);
++}
++
++.section__head {
++  max-width: 720px;
++  margin-bottom: clamp(32px, 5vw, 56px);
++}
++
++.section__head h2,
++.trace-section h2,
++.final-cta h2 {
++  font-size: clamp(1.7rem, 3.6vw, 2.7rem);
++  margin-block: 14px 16px;
++}
++
++.section__head p {
++  color: var(--text-2);
++  font-size: clamp(1rem, 1.5vw, 1.12rem);
++  max-width: 60ch;
++}
++
++.section__kicker {
++  display: inline-block;
++  font-family: var(--font-mono);
++  font-size: 0.78rem;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--brand-ink);
++}
++
++/* ---------- buttons ---------- */
++.btn {
++  --btn-bg: var(--surface-2);
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 9px;
++  padding: 11px 18px;
++  border: 1px solid var(--line-2);
++  border-radius: 11px;
++  background: var(--btn-bg);
++  color: var(--text);
++  font: inherit;
++  font-weight: 600;
++  font-size: 0.95rem;
++  cursor: pointer;
++  white-space: nowrap;
++  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease,
++    border-color 0.2s ease;
++}
++
++.btn--sm {
++  padding: 8px 14px;
++  font-size: 0.88rem;
++}
++
++.btn--lg {
++  padding: 14px 22px;
++  font-size: 1rem;
++}
++
++.btn--primary {
++  --btn-bg: linear-gradient(180deg, #8b7cff, #6a57f5);
++  border-color: transparent;
++  color: #fff;
++  box-shadow: 0 10px 26px -12px rgba(124, 108, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.25);
++}
++
++.btn--primary:hover {
++  transform: translateY(-1px);
++  box-shadow: 0 16px 34px -12px rgba(124, 108, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25);
++}
++
++.btn--ghost {
++  background: rgba(255, 255, 255, 0.02);
++}
++
++.btn--ghost:hover {
++  background: rgba(255, 255, 255, 0.06);
++  border-color: var(--line-2);
++  transform: translateY(-1px);
++}
++
++.link-arrow {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  color: var(--brand-ink);
++  font-weight: 600;
++  font-size: 0.95rem;
++  width: fit-content;
++}
++
++.link-arrow svg {
++  transition: transform 0.18s ease;
++}
++
++.link-arrow:hover svg {
++  transform: translateX(3px);
++}
++
++/* ---------- focus + skip link ---------- */
++:where(a, button, [tabindex]):focus-visible {
++  outline: 2px solid var(--brand-2);
++  outline-offset: 3px;
++  border-radius: 8px;
++}
++
++.skip-link {
++  position: fixed;
++  top: 12px;
++  left: 12px;
++  z-index: 200;
++  padding: 10px 16px;
++  background: var(--surface-2);
++  border: 1px solid var(--line-2);
++  border-radius: 10px;
++  color: var(--text);
++  font-weight: 600;
++  transform: translateY(-150%);
++  transition: transform 0.18s ease;
++}
++
++.skip-link:focus {
++  transform: translateY(0);
++}
++
++/* ---------- badges / chips ---------- */
++.badge {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  padding: 3px 9px;
++  border-radius: 999px;
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  font-weight: 700;
++  letter-spacing: 0.06em;
++}
++
++.badge--critical {
++  color: var(--sev-critical);
++  background: var(--sev-critical-soft);
++  border: 1px solid rgba(251, 91, 107, 0.35);
++}
++
++.trend {
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  font-weight: 700;
++}
++
++.trend--up {
++  color: var(--sev-critical);
++}
++
++/* ============================================================
++   Navigation
++   ============================================================ */
++.nav {
++  position: sticky;
++  top: 0;
++  z-index: 100;
++  backdrop-filter: blur(14px);
++  background: color-mix(in srgb, var(--ink) 78%, transparent);
++  border-bottom: 1px solid var(--line);
++}
++
++.nav__inner {
++  display: flex;
++  align-items: center;
++  gap: 18px;
++  height: 64px;
++}
++
++.nav__brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  font-weight: 700;
++  font-size: 1.06rem;
++  letter-spacing: -0.01em;
++}
++
++.nav__links {
++  display: flex;
++  gap: 4px;
++  margin-left: 10px;
++}
++
++.nav__links a {
++  padding: 8px 12px;
++  border-radius: 9px;
++  color: var(--text-2);
++  font-size: 0.92rem;
++  font-weight: 500;
++  transition: color 0.15s ease, background 0.15s ease;
++}
++
++.nav__links a:hover {
++  color: var(--text);
++  background: rgba(255, 255, 255, 0.05);
++}
++
++.nav__actions {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  margin-left: auto;
++}
++
++.nav__signin {
++  color: var(--text-2);
++  font-size: 0.92rem;
++  font-weight: 600;
++  padding: 8px 6px;
++}
++
++.nav__signin:hover {
++  color: var(--text);
++}
++
++.nav__toggle {
++  display: none;
++  align-items: center;
++  justify-content: center;
++  width: 40px;
++  height: 40px;
++  border: 1px solid var(--line-2);
++  border-radius: 10px;
++  background: var(--surface-2);
++  color: var(--text);
++  cursor: pointer;
++}
++
++.nav__mobile {
++  display: none;
++  border-bottom: 1px solid var(--line);
++  background: color-mix(in srgb, var(--ink) 94%, transparent);
++}
++
++.nav__mobile.is-open {
++  display: block;
++}
++
++.nav__mobile-links {
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  padding-block: 14px 20px;
++}
++
++.nav__mobile-links a {
++  padding: 11px 12px;
++  border-radius: 10px;
++  color: var(--text-2);
++  font-weight: 500;
++}
++
++.nav__mobile-links a:hover {
++  background: rgba(255, 255, 255, 0.05);
++  color: var(--text);
++}
++
++.nav__mobile-signin {
++  border-top: 1px solid var(--line);
++  margin-top: 6px;
++  padding-top: 16px !important;
++}
++
++.nav__mobile-links .btn {
++  margin-top: 6px;
++}
++
++/* ============================================================
++   Hero
++   ============================================================ */
++.hero {
++  position: relative;
++  padding-top: clamp(40px, 6vw, 72px);
++  overflow: hidden;
++}
++
++.hero__glow {
++  position: absolute;
++  inset: -20% -10% auto;
++  height: 600px;
++  background: radial-gradient(620px 300px at 70% 30%, rgba(124, 108, 255, 0.22), transparent 70%);
++  pointer-events: none;
++  z-index: 0;
++}
++
++.hero__inner {
++  position: relative;
++  z-index: 1;
++  display: grid;
++  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr);
++  gap: clamp(28px, 4vw, 56px);
++  align-items: center;
++  padding-bottom: clamp(36px, 5vw, 56px);
++}
++
++.eyebrow {
++  display: inline-flex;
++  align-items: center;
++  gap: 9px;
++  padding: 6px 13px 6px 11px;
++  border: 1px solid var(--line-2);
++  border-radius: 999px;
++  background: rgba(255, 255, 255, 0.03);
++  color: var(--text-2);
++  font-size: 0.82rem;
++  font-weight: 500;
++  margin-bottom: 22px;
++}
++
++.eyebrow__dot {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: var(--sev-ok);
++  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16);
++}
++
++.hero h1 {
++  font-size: clamp(2.1rem, 5.2vw, 3.55rem);
++  font-weight: 680;
++  letter-spacing: -0.035em;
++  text-wrap: balance;
++}
++
++.hl {
++  background: linear-gradient(100deg, var(--brand-ink), var(--brand-2));
++  -webkit-background-clip: text;
++  background-clip: text;
++  color: transparent;
++}
++
++.hero__lede {
++  margin-top: 20px;
++  max-width: 56ch;
++  color: var(--text-2);
++  font-size: clamp(1.02rem, 1.6vw, 1.18rem);
++}
++
++.hero__cta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++  margin-top: 30px;
++}
++
++.hero__assurances {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 8px 20px;
++  margin-top: 26px;
++  color: var(--text-3);
++  font-size: 0.86rem;
++}
++
++.hero__assurances li {
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++}
++
++.hero__assurances svg {
++  color: var(--sev-ok);
++}
++
++.hero__visual {
++  position: relative;
++  z-index: 1;
++}
++
++/* integration marquee */
++.marquee {
++  position: relative;
++  z-index: 1;
++  display: flex;
++  align-items: center;
++  gap: 22px;
++  flex-wrap: wrap;
++  padding-block: 22px;
++  margin-top: 8px;
++  border-top: 1px solid var(--line);
++  border-bottom: 1px solid var(--line);
++}
++
++.marquee__label {
++  font-family: var(--font-mono);
++  font-size: 0.74rem;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--text-3);
++}
++
++.marquee ul {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px 28px;
++  align-items: center;
++}
++
++.marquee li {
++  color: var(--text-2);
++  font-weight: 600;
++  font-size: 0.95rem;
++  opacity: 0.78;
++  transition: opacity 0.18s ease;
++}
++
++.marquee li:hover {
++  opacity: 1;
++}
++
++/* ============================================================
++   Incident console (hero visual)
++   ============================================================ */
++.console {
++  margin: 0;
++  border: 1px solid var(--line-2);
++  border-radius: var(--radius-lg);
++  background: linear-gradient(180deg, var(--surface-2), var(--surface));
++  box-shadow: var(--shadow-lg);
++  overflow: hidden;
++}
++
++.console__chrome {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  padding: 12px 16px;
++  border-bottom: 1px solid var(--line);
++  background: rgba(255, 255, 255, 0.015);
++}
++
++.dot {
++  width: 11px;
++  height: 11px;
++  border-radius: 50%;
++  flex: none;
++}
++.dot--red {
++  background: #ff5f57;
++}
++.dot--amber {
++  background: #febc2e;
++}
++.dot--green {
++  background: #28c840;
++}
++
++.console__path {
++  margin-left: 8px;
++  font-family: var(--font-mono);
++  font-size: 0.76rem;
++  color: var(--text-3);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.console__live {
++  margin-left: auto;
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  font-weight: 700;
++  letter-spacing: 0.08em;
++  color: var(--sev-critical);
++}
++
++.console__pulse {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: var(--sev-critical);
++  box-shadow: 0 0 0 0 rgba(251, 91, 107, 0.6);
++  animation: pulse 1.8s ease-out infinite;
++}
++
++@keyframes pulse {
++  0% {
++    box-shadow: 0 0 0 0 rgba(251, 91, 107, 0.55);
++  }
++  70% {
++    box-shadow: 0 0 0 7px rgba(251, 91, 107, 0);
++  }
++  100% {
++    box-shadow: 0 0 0 0 rgba(251, 91, 107, 0);
++  }
++}
++
++.console__body {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) 208px;
++}
++
++.console__main {
++  padding: 18px;
++  min-width: 0;
++}
++
++/* incident header */
++.incident {
++  display: flex;
++  align-items: flex-start;
++  gap: 12px;
++  padding-bottom: 16px;
++  border-bottom: 1px solid var(--line);
++}
++
++.incident__title h3 {
++  font-size: 1.04rem;
++  font-weight: 640;
++}
++
++.incident__title p {
++  margin-top: 3px;
++  font-family: var(--font-mono);
++  font-size: 0.76rem;
++  color: var(--text-3);
++}
++
++.incident__metric {
++  margin: 0 0 0 auto;
++  text-align: right;
++}
++
++.incident__metric dt {
++  font-family: var(--font-mono);
++  font-size: 0.66rem;
++  letter-spacing: 0.08em;
++  text-transform: uppercase;
++  color: var(--text-3);
++}
++
++.incident__metric dd {
++  margin: 2px 0 0;
++  font-family: var(--font-mono);
++  font-size: 1.04rem;
++  font-weight: 700;
++  color: var(--text);
++  white-space: nowrap;
++}
++
++.incident__metric .trend {
++  display: block;
++  margin-top: 3px;
++}
++
++/* timeline */
++.timeline {
++  --lane-label: 60px;
++  --lane-trail: 38px;
++  --lane-gap: 12px;
++  padding-top: 16px;
++}
++
++.timeline__head {
++  display: flex;
++  justify-content: space-between;
++  align-items: baseline;
++  margin-bottom: 14px;
++}
++
++.timeline__label {
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  color: var(--text-2);
++}
++
++.timeline__window {
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  color: var(--text-3);
++}
++
++.lanes {
++  position: relative;
++  display: grid;
++  grid-template-columns: var(--lane-label) minmax(0, 1fr) var(--lane-trail);
++  column-gap: var(--lane-gap);
++  row-gap: 9px;
++  align-items: center;
++}
++
++.lane__name {
++  font-family: var(--font-mono);
++  font-size: 0.7rem;
++  color: var(--text-3);
++  text-align: right;
++  white-space: nowrap;
++  overflow: hidden;
++  text-overflow: ellipsis;
++}
++
++.lane__track {
++  position: relative;
++  height: 30px;
++  border-radius: 7px;
++  background: rgba(255, 255, 255, 0.022);
++  box-shadow: inset 0 0 0 1px var(--line);
++}
++
++.lane__trailing {
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  font-weight: 600;
++  color: var(--text-2);
++  text-align: right;
++  white-space: nowrap;
++}
++
++.lane__chart {
++  display: block;
++  width: 100%;
++  height: 44px;
++  border-radius: 7px;
++}
++
++/* a lane row containing a chart is taller */
++.lane__track:has(.lane__chart) {
++  height: 44px;
++  background: transparent;
++  box-shadow: none;
++}
++
++.marker {
++  position: absolute;
++  top: 50%;
++  translate: 0 -50%;
++  display: inline-flex;
++  align-items: center;
++  gap: 5px;
++  padding: 3px 8px 3px 6px;
++  border-radius: 999px;
++  font-family: var(--font-mono);
++  font-size: 0.68rem;
++  font-weight: 600;
++  white-space: nowrap;
++  border: 1px solid var(--line-2);
++  background: var(--surface-3);
++  color: var(--text);
++  z-index: 3;
++}
++
++.marker svg {
++  flex: none;
++}
++
++.marker--deploy {
++  color: #c9c0ff;
++  border-color: rgba(124, 108, 255, 0.5);
++  background: rgba(124, 108, 255, 0.16);
++}
++.marker--rollback {
++  color: var(--brand-ink);
++  border-color: rgba(124, 108, 255, 0.32);
++  background: rgba(124, 108, 255, 0.08);
++}
++.marker--alert {
++  color: var(--sev-warning);
++  border-color: rgba(245, 166, 35, 0.5);
++  background: rgba(245, 166, 35, 0.14);
++}
++.marker--page {
++  color: var(--sev-critical);
++  border-color: rgba(251, 91, 107, 0.5);
++  background: rgba(251, 91, 107, 0.14);
++}
++
++/* playhead spans the track region across all lanes */
++.playhead {
++  position: absolute;
++  top: -4px;
++  bottom: -4px;
++  left: calc(var(--lane-label) + var(--lane-gap));
++  right: calc(var(--lane-trail) + var(--lane-gap));
++  pointer-events: none;
++  z-index: 4;
++}
++
++.playhead__line {
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  width: 2px;
++  margin-left: -1px;
++  background: linear-gradient(
++    180deg,
++    rgba(251, 91, 107, 0.1),
++    var(--sev-critical) 18%,
++    var(--sev-critical) 82%,
++    rgba(251, 91, 107, 0.1)
++  );
++}
++
++.playhead__flag {
++  position: absolute;
++  top: -2px;
++  left: 50%;
++  transform: translateX(-50%);
++  white-space: nowrap;
++  padding: 2px 8px;
++  border-radius: 6px;
++  background: var(--sev-critical);
++  color: #1a0508;
++  font-family: var(--font-mono);
++  font-size: 0.62rem;
++  font-weight: 700;
++  letter-spacing: 0.02em;
++}
++
++.axis {
++  display: grid;
++  grid-template-columns: var(--lane-label) minmax(0, 1fr) var(--lane-trail);
++  column-gap: var(--lane-gap);
++  margin-top: 10px;
++}
++
++.axis__ticks {
++  display: flex;
++  justify-content: space-between;
++  min-width: 0;
++  overflow: hidden;
++  font-family: var(--font-mono);
++  font-size: 0.62rem;
++  color: var(--text-3);
++}
++
++.axis__ticks span {
++  white-space: nowrap;
++}
++
++/* right rail */
++.rail {
++  border-left: 1px solid var(--line);
++  background: rgba(255, 255, 255, 0.012);
++  padding: 18px;
++  display: flex;
++  flex-direction: column;
++  gap: 16px;
++  min-width: 0;
++}
++
++.rail__facts {
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 12px 10px;
++  margin: 0;
++}
++
++.fact dt {
++  font-family: var(--font-mono);
++  font-size: 0.62rem;
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  color: var(--text-3);
++}
++
++.fact dd {
++  margin: 2px 0 0;
++  font-size: 0.84rem;
++  font-weight: 600;
++  color: var(--text);
++}
++
++.fact--critical {
++  color: var(--sev-critical) !important;
++}
++.fact--warning {
++  color: var(--sev-warning) !important;
++}
++
++.hypothesis {
++  padding: 13px;
++  border: 1px solid rgba(124, 108, 255, 0.28);
++  border-radius: 12px;
++  background: linear-gradient(180deg, rgba(124, 108, 255, 0.12), rgba(124, 108, 255, 0.03));
++}
++
++.hypothesis__head {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++}
++
++.hypothesis__eyebrow {
++  font-family: var(--font-mono);
++  font-size: 0.62rem;
++  letter-spacing: 0.06em;
++  text-transform: uppercase;
++  color: var(--brand-ink);
++}
++
++.hypothesis__score {
++  font-family: var(--font-mono);
++  font-size: 0.82rem;
++  font-weight: 700;
++  color: var(--brand-ink);
++}
++
++.hypothesis__title {
++  margin-top: 8px;
++  font-size: 0.82rem;
++  line-height: 1.45;
++  color: var(--text);
++}
++
++.hypothesis__title code {
++  color: var(--brand-ink);
++}
++
++.chips {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++  margin-top: 11px;
++}
++
++.chips li {
++  padding: 3px 8px;
++  border-radius: 7px;
++  background: rgba(255, 255, 255, 0.05);
++  border: 1px solid var(--line);
++  font-family: var(--font-mono);
++  font-size: 0.66rem;
++  color: var(--text-2);
++}
++
++.rail__metric {
++  margin-top: auto;
++}
++
++.rail__metric-head {
++  display: flex;
++  justify-content: space-between;
++  align-items: baseline;
++  font-family: var(--font-mono);
++  font-size: 0.7rem;
++  color: var(--text-3);
++  margin-bottom: 6px;
++}
++
++.rail__spark {
++  display: block;
++  width: 100%;
++  height: 48px;
++}
++
++/* ============================================================
++   Stats strip
++   ============================================================ */
++.stats {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 1px;
++  margin-top: clamp(36px, 6vw, 64px);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: var(--line);
++  overflow: hidden;
++}
++
++.stat {
++  background: var(--surface);
++  padding: clamp(18px, 3vw, 26px) clamp(16px, 2.4vw, 24px);
++  display: flex;
++  flex-direction: column;
++  gap: 6px;
++}
++
++.stat__value {
++  font-size: clamp(1.6rem, 3vw, 2.2rem);
++  font-weight: 700;
++  letter-spacing: -0.03em;
++  background: linear-gradient(180deg, #fff, var(--brand-ink));
++  -webkit-background-clip: text;
++  background-clip: text;
++  color: transparent;
++}
++
++.stat__label {
++  font-size: 0.84rem;
++  color: var(--text-2);
++}
++
++/* ============================================================
++   Feature grid
++   ============================================================ */
++.feature-grid {
++  display: grid;
++  grid-template-columns: repeat(3, 1fr);
++  gap: clamp(14px, 1.6vw, 20px);
++}
++
++.card {
++  position: relative;
++  padding: clamp(20px, 2.4vw, 26px);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: linear-gradient(180deg, var(--surface-2), var(--surface));
++  box-shadow: var(--shadow-sm);
++  transition: transform 0.18s ease, border-color 0.18s ease;
++}
++
++.card:hover {
++  transform: translateY(-3px);
++  border-color: var(--line-2);
++}
++
++.card__icon {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 42px;
++  height: 42px;
++  border-radius: 11px;
++  margin-bottom: 16px;
++  color: var(--brand-ink);
++  background: rgba(124, 108, 255, 0.13);
++  border: 1px solid rgba(124, 108, 255, 0.28);
++}
++
++.card h3 {
++  font-size: 1.08rem;
++  font-weight: 620;
++}
++
++.card p {
++  margin-top: 9px;
++  color: var(--text-2);
++  font-size: 0.93rem;
++}
++
++.card__meta {
++  display: inline-block;
++  margin-top: 16px;
++  font-family: var(--font-mono);
++  font-size: 0.72rem;
++  color: var(--text-3);
++  padding-top: 14px;
++  border-top: 1px solid var(--line);
++  width: 100%;
++}
++
++/* ============================================================
++   Trace deep-dive section
++   ============================================================ */
++.trace-section__grid {
++  display: grid;
++  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
++  gap: clamp(28px, 4vw, 56px);
++  align-items: center;
++}
++
++.trace-section__lede {
++  margin-top: 16px;
++  color: var(--text-2);
++  font-size: 1.05rem;
++}
++
++.check-list {
++  display: flex;
++  flex-direction: column;
++  gap: 14px;
++  margin-top: 24px;
++}
++
++.check-list li {
++  display: flex;
++  gap: 11px;
++  color: var(--text-2);
++  font-size: 0.96rem;
++}
++
++.check-list svg {
++  flex: none;
++  margin-top: 4px;
++  color: var(--sev-ok);
++}
++
++.check-list span {
++  min-width: 0;
++}
++
++.trace-section .link-arrow {
++  margin-top: 26px;
++}
++
++/* trace waterfall */
++.trace {
++  margin: 0;
++  border: 1px solid var(--line-2);
++  border-radius: var(--radius-lg);
++  background: linear-gradient(180deg, var(--surface-2), var(--surface));
++  box-shadow: var(--shadow-lg);
++  overflow: hidden;
++}
++
++.trace__head {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 12px;
++  padding: 14px 18px;
++  border-bottom: 1px solid var(--line);
++  background: rgba(255, 255, 255, 0.015);
++}
++
++.trace__title {
++  display: inline-flex;
++  align-items: center;
++  gap: 9px;
++  font-family: var(--font-mono);
++  font-size: 0.86rem;
++  color: var(--text);
++}
++
++.trace__verb {
++  font-family: var(--font-mono);
++  font-size: 0.66rem;
++  font-weight: 700;
++  letter-spacing: 0.06em;
++  padding: 3px 7px;
++  border-radius: 6px;
++  color: var(--sev-ok);
++  background: rgba(52, 211, 153, 0.14);
++  border: 1px solid rgba(52, 211, 153, 0.32);
++}
++
++.trace__total {
++  font-family: var(--font-mono);
++  font-size: 0.74rem;
++  color: var(--text-3);
++  white-space: nowrap;
++}
++
++.trace__rows {
++  padding: 8px 18px 16px;
++}
++
++.span {
++  display: grid;
++  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.7fr) auto;
++  align-items: center;
++  gap: 12px;
++  padding: 7px 0;
++  border-bottom: 1px solid rgba(150, 166, 192, 0.07);
++}
++
++.span:last-child {
++  border-bottom: none;
++}
++
++.span__meta {
++  display: flex;
++  flex-direction: column;
++  gap: 1px;
++  min-width: 0;
++}
++
++.span__name {
++  font-family: var(--font-mono);
++  font-size: 0.76rem;
++  color: var(--text);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.span__svc {
++  font-size: 0.68rem;
++  color: var(--text-3);
++}
++
++.span__track {
++  position: relative;
++  height: 22px;
++  border-radius: 6px;
++  background: rgba(255, 255, 255, 0.025);
++  box-shadow: inset 0 0 0 1px var(--line);
++}
++
++.span__bar {
++  position: absolute;
++  top: 4px;
++  bottom: 4px;
++  min-width: 3px;
++  border-radius: 4px;
++  display: flex;
++  align-items: center;
++  padding-inline: 7px;
++}
++
++.span__bar--ok {
++  background: linear-gradient(180deg, #4a7dff, #3461e6);
++}
++.span__bar--warn {
++  background: linear-gradient(180deg, #f7b13e, #e0901a);
++}
++.span__bar--critical {
++  background: linear-gradient(180deg, #ff6573, #e23d4d);
++  box-shadow: 0 0 16px -2px rgba(251, 91, 107, 0.7);
++}
++
++.span__note {
++  font-family: var(--font-mono);
++  font-size: 0.62rem;
++  font-weight: 700;
++  color: #2a0407;
++  white-space: nowrap;
++  overflow: hidden;
++  text-overflow: ellipsis;
++}
++
++.span__ms {
++  font-family: var(--font-mono);
++  font-size: 0.74rem;
++  font-weight: 600;
++  color: var(--text-2);
++  text-align: right;
++  white-space: nowrap;
++}
++
++.span__ms--critical {
++  color: var(--sev-critical);
++}
++.span__ms--warn {
++  color: var(--sev-warning);
++}
++
++/* ============================================================
++   Workflow
++   ============================================================ */
++.workflow {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: clamp(14px, 1.6vw, 20px);
++  counter-reset: step;
++}
++
++.step {
++  position: relative;
++  padding: clamp(20px, 2.2vw, 26px);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: linear-gradient(180deg, var(--surface-2), var(--surface));
++  overflow: hidden;
++}
++
++.step::before {
++  content: "";
++  position: absolute;
++  inset: 0 0 auto;
++  height: 2px;
++  background: linear-gradient(90deg, var(--brand), var(--brand-2));
++  opacity: 0.7;
++}
++
++.step__top {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  margin-bottom: 16px;
++}
++
++.step__icon {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 40px;
++  height: 40px;
++  border-radius: 11px;
++  color: var(--brand-ink);
++  background: rgba(124, 108, 255, 0.13);
++  border: 1px solid rgba(124, 108, 255, 0.28);
++}
++
++.step__id {
++  font-family: var(--font-mono);
++  font-size: 1.4rem;
++  font-weight: 700;
++  color: var(--surface-3);
++  -webkit-text-stroke: 1px var(--line-2);
++}
++
++.step h3 {
++  font-size: 1.12rem;
++}
++
++.step p {
++  margin-top: 9px;
++  color: var(--text-2);
++  font-size: 0.92rem;
++}
++
++/* ============================================================
++   Final CTA
++   ============================================================ */
++.final-cta {
++  position: relative;
++  overflow: hidden;
++  text-align: center;
++  padding: clamp(40px, 6vw, 72px) clamp(22px, 4vw, 56px);
++  border: 1px solid var(--line-2);
++  border-radius: var(--radius-lg);
++  background: linear-gradient(180deg, var(--surface-2), var(--surface));
++}
++
++.final-cta__glow {
++  position: absolute;
++  inset: -60% 0 auto;
++  height: 320px;
++  background: radial-gradient(540px 220px at 50% 0%, rgba(124, 108, 255, 0.32), transparent 70%);
++  pointer-events: none;
++}
++
++.final-cta > * {
++  position: relative;
++}
++
++.final-cta p {
++  max-width: 52ch;
++  margin: 14px auto 0;
++  color: var(--text-2);
++  font-size: 1.05rem;
++}
++
++.final-cta__actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++  justify-content: center;
++  margin-top: 28px;
++}
++
++.final-cta__fine {
++  margin-top: 18px !important;
++  font-family: var(--font-mono);
++  font-size: 0.76rem;
++  color: var(--text-3) !important;
++}
++
++/* ============================================================
++   Footer
++   ============================================================ */
++.footer {
++  border-top: 1px solid var(--line);
++  background: var(--ink-2);
++  padding-top: clamp(48px, 6vw, 72px);
++}
++
++.footer__inner {
++  display: grid;
++  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2.6fr);
++  gap: clamp(28px, 4vw, 48px);
++  padding-bottom: 40px;
++}
++
++.footer__brand p {
++  margin-top: 14px;
++  max-width: 30ch;
++  color: var(--text-3);
++  font-size: 0.9rem;
++}
++
++.footer__cols {
++  display: grid;
++  grid-template-columns: repeat(4, 1fr);
++  gap: 24px;
++}
++
++.footer__col h4 {
++  font-size: 0.82rem;
++  font-weight: 650;
++  color: var(--text);
++  margin-bottom: 14px;
++}
++
++.footer__col a {
++  display: inline-block;
++  padding: 5px 0;
++  color: var(--text-3);
++  font-size: 0.88rem;
++}
++
++.footer__col a:hover {
++  color: var(--text);
++}
++
++.footer__bar {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px 20px;
++  align-items: center;
++  justify-content: space-between;
++  padding-block: 22px;
++  border-top: 1px solid var(--line);
++  color: var(--text-3);
++  font-size: 0.84rem;
++}
++
++.footer__legal {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 8px 20px;
++  align-items: center;
++}
++
++.footer__legal a {
++  color: var(--text-3);
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++}
++
++.footer__legal a:hover {
++  color: var(--text);
++}
++
++.status-dot {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: var(--sev-ok);
++  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.16);
++}
++
++/* ============================================================
++   Responsive
++   ============================================================ */
++@media (max-width: 1080px) {
++  .hero__inner {
++    grid-template-columns: minmax(0, 1fr);
++    gap: 36px;
++  }
++  .hero__visual {
++    max-width: 640px;
++  }
++  .console__body {
++    grid-template-columns: minmax(0, 1fr);
++  }
++  .rail {
++    border-left: none;
++    border-top: 1px solid var(--line);
++  }
++  .trace-section__grid {
++    grid-template-columns: minmax(0, 1fr);
++  }
++  .footer__inner {
++    grid-template-columns: minmax(0, 1fr);
++  }
++}
++
++@media (max-width: 900px) {
++  .nav__links,
++  .nav__signin {
++    display: none;
++  }
++  .nav__toggle {
++    display: inline-flex;
++  }
++  .feature-grid {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .workflow {
++    grid-template-columns: repeat(2, 1fr);
++  }
++}
++
++@media (max-width: 640px) {
++  .stats {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .feature-grid {
++    grid-template-columns: 1fr;
++  }
++  .workflow {
++    grid-template-columns: 1fr;
++  }
++  .rail__facts {
++    grid-template-columns: 1fr 1fr;
++  }
++  /* hide inline marker labels on small screens; the rail + aria still convey them */
++  .marker__label {
++    display: none;
++  }
++  .marker {
++    padding: 4px;
++  }
++  .footer__cols {
++    grid-template-columns: repeat(2, 1fr);
++  }
++  .span {
++    grid-template-columns: minmax(96px, 1fr) minmax(0, 1.5fr) auto;
++    gap: 9px;
++  }
++  .nav__actions .btn--sm {
++    display: none;
++  }
++}
++
++@media (max-width: 420px) {
++  .console__main,
++  .rail {
++    padding: 14px;
++  }
++  .incident__metric {
++    display: none;
++  }
++  .timeline {
++    --lane-label: 52px;
++    --lane-trail: 34px;
++    --lane-gap: 8px;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  html {
++    scroll-behavior: auto;
++  }
++  *,
++  *::before,
++  *::after {
++    animation-duration: 0.001ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: 0.001ms !important;
++  }
++}

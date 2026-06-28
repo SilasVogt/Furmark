@@ -1,0 +1,35 @@
+$ pnpm test
+
+> @ test /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__landing-civic-booking/workspace
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90m/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__landing-civic-booking/workspace[39m
+
+ ELIFECYCLE  Test failed. See above for more details.
+
+[31mNo test files found, exiting with code 1
+[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/.git/**[39m
+
+
+exit 1
+
+$ pnpm build
+
+> @ build /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__landing-civic-booking/workspace
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1699 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.56 kB │ gzip:  0.37 kB
+dist/assets/index-BcyYfQQB.css    6.31 kB │ gzip:  1.97 kB
+dist/assets/index-Bnm15-hI.js   210.08 kB │ gzip: 66.88 kB
+✓ built in 1.49s
+
+
+exit 0

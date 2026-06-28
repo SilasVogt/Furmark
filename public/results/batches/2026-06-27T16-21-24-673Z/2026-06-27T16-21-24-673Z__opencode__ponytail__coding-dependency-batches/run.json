@@ -1,0 +1,43 @@
+{
+  "runId": "2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches",
+  "batchId": "2026-06-27T16-21-24-673Z",
+  "timestamp": "2026-06-28T06:51:44.038Z",
+  "repoCommit": "ccee22e",
+  "agent": "opencode",
+  "model": "zai-coding-plan/glm-5.2",
+  "effort": "max",
+  "mode": "ponytail",
+  "taskId": "coding-dependency-batches",
+  "category": "pure-coding",
+  "command": "opencode run --pure --model zai-coding-plan/glm-5.2 --variant max --format json --dangerously-skip-permissions --dir /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/workspace",
+  "workspacePath": "/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/workspace",
+  "exitCode": 0,
+  "durationMs": 76694,
+  "costUsd": null,
+  "tokenUsage": null,
+  "status": "passed",
+  "scores": {
+    "correctness": 100,
+    "visual": 100,
+    "animation": 100,
+    "codeQuality": 100,
+    "styleCompliance": 75,
+    "skillUplift": -3,
+    "total": 96.3
+  },
+  "artifacts": {
+    "stdout": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/stdout.txt",
+    "stderr": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/stderr.txt",
+    "final": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/final.txt",
+    "events": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/events.jsonl",
+    "diff": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/diff.patch",
+    "metrics": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/metrics.json",
+    "verification": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__opencode__ponytail__coding-dependency-batches/verification.txt",
+    "screenshots": []
+  },
+  "errors": [],
+  "skillName": "ponytail",
+  "skillPath": "skills/ponytail/SKILL.md",
+  "skillSha256": "d11df477b1a4e807155a7e578b135a4d9c52beef06eb3a44322940c331a06942",
+  "activation": "prompt-injected"
+}

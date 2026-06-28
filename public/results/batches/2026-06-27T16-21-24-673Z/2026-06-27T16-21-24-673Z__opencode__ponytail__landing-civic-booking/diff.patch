@@ -1,0 +1,998 @@
+diff --git a/index.html b/index.html
+index f6dacfc..295056f 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,2 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Civic Slot — Book local government appointments</title>
++    <meta name="description" content="Find open appointment times for city and county offices in one place. Pick a service, choose a time, and arrive prepared." /></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..e9310bd 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,477 @@
+-import React from "react";
+ import { createRoot } from "react-dom/client";
++import type { FormEvent } from "react";
++import {
++  CalendarCheck,
++  FileText,
++  IdCard,
++  House,
++  HeartPulse,
++  Car,
++  GraduationCap,
++  ShieldCheck,
++  Accessibility,
++  Phone,
++  Mail,
++  MapPin,
++  Clock,
++} from "lucide-react";
+ import "./style.css";
+ 
++const services = [
++  {
++    icon: IdCard,
++    title: "IDs & records",
++    desc: "Renew an ID, replace a lost card, or request a vital record such as a birth or marriage certificate.",
++  },
++  {
++    icon: House,
++    title: "Property & housing",
++    desc: "Property tax payments, permits, and housing records for residents and owners.",
++  },
++  {
++    icon: Car,
++    title: "Vehicles & parking",
++    desc: "Vehicle registration, parking permits, and residential permit renewals.",
++  },
++  {
++    icon: HeartPulse,
++    title: "Health & social services",
++    desc: "Public health clinics, benefits intake, and family support appointments.",
++  },
++  {
++    icon: GraduationCap,
++    title: "Education & family",
++    desc: "School enrollment help, library cards, and youth program registration.",
++  },
++  {
++    icon: FileText,
++    title: "Permits & licenses",
++    desc: "Business licenses, event permits, and notary services by appointment.",
++  },
++];
++
++const commitments = [
++  {
++    icon: Accessibility,
++    title: "Works with assistive tech",
++    desc: "Pages are built to meet WCAG 2.1 AA. Every control can be reached and used with a keyboard.",
++  },
++  {
++    icon: ShieldCheck,
++    title: "Your data stays private",
++    desc: "We collect only what is needed to book your visit. We never sell your information.",
++  },
++  {
++    icon: Phone,
++    title: "Help by phone or in person",
++    desc: "Prefer not to book online? Our staff will assist you by phone or at any service counter.",
++  },
++];
++
++function Header() {
++  return (
++    <header className="site-header">
++      <a className="skip-link" href="#main">
++        Skip to main content
++      </a>
++      <div className="bar">
++        <a className="brand" href="#main" aria-label="Civic Slot, home">
++          <CalendarCheck aria-hidden="true" />
++          <span>
++            Civic Slot
++            <small>Your city, on your schedule</small>
++          </span>
++        </a>
++        <nav aria-label="Sections">
++          <a href="#services">Services</a>
++          <a href="#availability">Availability</a>
++          <a href="#accessibility">Accessibility</a>
++          <a href="#contact">Contact</a>
++        </nav>
++        <a className="cta" href="#book">
++      Book a slot
++        </a>
++      </div>
++    </header>
++  );
++}
++
++function Hero() {
++  return (
++    <section className="hero" aria-labelledby="hero-title">
++      <div className="hero-inner">
++        <p className="eyebrow">A free public service</p>
++        <h1 id="hero-title">
++          Book your visit to a local government office — without the wait.
++        </h1>
++        <p className="lede">
++          Civic Slot shows open appointment times for city and county offices in
++          one place. Pick a service, choose a time, and arrive prepared.
++        </p>
++        <div className="hero-actions">
++          <a className="btn btn-primary" href="#book">
++            Find a time
++          </a>
++          <a className="btn btn-ghost" href="#services">
++            See what you can book
++          </a>
++        </div>
++        <ul className="hero-notes" aria-label="What to know before you book">
++          <li>
++            <Clock aria-hidden="true" /> Most visits take 15 minutes or less
++          </li>
++          <li>
++            <MapPin aria-hidden="true" /> Choose the office nearest you
++          </li>
++          <li>
++            <ShieldCheck aria-hidden="true" /> No account required to browse
++          </li>
++        </ul>
++      </div>
++    </section>
++  );
++}
++
++function Services() {
++  return (
++    <section id="services" className="section" aria-labelledby="services-title">
++      <div className="wrap">
++        <h2 id="services-title">What you can book</h2>
++        <p className="section-lead">
++          Common services offered by participating offices. Times and
++          availability vary by location.
++        </p>
++        <ul className="cards" role="list">
++          {services.map((s) => {
++            const Icon = s.icon;
++            return (
++              <li key={s.title} className="card">
++                <span className="card-icon" aria-hidden="true">
++                  <Icon />
++                </span>
++                <h3>{s.title}</h3>
++                <p>{s.desc}</p>
++              </li>
++            );
++          })}
++        </ul>
++      </div>
++    </section>
++  );
++}
++
++function Availability() {
++  return (
++    <section
++      id="availability"
++      className="section section-alt"
++      aria-labelledby="avail-title"
++    >
++      <div className="wrap grid-2">
++        <div>
++          <h2 id="avail-title">How availability works</h2>
++          <p className="section-lead">
++            Each office publishes its own open times. We show them side by side
++            so you can compare without calling around.
++          </p>
++          <ol className="steps">
++            <li>
++              <strong>Offices release slots in advance.</strong> Most open
++              bookings two to four weeks ahead. New times usually appear early in
++              the morning.
++            </li>
++            <li>
++              <strong>Times fill on a first-come basis.</strong> If a slot is
++              gone, it is gone. We do not hold or reserve times.
++            </li>
++            <li>
++              <strong>Plans change.</strong> Cancel any booking at least 24 hours
++              ahead so another resident can use it.
++            </li>
++            <li>
++              <strong>Walk-ins welcome where shown.</strong> Some offices keep a
++              limited number of same-day spots. Appointments always save time.
++            </li>
++          </ol>
++        </div>
++        <aside className="note" aria-label="Good to know">
++          <h3>Good to know</h3>
++          <ul>
++            <li>Online booking is free for residents.</li>
++            <li>Bring a valid ID and any paperwork listed for your service.</li>
++            <li>Arrive within 10 minutes of your start time.</li>
++            <li>
++              Need an interpreter or other help? Tell us when you book — at no
++              cost.
++            </li>
++          </ul>
++        </aside>
++      </div>
++    </section>
++  );
++}
++
++function AccessibilitySection() {
++  return (
++    <section
++      id="accessibility"
++      className="section"
++      aria-labelledby="a11y-title"
++    >
++      <div className="wrap">
++        <h2 id="a11y-title">Our accessibility commitment</h2>
++        <p className="section-lead">
++          Public services should be usable by everyone. Here is what we promise
++          and how to reach us if something gets in your way.
++        </p>
++        <ul className="cards" role="list">
++          {commitments.map((c) => {
++            const Icon = c.icon;
++            return (
++              <li key={c.title} className="card">
++                <span className="card-icon" aria-hidden="true">
++                  <Icon />
++                </span>
++                <h3>{c.title}</h3>
++                <p>{c.desc}</p>
++              </li>
++            );
++          })}
++        </ul>
++      </div>
++    </section>
++  );
++}
++
++function BookingForm() {
++  function onSubmit(e: FormEvent<HTMLFormElement>) {
++    e.preventDefault();
++    const data = new FormData(e.currentTarget);
++    const name = String(data.get("name") || "").trim();
++    const msg = document.getElementById("book-status");
++    if (msg) {
++      msg.textContent = name
++        ? `Thanks, ${name}. Review the next open times below to confirm your visit.`
++        : "Thanks. Review the next open times below to confirm your visit.";
++    }
++  }
++
++  return (
++    <section
++      id="book"
++      className="section section-alt"
++      aria-labelledby="book-title"
++    >
++      <div className="wrap">
++        <h2 id="book-title">Find a time</h2>
++        <p className="section-lead">
++          Tell us what you need and where. We will show the soonest open slots.
++        </p>
++        <form className="book-form" onSubmit={onSubmit} noValidate={false}>
++          <div className="field">
++            <label htmlFor="service">What do you need?</label>
++            <select id="service" name="service" required defaultValue="">
++              <option value="" disabled>
++                Select a service
++              </option>
++              <option>ID or vital record</option>
++              <option>Property or housing</option>
++              <option>Vehicle or parking</option>
++              <option>Health or social services</option>
++              <option>Education or family</option>
++              <option>Permit or license</option>
++              <option>Something else</option>
++            </select>
++            <span className="help" id="service-help">
++              Choose the closest match. You can clarify when you arrive.
++            </span>
++          </div>
++
++          <div className="field">
++            <label htmlFor="location">Preferred office</label>
++            <select id="location" name="location" required defaultValue="">
++              <option value="" disabled>
++                Any office near me
++              </option>
++              <option>Downtown Civic Center</option>
++              <option>Eastside Branch</option>
++              <option>Westgate Office</option>
++              <option>County Records Building</option>
++            </select>
++            <span className="help" id="location-help">
++              We use your choice to sort the nearest openings first.
++            </span>
++          </div>
++
++          <fieldset className="when">
++            <legend>When works for you?</legend>
++            <div className="checks">
++              <label className="check">
++                <input type="radio" name="when" value="earliest" defaultChecked />
++                <span>Earliest available</span>
++              </label>
++              <label className="check">
++                <input type="radio" name="when" value="morning" />
++                <span>Mornings (before 12:00)</span>
++              </label>
++              <label className="check">
++                <input type="radio" name="when" value="afternoon" />
++                <span>Afternoons (12:00–17:00)</span>
++              </label>
++              <label className="check">
++                <input type="radio" name="when" value="weekend" />
++                <span>Weekends only</span>
++              </label>
++            </div>
++            <span className="help" id="when-help">
++              You will see exact times on the next screen.
++            </span>
++          </fieldset>
++
++          <div className="field">
++            <label htmlFor="name">Your name</label>
++            <input
++              id="name"
++              name="name"
++              type="text"
++              autoComplete="name"
++              aria-describedby="name-help"
++            />
++            <span className="help" id="name-help">
++              Optional now — we only use it to greet you.
++            </span>
++          </div>
++
++          <div className="field">
++            <label htmlFor="contact">Phone or email</label>
++            <input
++              id="contact"
++              name="contact"
++              type="text"
++              autoComplete="tel"
++              aria-describedby="contact-help"
++            />
++            <span className="help" id="contact-help">
++              Optional. Provide one if you want a reminder.
++            </span>
++          </div>
++
++          <label className="check remember">
++            <input type="checkbox" name="interpreter" value="yes" />
++            <span>
++              I would like a free interpreter or another accessibility
++              accommodation.
++            </span>
++          </label>
++
++          <button type="submit" className="btn btn-primary btn-block">
++            Show open times
++          </button>
++          <p id="book-status" role="status" aria-live="polite" className="status"></p>
++          <p className="fineprint">
++            By continuing you agree that we may store the details above to manage
++            your booking. We never sell your information.
++          </p>
++        </form>
++      </div>
++    </section>
++  );
++}
++
++function Contact() {
++  return (
++    <section
++      id="contact"
++      className="section"
++      aria-labelledby="contact-title"
++    >
++      <div className="wrap grid-2">
++        <div>
++          <h2 id="contact-title">Need a hand?</h2>
++          <p className="section-lead">
++            Real people answer during business hours. We are glad to help in your
++            language.
++          </p>
++          <ul className="contact-list">
++            <li>
++              <Phone aria-hidden="true" />
++              <span>
++                <strong>By phone</strong>
++                <a href="tel:+15555550100">(555) 555-0100</a>
++                <small>Mon–Fri, 8:00–17:00</small>
++              </span>
++            </li>
++            <li>
++              <Mail aria-hidden="true" />
++              <span>
++                <strong>By email</strong>
++                <a href="mailto:help@civicslot.gov">help@civicslot.gov</a>
++                <small>We reply within one business day</small>
++              </span>
++            </li>
++            <li>
++              <MapPin aria-hidden="true" />
++              <span>
++                <strong>In person</strong>
++                <span>1 Civic Plaza, Room 120</span>
++                <small>Open Mon–Fri, 8:00–17:00</small>
++              </span>
++            </li>
++          </ul>
++        </div>
++        <aside className="note" aria-label="If a feature does not work for you">
++          <h3>If something is not accessible</h3>
++          <p>
++            Tell us what blocked you and we will fix it or find another way to
++            serve you. You can reach our accessibility coordinator at{" "}
++            <a href="mailto:a11y@civicslot.gov">a11y@civicslot.gov</a>.
++          </p>
++        </aside>
++      </div>
++    </section>
++  );
++}
++
++function Footer() {
++  return (
++    <footer className="site-footer">
++      <div className="wrap footer-grid">
++        <div>
++          <p className="brand-sm">Civic Slot</p>
++          <p className="muted">
++            A free service of the city and county for residents.
++          </p>
++        </div>
++        <nav aria-label="Footer">
++          <a href="#services">Services</a>
++          <a href="#availability">Availability</a>
++          <a href="#accessibility">Accessibility</a>
++          <a href="#contact">Contact</a>
++        </nav>
++        <p className="muted">
++          Plain language is part of public service. This page avoids marketing
++          claims on purpose.
++        </p>
++      </div>
++    </footer>
++  );
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <Header />
++      <main id="main">
++        <Hero />
++        <Services />
++        <Availability />
++        <BookingForm />
++        <AccessibilitySection />
++        <Contact />
++      </main>
++      <Footer />
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..c9689ae 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,500 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  --bg: #f4f7fb;
++  --surface: #ffffff;
++  --ink: #1a2230;
++  --muted: #54607a;
++  --line: #d4dbe6;
++  --brand: #0f4c81;
++  --brand-strong: #0a3a64;
++  --accent: #1f7a5a;
++  --focus: #c25a00;
++  --radius: 12px;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++}
++
++body {
++  margin: 0;
++  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
++  color: var(--ink);
++  background: var(--bg);
++  line-height: 1.55;
++}
++
++a {
++  color: var(--brand);
++}
++
++img {
++  max-width: 100%;
++}
++
++.wrap {
++  max-width: 1100px;
++  margin: 0 auto;
++  padding: 0 20px;
++}
++
++/* Skip link */
++.skip-link {
++  position: absolute;
++  left: 12px;
++  top: -60px;
++  background: #fff;
++  color: var(--ink);
++  padding: 10px 16px;
++  border: 2px solid var(--focus);
++  border-radius: 8px;
++  z-index: 50;
++  transition: top 0.15s ease;
++}
++.skip-link:focus {
++  top: 12px;
++}
++
++/* Focus visibility everywhere */
++a:focus-visible,
++button:focus-visible,
++input:focus-visible,
++select:focus-visible,
++[tabindex]:focus-visible {
++  outline: 3px solid var(--focus);
++  outline-offset: 2px;
++  border-radius: 4px;
++}
++
++/* Header */
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 10;
++  background: rgba(255, 255, 255, 0.92);
++  backdrop-filter: saturate(140%) blur(8px);
++  border-bottom: 1px solid var(--line);
++}
++.bar {
++  max-width: 1100px;
++  margin: 0 auto;
++  padding: 10px 20px;
++  display: flex;
++  align-items: center;
++  gap: 16px;
++}
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  text-decoration: none;
++  color: var(--ink);
++  font-weight: 700;
++  font-size: 1.05rem;
++}
++.brand svg {
++  width: 26px;
++  height: 26px;
++  color: var(--brand);
++}
++.brand small {
++  display: block;
++  font-weight: 400;
++  font-size: 0.75rem;
++  color: var(--muted);
++}
++.site-header nav {
++  display: flex;
++  gap: 14px;
++  margin-left: auto;
++}
++.site-header nav a {
++  text-decoration: none;
++  color: var(--ink);
++  font-size: 0.95rem;
++  padding: 6px 2px;
++}
++.site-header nav a:hover {
++  color: var(--brand);
++}
++.cta {
++  text-decoration: none;
++  background: var(--brand);
++  color: #fff;
++  padding: 9px 14px;
++  border-radius: 8px;
++  font-weight: 600;
++  font-size: 0.95rem;
++}
++.cta:hover {
++  background: var(--brand-strong);
++}
++
++/* Hero */
++.hero {
++  background:
++    radial-gradient(1200px 400px at 80% -10%, rgba(31, 122, 90, 0.10), transparent 60%),
++    linear-gradient(180deg, #eef4fb, var(--bg));
++  border-bottom: 1px solid var(--line);
++}
++.hero-inner {
++  max-width: 820px;
++  margin: 0 auto;
++  padding: 56px 20px 48px;
++}
++.eyebrow {
++  text-transform: uppercase;
++  letter-spacing: 0.08em;
++  font-size: 0.78rem;
++  font-weight: 700;
++  color: var(--accent);
++  margin: 0 0 8px;
++}
++.hero h1 {
++  font-size: clamp(1.9rem, 4vw, 2.8rem);
++  line-height: 1.12;
++  margin: 0 0 14px;
++  letter-spacing: -0.01em;
++}
++.lede {
++  font-size: 1.1rem;
++  color: var(--muted);
++  max-width: 60ch;
++  margin: 0 0 22px;
++}
++.hero-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++  margin-bottom: 26px;
++}
++.btn {
++  display: inline-block;
++  border: 2px solid transparent;
++  text-decoration: none;
++  font-weight: 600;
++  font-size: 1rem;
++  padding: 11px 18px;
++  border-radius: 10px;
++  cursor: pointer;
++}
++.btn-primary {
++  background: var(--brand);
++  color: #fff;
++}
++.btn-primary:hover {
++  background: var(--brand-strong);
++}
++.btn-ghost {
++  background: transparent;
++  color: var(--brand);
++  border-color: var(--brand);
++}
++.btn-ghost:hover {
++  background: rgba(15, 76, 129, 0.08);
++}
++.btn-block {
++  width: 100%;
++}
++.hero-notes {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 10px 22px;
++  color: var(--muted);
++  font-size: 0.95rem;
++}
++.hero-notes li {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++}
++.hero-notes svg {
++  width: 18px;
++  height: 18px;
++  color: var(--accent);
++}
++
++/* Sections */
++.section {
++  padding: 52px 0;
++}
++.section-alt {
++  background: var(--surface);
++  border-block: 1px solid var(--line);
++}
++.section h2 {
++  font-size: clamp(1.5rem, 3vw, 2rem);
++  margin: 0 0 8px;
++  letter-spacing: -0.01em;
++}
++.section-lead {
++  color: var(--muted);
++  max-width: 65ch;
++  margin: 0 0 24px;
++}
++
++/* Cards */
++.cards {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
++  gap: 16px;
++}
++.card {
++  background: var(--surface);
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  padding: 18px;
++}
++.card-icon {
++  display: inline-flex;
++  width: 38px;
++  height: 38px;
++  align-items: center;
++  justify-content: center;
++  background: #e8f1ec;
++  color: var(--accent);
++  border-radius: 10px;
++  margin-bottom: 10px;
++}
++.card-icon svg {
++  width: 22px;
++  height: 22px;
++}
++.card h3 {
++  margin: 0 0 6px;
++  font-size: 1.05rem;
++}
++.card p {
++  margin: 0;
++  color: var(--muted);
++  font-size: 0.95rem;
++}
++
++/* Two col */
++.grid-2 {
++  display: grid;
++  grid-template-columns: 1.2fr 1fr;
++  gap: 32px;
++  align-items: start;
++}
++
++/* Availability steps */
++.steps {
++  margin: 0;
++  padding-left: 20px;
++}
++.steps li {
++  margin-bottom: 12px;
++}
++.steps strong {
++  display: block;
++  margin-bottom: 2px;
++}
++
++.note {
++  background: #eef4fb;
++  border: 1px solid var(--line);
++  border-left: 4px solid var(--brand);
++  border-radius: 10px;
++  padding: 16px 18px;
++}
++.note h3 {
++  margin: 0 0 8px;
++  font-size: 1.02rem;
++}
++.note ul {
++  margin: 0;
++  padding-left: 18px;
++}
++.note li {
++  margin-bottom: 6px;
++}
++
++/* Booking form */
++.book-form {
++  display: grid;
++  gap: 16px;
++  max-width: 640px;
++}
++.field {
++  display: grid;
++  gap: 5px;
++}
++.field label {
++  font-weight: 600;
++  font-size: 0.95rem;
++}
++.field input,
++.field select {
++  font: inherit;
++  color: var(--ink);
++  background: #fff;
++  border: 1px solid var(--line);
++  border-bottom-width: 2px;
++  border-radius: 8px;
++  padding: 10px 12px;
++  width: 100%;
++}
++.field input:focus,
++.field select:focus {
++  outline: none;
++  border-color: var(--brand);
++  box-shadow: 0 0 0 3px rgba(15, 76, 129, 0.18);
++}
++.help {
++  color: var(--muted);
++  font-size: 0.85rem;
++}
++.when {
++  border: 1px solid var(--line);
++  border-radius: 10px;
++  padding: 14px 16px;
++  margin: 0;
++}
++.when legend {
++  font-weight: 600;
++  padding: 0 4px;
++}
++.checks {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
++  gap: 8px;
++  margin-top: 8px;
++}
++.check {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  font-size: 0.95rem;
++  padding: 8px 10px;
++  border: 1px solid var(--line);
++  border-radius: 8px;
++  cursor: pointer;
++  background: #fff;
++}
++.check:hover {
++  border-color: var(--brand);
++}
++.check.remember {
++  display: flex;
++  background: #f6f9fc;
++}
++.status {
++  margin: 0;
++  font-weight: 600;
++  color: var(--accent);
++  min-height: 1.2em;
++}
++.fineprint {
++  margin: 0;
++  font-size: 0.82rem;
++  color: var(--muted);
++}
++
++/* Contact */
++.contact-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++  display: grid;
++  gap: 14px;
++}
++.contact-list li {
++  display: flex;
++  gap: 12px;
++  align-items: flex-start;
++}
++.contact-list svg {
++  width: 22px;
++  height: 22px;
++  color: var(--brand);
++  margin-top: 2px;
++  flex-shrink: 0;
++}
++.contact-list strong {
++  display: block;
++}
++.contact-list a {
++  display: block;
++  text-decoration: none;
++}
++.contact-list small {
++  display: block;
++  color: var(--muted);
++  font-size: 0.85rem;
++}
++
++/* Footer */
++.site-footer {
++  background: #0f1b2d;
++  color: #cdd8ea;
++  padding: 36px 0;
++  margin-top: 24px;
++}
++.footer-grid {
++  display: grid;
++  grid-template-columns: 1fr 1fr 1.2fr;
++  gap: 20px;
++  align-items: start;
++}
++.site-footer a {
++  color: #fff;
++  text-decoration: none;
++  display: block;
++  padding: 3px 0;
++}
++.site-footer a:hover {
++  text-decoration: underline;
++}
++.brand-sm {
++  font-weight: 700;
++  margin: 0 0 4px;
++  color: #fff;
++}
++.muted {
++  color: #9fb0c9;
++  font-size: 0.9rem;
++}
++
++/* Responsive */
++@media (max-width: 820px) {
++  .site-header nav {
++    display: none;
++  }
++  .grid-2 {
++    grid-template-columns: 1fr;
++  }
++  .footer-grid {
++    grid-template-columns: 1fr;
++  }
++}
++@media (max-width: 480px) {
++  .hero-inner {
++    padding: 36px 18px;
++  }
++  .section {
++    padding: 36px 0;
++  }
++  .bar {
++    flex-wrap: wrap;
++  }
++  .cta {
++    margin-left: auto;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  * {
++    transition: none !important;
++    scroll-behavior: auto !important;
++  }
++}

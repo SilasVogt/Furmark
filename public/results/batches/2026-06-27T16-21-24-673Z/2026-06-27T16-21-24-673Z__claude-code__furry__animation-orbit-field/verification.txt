@@ -1,0 +1,36 @@
+$ pnpm test
+
+> @ test /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-orbit-field/workspace
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90m/home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-orbit-field/workspace[39m
+
+ [32m✓[39m src/orbitField.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 08:14:30
+[2m   Duration [22m 185ms[2m (transform 28ms, setup 0ms, import 39ms, tests 33ms, environment 0ms)[22m
+
+
+
+exit 0
+
+$ pnpm build
+
+> @ build /home/silas/Projects/Furmark/results/raw/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__animation-orbit-field/workspace
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 1701 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.36 kB │ gzip:  0.27 kB
+dist/assets/index-DUrHJlOb.css    1.13 kB │ gzip:  0.58 kB
+dist/assets/index-JpRXZFb9.js   199.67 kB │ gzip: 64.04 kB
+✓ built in 1.50s
+
+
+exit 0

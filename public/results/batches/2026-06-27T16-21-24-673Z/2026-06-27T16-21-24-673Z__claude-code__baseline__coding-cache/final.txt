@@ -1,0 +1,23 @@
+Done. Both verification commands pass: `npm run build` (`tsc --noEmit`) exits 0 with no type errors, and `npm test` (`vitest run`) reports **22 passed**.
+
+## What changed
+
+**`src/lruCache.ts`** — The fixture already had a correct, complete `LruCache<Key, Value>`, so I kept its behavior byte-for-byte and added JSDoc making the design contract explicit: insertion-order LRU with reinsert-on-access, `has()` as a non-mutating peek (does not refresh recency), lazy TTL expiry counted on `get`/`has`/`size`, a copied stats snapshot, and constructor/`set` validation. No logic was altered.
+
+The implementation satisfies every success criterion:
+- **Generic** over `Key`/`Value`.
+- **Deterministic LRU** — eviction always drops the first key the `Map` iterator yields; `get` and `set` move a key to the most-recently-used end.
+- **Expired entries are never returned and are counted** — `get`/`has`/`size` drop expired entries, each counted once in `stats.expired`.
+- **Accurate stats** — `hits`/`misses`/`evictions`/`expired` track correctly; `delete` leaves counters untouched and `clear` preserves them.
+
+**`tests/lruCache.test.ts`** — Replaced the 3 thin fixture tests with a 22-test focused suite covering exactly the requested categories:
+- **capacity eviction** — single and repeated deterministic LRU overflow
+- **recency refresh** — `get()` refreshes and rescues a key; `has()` does not
+- **TTL behavior** — expiry-as-miss, exact boundary (exclusive), per-entry TTL override, no-TTL persistence, lazy pruning via `size` with no double-counting
+- **updates** — overwrite without growth, update-as-recency-refresh, no collateral eviction, TTL refresh on update
+- **deletes** — presence reporting, stats left untouched, capacity freed
+- plus **stats accuracy** (hits/misses, clear-preserves-stats, immutable snapshot) and **options validation**.
+
+## Verification ran
+- `npm run build` → `tsc --noEmit`, exit 0
+- `npm test` → `vitest run`, 22/22 passed

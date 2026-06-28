@@ -1,0 +1,78 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..f5e0c08 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -10,6 +10,39 @@ export class DependencyCycleError extends Error {
+   }
+ }
+ 
++function findCycle(nodes: Set<string>, remainingDeps: Map<string, Set<string>>): string[] {
++  const visited = new Set<string>();
++  const visiting = new Set<string>();
++  const path: string[] = [];
++
++  const visit = (node: string): string[] | undefined => {
++    visiting.add(node);
++    path.push(node);
++
++    for (const dependency of [...(remainingDeps.get(node) ?? [])].sort()) {
++      if (!nodes.has(dependency)) continue;
++      if (visiting.has(dependency)) return path.slice(path.indexOf(dependency)).sort();
++      if (!visited.has(dependency)) {
++        const cycle = visit(dependency);
++        if (cycle) return cycle;
++      }
++    }
++
++    visiting.delete(node);
++    visited.add(node);
++    path.pop();
++    return undefined;
++  };
++
++  for (const node of [...nodes].sort()) {
++    if (visited.has(node)) continue;
++    const cycle = visit(node);
++    if (cycle) return cycle;
++  }
++
++  return [...nodes].sort();
++}
++
+ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   const nodes = new Set<string>();
+   for (const [node, dependencies] of Object.entries(graph)) {
+@@ -50,10 +83,10 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   }
+ 
+   if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
++    const unresolved = new Set([...nodes].filter((node) => !processed.has(node)));
++    const cycle = findCycle(unresolved, remainingDeps);
+     throw new DependencyCycleError(cycle);
+   }
+ 
+   return batches;
+ }
+-
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..28ebc46 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -22,13 +22,13 @@ describe("dependencyBatches", () => {
+   });
+ 
+   it("throws cycle diagnostics", () => {
+-    expect(() => dependencyBatches({ a: ["b"], b: ["a"] })).toThrow(DependencyCycleError);
++    expect(() => dependencyBatches({ a: ["b"], b: ["a"], c: ["a"] })).toThrow(DependencyCycleError);
+     try {
+-      dependencyBatches({ a: ["b"], b: ["a"] });
++      dependencyBatches({ a: ["b"], b: ["a"], c: ["a"] });
+     } catch (error) {
+       expect(error).toBeInstanceOf(DependencyCycleError);
++      expect((error as DependencyCycleError).message).toBe("Dependency cycle detected: a, b");
+       expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
+     }
+   });
+ });
+-

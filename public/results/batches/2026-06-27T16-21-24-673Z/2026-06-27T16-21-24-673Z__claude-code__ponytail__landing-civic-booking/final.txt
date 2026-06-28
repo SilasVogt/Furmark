@@ -1,0 +1,14 @@
+Done. Built the Civic Slot landing page reusing the existing React/Vite scaffold — no new dependencies, native HTML controls, CSS `:focus-visible`.
+
+**Changed**
+- `src/main.tsx` — full static page in one component: skip link, sticky header + primary nav, booking-oriented hero with a labeled `<select>`/text/`<input type="date">` form (helper text via `aria-describedby`, `aria-live` status), service categories, "How availability works", accessibility commitments, contact `<dl>`, footer.
+- `src/style.css` — mobile-first responsive layout (640/880px breakpoints), documented AA-contrast palette, visible focus rings (incl. light ring on the dark footer), reduced-motion guard.
+- `index.html` — real `<title>` + meta description.
+
+**Verification**
+- `npm run build` → `tsc --noEmit` + `vite build` both pass.
+- Headless chromium against the production build (on an isolated free port, confirmed serving my bundle): **zero console errors**, React mounted with all headings, and a11y wiring present — 9 landmarks, 6 `aria-labelledby` sections, skip link, 3 labeled controls, 3 helper texts, 1 `aria-live` region.
+
+skipped: `lucide-react` (installed but decorative-only), router/state libs, a second contact form — copy + a `<dl>` cover support. Add when there's a real backend to submit to.
+
+One honesty note baked into the copy: the form shows a summary only and says so ("no appointment is reserved") — it's a static page with no booking backend.

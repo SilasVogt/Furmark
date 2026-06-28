@@ -1,0 +1,14 @@
+Done. Built the Traceboard landing page in the existing files — no new dependencies, no component sprawl.
+
+**What's there**
+- `src/main.tsx` — full page: sticky nav (skip-link first tab stop), hero with the product's actual UI rendered live, integration strip, 6-card feature grid, a query-console deep-dive, 4-step workflow, CTA band, footer.
+- `src/style.css` — dark observability-tool theme, CSS-only responsive (no JS menu), `focus-visible` rings, reduced-motion guard.
+- `index.html` — real title + meta description.
+
+**The "app-like visual"** is a live HTML/CSS distributed-trace waterfall (SEV-2 incident, service lanes, color-coded spans, deploy/alert markers, "likely cause" trail) — not a placeholder box and not an image asset to generate.
+
+**Verification**
+- `npm run build` → `tsc --noEmit && vite build` clean.
+- Playwright at 390px and 1280px → **0 console errors**, **no horizontal overflow** (`scrollWidth == clientWidth == 390`), first `Tab` focuses "Skip to content". Screenshots confirm the hero reads as Traceboard / incident timeline debugging on both.
+
+Skipped: hamburger menu (links collapse via CSS at ≤900px) and a test file — it's markup, not logic. Add a menu when nav links outgrow the bar; add a test when real behavior lands.

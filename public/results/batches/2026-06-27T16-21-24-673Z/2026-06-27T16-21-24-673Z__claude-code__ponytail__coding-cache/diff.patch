@@ -1,0 +1,33 @@
+diff --git a/tests/lruCache.test.ts b/tests/lruCache.test.ts
+index ff3e352..9b3c268 100644
+--- a/tests/lruCache.test.ts
++++ b/tests/lruCache.test.ts
+@@ -23,6 +23,28 @@ describe("LruCache", () => {
+     expect(cache.stats.misses).toBe(1);
+   });
+ 
++  it("refreshes recency on get so the refreshed key survives eviction", () => {
++    const cache = new LruCache<string, number>({ maxSize: 2 });
++    cache.set("a", 1);
++    cache.set("b", 2);
++    cache.get("a"); // "a" is now most-recently-used, "b" is the LRU
++    cache.set("c", 3); // evicts "b"
++    expect(cache.has("a")).toBe(true);
++    expect(cache.has("b")).toBe(false);
++    expect(cache.has("c")).toBe(true);
++  });
++
++  it("deletes entries and keeps stats accurate", () => {
++    const cache = new LruCache<string, number>({ maxSize: 2 });
++    cache.set("a", 1);
++    expect(cache.get("a")).toBe(1); // 1 hit
++    expect(cache.delete("a")).toBe(true);
++    expect(cache.delete("a")).toBe(false); // already gone
++    expect(cache.get("a")).toBeUndefined(); // 1 miss
++    expect(cache.size).toBe(0);
++    expect(cache.stats).toMatchObject({ hits: 1, misses: 1, evictions: 0 });
++  });
++
+   it("updates values and clears entries without resetting stats", () => {
+     const cache = new LruCache<string, number>({ maxSize: 1 });
+     cache.set("a", 1);

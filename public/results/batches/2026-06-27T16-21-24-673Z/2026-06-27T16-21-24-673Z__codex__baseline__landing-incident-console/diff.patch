@@ -1,0 +1,1172 @@
+diff --git a/index.html b/index.html
+index f6dacfc..a683e2e 100644
+--- a/index.html
++++ b/index.html
+@@ -1 +1,16 @@
+-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Furmark Task</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <meta
++      name="description"
++      content="Traceboard is an incident timeline debugger for engineering teams that need shared outage context."
++    />
++    <title>Traceboard | Incident Timeline Debugger</title>
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/main.tsx"></script>
++  </body>
++</html>
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..4e0b79c 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,342 @@
+-import React from "react";
+ import { createRoot } from "react-dom/client";
++import {
++  Activity,
++  ArrowRight,
++  Bell,
++  CheckCircle2,
++  Clock3,
++  Database,
++  GitBranch,
++  LockKeyhole,
++  Network,
++  SearchCheck,
++  ShieldCheck,
++  UsersRound,
++  Zap,
++  type LucideIcon,
++} from "lucide-react";
++import timelineImage from "./assets/traceboard-timeline-ui.png";
+ import "./style.css";
+ 
++type NavItem = {
++  href: string;
++  label: string;
++};
++
++type Feature = {
++  title: string;
++  text: string;
++  icon: LucideIcon;
++  className?: string;
++  details: string[];
++};
++
++type WorkflowItem = {
++  title: string;
++  text: string;
++  icon: LucideIcon;
++};
++
++const navItems: NavItem[] = [
++  { href: "#features", label: "Features" },
++  { href: "#workflow", label: "Workflow" },
++  { href: "#security", label: "Security" },
++];
++
++const signalSources = [
++  "Alerts",
++  "Deploys",
++  "Logs",
++  "Traces",
++  "Metrics",
++  "Chat decisions",
++];
++
++const features: Feature[] = [
++  {
++    title: "Causal incident timeline",
++    text: "Pin deploys, alerts, traces, logs, and decisions to one ordered incident record.",
++    icon: GitBranch,
++    className: "feature-card--large",
++    details: ["Clock skew normalized", "Evidence linked to every event"],
++  },
++  {
++    title: "Signal correlation",
++    text: "Traceboard connects service changes to user impact without forcing responders into another dashboard hunt.",
++    icon: Network,
++    details: ["Service lanes", "Dependency context"],
++  },
++  {
++    title: "Response alignment",
++    text: "Keep responders, incident leads, and engineering managers anchored to the same facts.",
++    icon: UsersRound,
++    details: ["Shared handoff state", "Decision history"],
++  },
++  {
++    title: "Postmortem ready",
++    text: "Convert the timeline into a review document while context is still fresh.",
++    icon: SearchCheck,
++    className: "feature-card--wide",
++    details: ["Action items preserved", "Exportable evidence trail"],
++  },
++];
++
++const workflowItems: WorkflowItem[] = [
++  {
++    title: "Capture the incident",
++    text: "Bring alerts, deploys, logs, chat decisions, and runbook actions into the room.",
++    icon: Bell,
++  },
++  {
++    title: "Align the clock",
++    text: "Normalize event order across services so the first bad change is easier to inspect.",
++    icon: Clock3,
++  },
++  {
++    title: "Test the theory",
++    text: "Compare traces, service health, and deploy metadata before choosing the next fix.",
++    icon: Activity,
++  },
++  {
++    title: "Close the loop",
++    text: "Publish decisions, owners, and follow-up work from the same source of truth.",
++    icon: CheckCircle2,
++  },
++];
++
++const assuranceItems = [
++  {
++    title: "Least-privilege access",
++    text: "Keep sensitive services and customer-impact evidence scoped to the responders who need it.",
++    icon: LockKeyhole,
++  },
++  {
++    title: "Audit-friendly records",
++    text: "Every imported signal and human decision stays attached to the incident record.",
++    icon: ShieldCheck,
++  },
++  {
++    title: "Source control context",
++    text: "Connect deploys and rollback decisions to the exact changes engineers reviewed.",
++    icon: Database,
++  },
++];
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  return (
++    <>
++      <a className="skip-link" href="#main">
++        Skip to content
++      </a>
++      <header className="site-header">
++        <nav className="nav-shell" aria-label="Primary navigation">
++          <a className="brand" href="#top" aria-label="Traceboard home">
++            <span className="brand-mark" aria-hidden="true">
++              T
++            </span>
++            <span>Traceboard</span>
++          </a>
++
++          <div className="nav-links">
++            {navItems.map((item) => (
++              <a key={item.href} href={item.href}>
++                {item.label}
++              </a>
++            ))}
++          </div>
++
++          <a className="button button--small button--primary" href="#demo">
++            Request demo
++            <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} />
++          </a>
++        </nav>
++      </header>
++
++      <main id="main">
++        <section className="hero-section" id="top" aria-labelledby="hero-title">
++          <div className="container hero-grid">
++            <div className="hero-copy">
++              <h1 id="hero-title">Debug incidents on a shared timeline</h1>
++              <p>
++                Traceboard helps engineering teams reconstruct outages, correlate
++                signals, and agree on the next fix before memory fades.
++              </p>
++              <div className="hero-actions" aria-label="Traceboard actions">
++                <a className="button button--primary" href="#demo">
++                  Request demo
++                  <ArrowRight aria-hidden="true" size={18} strokeWidth={1.8} />
++                </a>
++                <a className="button button--secondary" href="#workflow">
++                  View workflow
++                </a>
++              </div>
++            </div>
++
++            <div className="hero-visual" aria-label="Traceboard product preview">
++              <img
++                src={timelineImage}
++                width="1568"
++                height="1003"
++                alt="Traceboard app showing incident event lanes, alerts, logs, and correlation panels on a dark timeline"
++                decoding="async"
++                loading="eager"
++                fetchPriority="high"
++              />
++            </div>
++          </div>
++        </section>
++
++        <section className="signal-section" aria-labelledby="signals-title">
++          <div className="container signal-layout">
++            <div>
++              <h2 id="signals-title">One incident record from scattered tools</h2>
++              <p>
++                Traceboard keeps the timeline readable while responders move
++                between alerts, deploy data, service health, and notes.
++              </p>
++            </div>
++            <div className="source-matrix" aria-label="Signal sources">
++              {signalSources.map((source) => (
++                <span key={source}>{source}</span>
++              ))}
++            </div>
++          </div>
++        </section>
++
++        <section className="section" id="features" aria-labelledby="features-title">
++          <div className="container">
++            <div className="section-header">
++              <h2 id="features-title">Make the incident legible</h2>
++              <p>
++                Traceboard turns scattered response data into a timeline the
++                whole team can inspect, question, and preserve.
++              </p>
++            </div>
++
++            <div className="feature-grid">
++              {features.map((feature) => {
++                const Icon = feature.icon;
++                return (
++                  <article
++                    className={`feature-card ${feature.className ?? ""}`}
++                    key={feature.title}
++                  >
++                    <div className="feature-icon">
++                      <Icon aria-hidden="true" size={24} strokeWidth={1.7} />
++                    </div>
++                    <h3>{feature.title}</h3>
++                    <p>{feature.text}</p>
++                    <ul className="detail-list" aria-label={`${feature.title} details`}>
++                      {feature.details.map((detail) => (
++                        <li key={detail}>{detail}</li>
++                      ))}
++                    </ul>
++                  </article>
++                );
++              })}
++            </div>
++          </div>
++        </section>
++
++        <section
++          className="section workflow-section"
++          id="workflow"
++          aria-labelledby="workflow-title"
++        >
++          <div className="container workflow-layout">
++            <div className="workflow-intro">
++              <Zap aria-hidden="true" size={30} strokeWidth={1.6} />
++              <h2 id="workflow-title">How response teams use it</h2>
++              <p>
++                Keep triage, investigation, mitigation, and review in one
++                continuous record instead of four separate recaps.
++              </p>
++            </div>
++
++            <div className="workflow-track">
++              {workflowItems.map((item) => {
++                const Icon = item.icon;
++                return (
++                  <article className="workflow-card" key={item.title}>
++                    <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
++                    <h3>{item.title}</h3>
++                    <p>{item.text}</p>
++                  </article>
++                );
++              })}
++            </div>
++          </div>
++        </section>
++
++        <section className="section split-section" id="security" aria-labelledby="security-title">
++          <div className="container split-layout">
++            <div className="assurance-copy">
++              <h2 id="security-title">Built for serious postmortems</h2>
++              <p>
++                The record stays useful after the page quiets down. Review what
++                changed, who decided, and why it mattered.
++              </p>
++              <a className="text-link" href="#demo">
++                Talk to incident engineering
++                <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} />
++              </a>
++            </div>
++
++            <div className="assurance-panel">
++              {assuranceItems.map((item) => {
++                const Icon = item.icon;
++                return (
++                  <article className="assurance-item" key={item.title}>
++                    <div className="assurance-icon">
++                      <Icon aria-hidden="true" size={22} strokeWidth={1.7} />
++                    </div>
++                    <div>
++                      <h3>{item.title}</h3>
++                      <p>{item.text}</p>
++                    </div>
++                  </article>
++                );
++              })}
++            </div>
++          </div>
++        </section>
++
++        <section className="cta-section" id="demo" aria-labelledby="demo-title">
++          <div className="container cta-layout">
++            <div>
++              <h2 id="demo-title">Bring order to the next incident</h2>
++              <p>
++                Give every responder the same timeline, context, and decision
++                trail from the first alert to the review.
++              </p>
++            </div>
++            <a className="button button--primary" href="mailto:hello@traceboard.dev">
++              Request demo
++              <ArrowRight aria-hidden="true" size={18} strokeWidth={1.8} />
++            </a>
++          </div>
++        </section>
++      </main>
++
++      <footer className="site-footer">
++        <div className="container footer-layout">
++          <a className="brand" href="#top" aria-label="Traceboard home">
++            <span className="brand-mark" aria-hidden="true">
++              T
++            </span>
++            <span>Traceboard</span>
++          </a>
++          <div className="footer-links" aria-label="Footer navigation">
++            {navItems.map((item) => (
++              <a key={item.href} href={item.href}>
++                {item.label}
++              </a>
++            ))}
++          </div>
++        </div>
++      </footer>
++    </>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..94b9f88 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,795 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++:root {
++  color-scheme: dark;
++  --bg: #101411;
++  --bg-2: #151a17;
++  --surface: #18201c;
++  --surface-strong: #202822;
++  --surface-soft: #121713;
++  --line: #2a342e;
++  --line-strong: #3a463f;
++  --text: #eef5ef;
++  --muted: #a9b8ad;
++  --muted-2: #758379;
++  --accent: #55d6aa;
++  --accent-strong: #8af0c9;
++  --accent-dark: #18362b;
++  --warning: #f1ad3d;
++  --danger: #f06961;
++  --radius: 8px;
++  --shadow: 0 24px 70px rgb(0 0 0 / 0.34);
++  font-family:
++    "Aptos", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
++}
++
++* {
++  box-sizing: border-box;
++}
++
++html {
++  scroll-behavior: smooth;
++  background: var(--bg);
++}
++
++body {
++  margin: 0;
++  min-width: 320px;
++  color: var(--text);
++  background:
++    linear-gradient(180deg, rgb(16 20 17 / 0.96), rgb(21 26 23 / 0.98) 42%, #101411),
++    var(--bg);
++  font-size: 16px;
++  line-height: 1.5;
++  text-rendering: optimizeLegibility;
++  -webkit-font-smoothing: antialiased;
++}
++
++body::before {
++  content: "";
++  position: fixed;
++  inset: 0;
++  z-index: -1;
++  pointer-events: none;
++  background-image:
++    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
++    linear-gradient(90deg, rgb(255 255 255 / 0.02) 1px, transparent 1px);
++  background-size: 44px 44px;
++  mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.75), transparent 80%);
++}
++
++button,
++a {
++  font: inherit;
++}
++
++a {
++  color: inherit;
++  text-decoration: none;
++}
++
++img {
++  display: block;
++  max-width: 100%;
++}
++
++:focus-visible {
++  outline: 3px solid rgb(85 214 170 / 0.82);
++  outline-offset: 4px;
++}
++
++::selection {
++  background: rgb(85 214 170 / 0.28);
++  color: var(--text);
++}
++
++.skip-link {
++  position: fixed;
++  left: 16px;
++  top: 12px;
++  z-index: 50;
++  transform: translateY(-130%);
++  border: 1px solid var(--accent);
++  border-radius: var(--radius);
++  background: var(--surface-strong);
++  color: var(--text);
++  padding: 10px 14px;
++  transition: transform 160ms ease;
++}
++
++.skip-link:focus {
++  transform: translateY(0);
++}
++
++.container {
++  width: min(1180px, calc(100% - 40px));
++  margin-inline: auto;
++}
++
++.site-header {
++  position: sticky;
++  top: 0;
++  z-index: 20;
++  border-bottom: 1px solid rgb(255 255 255 / 0.08);
++  background: rgb(16 20 17 / 0.86);
++  backdrop-filter: blur(18px);
++}
++
++.nav-shell {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 24px;
++  width: min(1180px, calc(100% - 40px));
++  height: 68px;
++  margin-inline: auto;
++}
++
++.brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  min-width: 0;
++  color: var(--text);
++  font-weight: 760;
++}
++
++.brand-mark {
++  display: grid;
++  width: 34px;
++  height: 34px;
++  flex: 0 0 auto;
++  place-items: center;
++  border: 1px solid rgb(85 214 170 / 0.46);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(135deg, rgb(85 214 170 / 0.24), rgb(255 255 255 / 0.03)),
++    var(--accent-dark);
++  color: var(--accent-strong);
++  font-weight: 820;
++}
++
++.nav-links {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  gap: 6px;
++}
++
++.nav-links a,
++.footer-links a {
++  border-radius: var(--radius);
++  color: var(--muted);
++  padding: 9px 12px;
++  font-size: 0.95rem;
++  transition:
++    background-color 160ms ease,
++    color 160ms ease;
++}
++
++.nav-links a:hover,
++.footer-links a:hover {
++  background: rgb(255 255 255 / 0.06);
++  color: var(--text);
++}
++
++.button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 9px;
++  min-height: 46px;
++  border: 1px solid transparent;
++  border-radius: var(--radius);
++  padding: 0 18px;
++  font-weight: 740;
++  white-space: nowrap;
++  transition:
++    transform 160ms ease,
++    border-color 160ms ease,
++    background-color 160ms ease,
++    color 160ms ease;
++}
++
++.button:active {
++  transform: translateY(1px);
++}
++
++.button--small {
++  min-height: 40px;
++  padding-inline: 14px;
++  font-size: 0.92rem;
++}
++
++.button--primary {
++  border-color: rgb(138 240 201 / 0.54);
++  background: var(--accent);
++  color: #102018;
++  box-shadow: 0 16px 38px rgb(85 214 170 / 0.18);
++}
++
++.button--primary:hover {
++  background: var(--accent-strong);
++}
++
++.button--secondary {
++  border-color: var(--line-strong);
++  background: rgb(255 255 255 / 0.04);
++  color: var(--text);
++}
++
++.button--secondary:hover {
++  border-color: rgb(85 214 170 / 0.5);
++  color: var(--accent-strong);
++}
++
++.hero-section {
++  display: flex;
++  align-items: center;
++  min-height: calc(100dvh - 112px);
++  padding: 58px 0 34px;
++}
++
++.hero-grid {
++  display: grid;
++  grid-template-columns: minmax(0, 0.88fr) minmax(420px, 1.12fr);
++  align-items: center;
++  gap: clamp(32px, 5vw, 70px);
++}
++
++.hero-copy {
++  max-width: 640px;
++}
++
++.hero-copy h1 {
++  margin: 0;
++  max-width: 10.8ch;
++  color: var(--text);
++  font-size: clamp(3rem, 6.4vw, 5.85rem);
++  font-weight: 790;
++  line-height: 0.96;
++}
++
++.hero-copy p {
++  max-width: 58ch;
++  margin: 24px 0 0;
++  color: var(--muted);
++  font-size: clamp(1rem, 1.2vw, 1.14rem);
++  line-height: 1.58;
++}
++
++.hero-actions {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 12px;
++  margin-top: 30px;
++}
++
++.hero-visual {
++  position: relative;
++  min-width: 0;
++  overflow: hidden;
++  border: 1px solid rgb(255 255 255 / 0.11);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.02)),
++    var(--surface-soft);
++  box-shadow: var(--shadow);
++}
++
++.hero-visual::after {
++  content: "";
++  position: absolute;
++  inset: 0;
++  border-radius: inherit;
++  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
++  pointer-events: none;
++}
++
++.hero-visual img {
++  width: 100%;
++  height: auto;
++}
++
++.signal-section {
++  padding: 22px 0 70px;
++}
++
++.signal-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
++  gap: 30px;
++  align-items: center;
++  border-top: 1px solid var(--line);
++  border-bottom: 1px solid var(--line);
++  padding: 28px 0;
++}
++
++.signal-layout h2 {
++  margin: 0;
++  font-size: clamp(1.5rem, 3vw, 2.35rem);
++  line-height: 1.08;
++}
++
++.signal-layout p {
++  max-width: 56ch;
++  margin: 14px 0 0;
++  color: var(--muted);
++}
++
++.source-matrix {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 10px;
++}
++
++.source-matrix span {
++  display: flex;
++  align-items: center;
++  min-height: 48px;
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background: rgb(255 255 255 / 0.035);
++  color: var(--text);
++  padding: 0 14px;
++  font-weight: 680;
++}
++
++.section {
++  padding: 72px 0;
++}
++
++.section-header {
++  max-width: 710px;
++  margin-bottom: 32px;
++}
++
++.section-header h2,
++.workflow-intro h2,
++.assurance-copy h2,
++.cta-layout h2 {
++  margin: 0;
++  color: var(--text);
++  font-size: clamp(2rem, 4.6vw, 4.15rem);
++  font-weight: 780;
++  line-height: 1.02;
++}
++
++.section-header p,
++.workflow-intro p,
++.assurance-copy p,
++.cta-layout p {
++  max-width: 62ch;
++  margin: 16px 0 0;
++  color: var(--muted);
++  font-size: 1.05rem;
++}
++
++.feature-grid {
++  display: grid;
++  grid-template-columns: repeat(3, minmax(0, 1fr));
++  gap: 14px;
++}
++
++.feature-card,
++.workflow-card,
++.assurance-item {
++  border: 1px solid var(--line);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(180deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.024)),
++    var(--surface);
++}
++
++.feature-card {
++  display: flex;
++  min-height: 240px;
++  flex-direction: column;
++  padding: 24px;
++  transition:
++    transform 160ms ease,
++    border-color 160ms ease,
++    background-color 160ms ease;
++}
++
++.feature-card:hover {
++  transform: translateY(-3px);
++  border-color: rgb(85 214 170 / 0.42);
++}
++
++.feature-card--large {
++  grid-column: span 2;
++  background:
++    linear-gradient(135deg, rgb(85 214 170 / 0.14), transparent 52%),
++    linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.025)),
++    var(--surface-strong);
++}
++
++.feature-card--wide {
++  grid-column: span 2;
++  background:
++    linear-gradient(135deg, rgb(85 214 170 / 0.11), rgb(241 173 61 / 0.07) 62%, transparent),
++    var(--surface);
++}
++
++.feature-icon,
++.assurance-icon {
++  display: grid;
++  width: 44px;
++  height: 44px;
++  flex: 0 0 auto;
++  place-items: center;
++  border: 1px solid rgb(85 214 170 / 0.33);
++  border-radius: var(--radius);
++  background: rgb(85 214 170 / 0.1);
++  color: var(--accent-strong);
++}
++
++.feature-card h3,
++.workflow-card h3,
++.assurance-item h3 {
++  margin: 18px 0 0;
++  color: var(--text);
++  font-size: 1.08rem;
++  line-height: 1.22;
++}
++
++.feature-card p,
++.workflow-card p,
++.assurance-item p {
++  margin: 10px 0 0;
++  color: var(--muted);
++}
++
++.detail-list {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 8px;
++  margin: auto 0 0;
++  padding: 24px 0 0;
++  list-style: none;
++}
++
++.detail-list li {
++  border: 1px solid rgb(255 255 255 / 0.09);
++  border-radius: var(--radius);
++  background: rgb(0 0 0 / 0.18);
++  color: var(--muted);
++  padding: 7px 9px;
++  font-size: 0.86rem;
++}
++
++.workflow-section {
++  background:
++    linear-gradient(180deg, transparent, rgb(85 214 170 / 0.04) 40%, transparent),
++    var(--bg);
++}
++
++.workflow-layout {
++  display: grid;
++  grid-template-columns: minmax(260px, 0.74fr) minmax(0, 1.26fr);
++  gap: 34px;
++  align-items: start;
++}
++
++.workflow-intro {
++  position: sticky;
++  top: 92px;
++  color: var(--accent-strong);
++}
++
++.workflow-intro h2,
++.workflow-intro p {
++  color: var(--text);
++}
++
++.workflow-intro p {
++  color: var(--muted);
++}
++
++.workflow-track {
++  display: grid;
++  grid-template-columns: repeat(2, minmax(0, 1fr));
++  gap: 14px;
++}
++
++.workflow-card {
++  min-height: 210px;
++  padding: 22px;
++  color: var(--accent-strong);
++}
++
++.workflow-card p {
++  color: var(--muted);
++}
++
++.split-section {
++  padding-top: 86px;
++}
++
++.split-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 0.86fr) minmax(380px, 1.14fr);
++  gap: clamp(28px, 6vw, 74px);
++  align-items: start;
++}
++
++.assurance-copy {
++  max-width: 560px;
++}
++
++.text-link {
++  display: inline-flex;
++  align-items: center;
++  gap: 8px;
++  margin-top: 24px;
++  border-bottom: 1px solid rgb(85 214 170 / 0.5);
++  color: var(--accent-strong);
++  font-weight: 740;
++  padding-bottom: 4px;
++}
++
++.text-link:hover {
++  color: var(--text);
++}
++
++.assurance-panel {
++  display: grid;
++  gap: 12px;
++}
++
++.assurance-item {
++  display: grid;
++  grid-template-columns: auto 1fr;
++  gap: 16px;
++  align-items: start;
++  padding: 20px;
++}
++
++.assurance-item h3 {
++  margin-top: 0;
++}
++
++.cta-section {
++  padding: 74px 0;
++}
++
++.cta-layout {
++  display: grid;
++  grid-template-columns: minmax(0, 1fr) auto;
++  gap: 30px;
++  align-items: center;
++  border: 1px solid rgb(85 214 170 / 0.28);
++  border-radius: var(--radius);
++  background:
++    linear-gradient(135deg, rgb(85 214 170 / 0.13), rgb(255 255 255 / 0.035) 52%, rgb(241 173 61 / 0.05)),
++    var(--surface-strong);
++  padding: clamp(24px, 5vw, 44px);
++}
++
++.site-footer {
++  border-top: 1px solid var(--line);
++  padding: 28px 0;
++}
++
++.footer-layout {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 24px;
++}
++
++.footer-links {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  justify-content: flex-end;
++  gap: 4px;
++}
++
++@media (prefers-reduced-motion: no-preference) {
++  .hero-copy > *,
++  .hero-visual {
++    animation: enter-up 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
++  }
++
++  .hero-copy p {
++    animation-delay: 80ms;
++  }
++
++  .hero-actions {
++    animation-delay: 140ms;
++  }
++
++  .hero-visual {
++    animation-delay: 180ms;
++  }
++}
++
++@keyframes enter-up {
++  from {
++    opacity: 0;
++    transform: translateY(18px);
++  }
++
++  to {
++    opacity: 1;
++    transform: translateY(0);
++  }
++}
++
++@media (max-width: 980px) {
++  .hero-section {
++    align-items: start;
++    min-height: auto;
++    padding-top: 34px;
++  }
++
++  .hero-grid,
++  .signal-layout,
++  .workflow-layout,
++  .split-layout,
++  .cta-layout {
++    grid-template-columns: 1fr;
++  }
++
++  .hero-copy h1 {
++    max-width: 11ch;
++  }
++
++  .workflow-intro {
++    position: static;
++  }
++
++  .cta-layout {
++    justify-items: start;
++  }
++}
++
++@media (max-width: 760px) {
++  .container,
++  .nav-shell {
++    width: min(100% - 32px, 1180px);
++  }
++
++  .site-header {
++    backdrop-filter: blur(12px);
++  }
++
++  .nav-shell {
++    height: 64px;
++    gap: 12px;
++  }
++
++  .nav-links {
++    display: none;
++  }
++
++  .brand {
++    font-size: 0.98rem;
++  }
++
++  .brand-mark {
++    width: 32px;
++    height: 32px;
++  }
++
++  .button {
++    min-height: 44px;
++    padding-inline: 15px;
++  }
++
++  .button--small {
++    min-height: 38px;
++    padding-inline: 12px;
++  }
++
++  .hero-section {
++    padding: 28px 0 22px;
++  }
++
++  .hero-grid {
++    gap: 26px;
++  }
++
++  .hero-copy h1 {
++    max-width: 10ch;
++    font-size: clamp(2.75rem, 13vw, 4.05rem);
++    line-height: 1;
++  }
++
++  .hero-copy p {
++    margin-top: 18px;
++    font-size: 1rem;
++  }
++
++  .hero-actions {
++    margin-top: 22px;
++  }
++
++  .hero-actions .button {
++    flex: 1 1 160px;
++  }
++
++  .signal-section {
++    padding-bottom: 48px;
++  }
++
++  .source-matrix,
++  .feature-grid,
++  .workflow-track {
++    grid-template-columns: 1fr;
++  }
++
++  .feature-card--large,
++  .feature-card--wide {
++    grid-column: auto;
++  }
++
++  .feature-card,
++  .workflow-card {
++    min-height: auto;
++  }
++
++  .section {
++    padding: 54px 0;
++  }
++
++  .section-header {
++    margin-bottom: 24px;
++  }
++
++  .section-header h2,
++  .workflow-intro h2,
++  .assurance-copy h2,
++  .cta-layout h2 {
++    font-size: clamp(2rem, 10vw, 3rem);
++  }
++
++  .assurance-item {
++    grid-template-columns: 1fr;
++  }
++
++  .footer-layout {
++    align-items: flex-start;
++    flex-direction: column;
++  }
++
++  .footer-links {
++    justify-content: flex-start;
++  }
++}
++
++@media (max-width: 430px) {
++  .container,
++  .nav-shell {
++    width: min(100% - 28px, 1180px);
++  }
++
++  .nav-shell .button svg {
++    display: none;
++  }
++
++  .source-matrix span {
++    min-height: 44px;
++  }
++
++  .feature-card,
++  .workflow-card,
++  .assurance-item {
++    padding: 18px;
++  }
++
++  .cta-layout {
++    padding: 22px;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  *,
++  *::before,
++  *::after {
++    scroll-behavior: auto !important;
++    animation-duration: 0.01ms !important;
++    animation-iteration-count: 1 !important;
++    transition-duration: 0.01ms !important;
++  }
++}

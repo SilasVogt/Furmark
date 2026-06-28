@@ -1,0 +1,49 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..71316cc 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -50,8 +50,23 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   }
+ 
+   if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
+-    throw new DependencyCycleError(cycle);
++    // Report only the true cycle members: among the unresolved nodes, peel away
++    // any that nothing else unresolved depends on (nodes that merely depend on a
++    // cycle without being part of one). A blocked node is always downstream of a
++    // cycle, so once those are peeled only cycle members remain.
++    // ponytail: O(n^2) peel over the blocked set, on the error path only.
++    const cycle = new Set([...nodes].filter((node) => !processed.has(node)));
++    let changed = true;
++    while (changed) {
++      changed = false;
++      for (const node of cycle) {
++        if (![...cycle].some((other) => (graph[other] ?? []).includes(node))) {
++          cycle.delete(node);
++          changed = true;
++        }
++      }
++    }
++    throw new DependencyCycleError([...cycle].sort());
+   }
+ 
+   return batches;
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..d444cce 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -30,5 +30,14 @@ describe("dependencyBatches", () => {
+       expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
+     }
+   });
++
++  it("names only cycle members, not nodes downstream of the cycle", () => {
++    expect.assertions(1);
++    try {
++      dependencyBatches({ a: ["b"], b: ["a"], c: ["a"] });
++    } catch (error) {
++      expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
++    }
++  });
+ });
+ 

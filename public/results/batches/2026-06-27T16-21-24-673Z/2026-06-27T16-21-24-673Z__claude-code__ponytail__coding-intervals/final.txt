@@ -1,0 +1,14 @@
+All 8 tests pass; `tsc --noEmit` clean.
+
+## What changed
+
+The coalescer implementation was already **correct** — continuous-interval semantics, normalization, validation, deterministic sort, and the `mergeTouching` toggle all work. The actual bug was in the test fixture:
+
+- `tests/intervals.test.ts` — the "reversed and negative ranges" case fed `[-3,-2]` + `[-1,4]` (disjoint — there's a gap between -2 and -1) but expected a merged `[-3,4]`. Changed the input to `{start:-3, end:0}` so it genuinely overlaps `[-1,4]`, keeping the intended `[-3,4]` output.
+- Added edge-case tests: empty/single (incl. reversed single), duplicates, touching-merge default, `Infinity` rejection, and order-independence.
+
+Why fix the test, not the code: the "keep touching separate" test (`[1,2]`+`[2,3]` stay split with `mergeTouching:false`) only makes sense under continuous semantics — so `[-3,-2]` and `[-1,4]` are correctly disjoint. Making them merge would have required a contrived "+1 gap" rule that breaks "overlapping intervals merge correctly."
+
+Verification: `npx tsc --noEmit` + `npx vitest run` → 8/8 pass.
+
+skipped: no impl change (was already spec-correct); add when a real semantics gap surfaces, not a fixture typo.

@@ -1,0 +1,56 @@
+diff --git a/src/dependencyBatches.ts b/src/dependencyBatches.ts
+index 88b1775..e203e58 100644
+--- a/src/dependencyBatches.ts
++++ b/src/dependencyBatches.ts
+@@ -50,10 +50,32 @@ export function dependencyBatches(graph: DependencyGraph): string[][] {
+   }
+ 
+   if (processed.size !== nodes.size) {
+-    const cycle = [...nodes].filter((node) => !processed.has(node)).sort();
++    const unresolved = [...nodes].filter((node) => !processed.has(node)).sort();
++    const unresolvedSet = new Set(unresolved);
++    const visited = new Set<string>();
++    const stack: string[] = [];
++
++    const findCycle = (node: string): string[] | undefined => {
++      visited.add(node);
++      stack.push(node);
++
++      for (const dependency of [...(graph[node] ?? [])].sort()) {
++        if (!unresolvedSet.has(dependency)) continue;
++        const start = stack.indexOf(dependency);
++        if (start !== -1) return stack.slice(start).sort();
++        if (!visited.has(dependency)) {
++          const cycle = findCycle(dependency);
++          if (cycle) return cycle;
++        }
++      }
++
++      stack.pop();
++      return undefined;
++    };
++
++    const cycle = unresolved.map((node) => (visited.has(node) ? undefined : findCycle(node))).find(Boolean) ?? unresolved;
+     throw new DependencyCycleError(cycle);
+   }
+ 
+   return batches;
+ }
+-
+diff --git a/tests/dependencyBatches.test.ts b/tests/dependencyBatches.test.ts
+index b14f33c..3b3cbcb 100644
+--- a/tests/dependencyBatches.test.ts
++++ b/tests/dependencyBatches.test.ts
+@@ -24,11 +24,10 @@ describe("dependencyBatches", () => {
+   it("throws cycle diagnostics", () => {
+     expect(() => dependencyBatches({ a: ["b"], b: ["a"] })).toThrow(DependencyCycleError);
+     try {
+-      dependencyBatches({ a: ["b"], b: ["a"] });
++      dependencyBatches({ a: ["b"], b: ["a"], c: ["a"] });
+     } catch (error) {
+       expect(error).toBeInstanceOf(DependencyCycleError);
+       expect((error as DependencyCycleError).cycle).toEqual(["a", "b"]);
+     }
+   });
+ });
+-

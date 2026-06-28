@@ -1,0 +1,30 @@
+Done. The benchmark workspace now contains a complete scroll-driven assembly-line animation.
+
+## What changed
+
+Replaced the placeholder `App` with a full implementation:
+
+- **`src/stations.ts`** — single source of truth for the 5 stations (Intake → Cut → Weld → Paint → Package) plus pure helpers (`formOpacity`, `activity`, `clamp`) that map a 0–1 progress value to part-morph and station-activity weights.
+- **`src/Machine.tsx`** — the SVG machine (housing, gantry, per-station robot arms, conveyor with moving treads, rotating gears, station badges, and the travelling work-piece). Memoized; renders once.
+- **`src/PartGraphic.tsx`** — the work-piece drawn per "form" (raw billet → cut plate → welded assembly → painted body → labelled box), reused by both views.
+- **`src/AssemblyLine.tsx`** — the scroll-driven view. A tall wrapper + a `position: sticky` stage; a single rAF-throttled scroll handler writes CSS custom properties (`--p`, `--form-N`, `--act-N`) straight to the DOM. All continuous motion (part travel, morph, arm dips, gear spin, belt, progress bar) is pure CSS reading those vars — **React state changes only when the discrete active station changes**, so there is no scroll-linked render loop. Station dots are clickable to jump.
+- **`src/ReducedView.tsx`** — the reduced-motion fallback: a normal-flow static stepper (transformation filmstrip + numbered cards with the same names/actions/descriptions/part states). No sticky pinning, no scroll-linked transforms, no continuous animation.
+- **`src/App.tsx` / `src/useReducedMotion.ts`** — detects `prefers-reduced-motion` (and live-updates on change), swaps views accordingly, and adds an Auto/Full/Reduced toggle so either mode can be exercised regardless of OS setting.
+- **`src/main.tsx`** (StrictMode), **`src/style.css`** (industrial theme, responsive via `clamp`/`svh`, reduced-motion safety net), **`index.html`** (title + inline favicon).
+
+## Verification
+
+`npm run build` (`tsc --noEmit && vite build`) — passes with no type errors.
+
+I also ran a headless Chromium check (DevTools Protocol) against the production preview, which confirmed every success criterion:
+
+| State | Result |
+|---|---|
+| Initial | `--p`=0, station "Intake", 5 dots |
+| Scroll ~50% | `--p`=0.58, station advances to "Weld", progress bar fills |
+| Scroll end | `--p`=1, station "Package" (boxed part) |
+| Reduced-motion | animated wrapper absent, 5 static steps render |
+| Mobile (375px) | horizontal overflow = 0 |
+| Console | **0 errors** |
+
+Note: `dist/` is the build output (untracked artifact).

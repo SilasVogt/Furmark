@@ -1,0 +1,96 @@
+diff --git a/tests/intervals.test.ts b/tests/intervals.test.ts
+index 81c8bb9..e01380c 100644
+--- a/tests/intervals.test.ts
++++ b/tests/intervals.test.ts
+@@ -12,6 +12,15 @@ describe("coalesceIntervals", () => {
+     ).toEqual([{ start: 1, end: 8 }]);
+   });
+ 
++  it("merges touching intervals by default", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 2 },
++        { start: 2, end: 3 },
++      ]),
++    ).toEqual([{ start: 1, end: 3 }]);
++  });
++
+   it("can keep touching intervals separate", () => {
+     expect(
+       coalesceIntervals(
+@@ -27,17 +36,71 @@ describe("coalesceIntervals", () => {
+     ]);
+   });
+ 
+-  it("normalizes reversed and negative ranges", () => {
++  it("normalizes reversed endpoints and merges when they overlap", () => {
++    // { start: 4, end: -1 } normalizes to [-1, 4], which overlaps [-3, 0].
+     expect(
+       coalesceIntervals([
+         { start: 4, end: -1 },
+-        { start: -3, end: -2 },
++        { start: -3, end: 0 },
+       ]),
+     ).toEqual([{ start: -3, end: 4 }]);
+   });
+ 
+-  it("rejects invalid endpoints", () => {
++  it("keeps disjoint negative ranges separate", () => {
++    // [-1, 4] and [-3, -2] do not overlap or touch, so they are not merged.
++    expect(
++      coalesceIntervals([
++        { start: 4, end: -1 },
++        { start: -3, end: -2 },
++      ]),
++    ).toEqual([
++      { start: -3, end: -2 },
++      { start: -1, end: 4 },
++    ]);
++  });
++
++  it("collapses duplicate intervals", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 4 },
++        { start: 1, end: 4 },
++        { start: 1, end: 4 },
++      ]),
++    ).toEqual([{ start: 1, end: 4 }]);
++  });
++
++  it("does not depend on input order", () => {
++    const expected = [
++      { start: 1, end: 8 },
++      { start: 10, end: 12 },
++    ];
++    const ascending = coalesceIntervals([
++      { start: 1, end: 3 },
++      { start: 2, end: 6 },
++      { start: 5, end: 8 },
++      { start: 10, end: 12 },
++    ]);
++    const shuffled = coalesceIntervals([
++      { start: 10, end: 12 },
++      { start: 5, end: 8 },
++      { start: 2, end: 6 },
++      { start: 1, end: 3 },
++    ]);
++    expect(ascending).toEqual(expected);
++    expect(shuffled).toEqual(expected);
++  });
++
++  it("returns an empty array for empty input", () => {
++    expect(coalesceIntervals([])).toEqual([]);
++  });
++
++  it("normalizes a single reversed interval", () => {
++    expect(coalesceIntervals([{ start: 7, end: 2 }])).toEqual([{ start: 2, end: 7 }]);
++  });
++
++  it("rejects non-finite endpoints", () => {
+     expect(() => coalesceIntervals([{ start: 1, end: Number.NaN }])).toThrow(/finite/);
++    expect(() => coalesceIntervals([{ start: Number.POSITIVE_INFINITY, end: 2 }])).toThrow(/finite/);
++    expect(() => coalesceIntervals([{ start: 0, end: Number.NEGATIVE_INFINITY }])).toThrow(/finite/);
+   });
+ });
+-

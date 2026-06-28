@@ -1,0 +1,58 @@
+diff --git a/tests/intervals.test.ts b/tests/intervals.test.ts
+index 81c8bb9..f7c00a9 100644
+--- a/tests/intervals.test.ts
++++ b/tests/intervals.test.ts
+@@ -31,13 +31,52 @@ describe("coalesceIntervals", () => {
+     expect(
+       coalesceIntervals([
+         { start: 4, end: -1 },
+-        { start: -3, end: -2 },
++        { start: -3, end: 0 },
+       ]),
+     ).toEqual([{ start: -3, end: 4 }]);
+   });
+ 
+   it("rejects invalid endpoints", () => {
+     expect(() => coalesceIntervals([{ start: 1, end: Number.NaN }])).toThrow(/finite/);
++    expect(() => coalesceIntervals([{ start: Number.POSITIVE_INFINITY, end: 1 }])).toThrow(/finite/);
++  });
++
++  it("handles empty and single inputs", () => {
++    expect(coalesceIntervals([])).toEqual([]);
++    expect(coalesceIntervals([{ start: 1, end: 2 }])).toEqual([{ start: 1, end: 2 }]);
++    expect(coalesceIntervals([{ start: 5, end: 1 }])).toEqual([{ start: 1, end: 5 }]);
++  });
++
++  it("collapses duplicates", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 4 },
++        { start: 1, end: 4 },
++      ]),
++    ).toEqual([{ start: 1, end: 4 }]);
++  });
++
++  it("merges touching ranges by default", () => {
++    expect(
++      coalesceIntervals([
++        { start: 1, end: 2 },
++        { start: 2, end: 3 },
++      ]),
++    ).toEqual([{ start: 1, end: 3 }]);
++  });
++
++  it("is order independent", () => {
++    const intervals = [
++      { start: 10, end: 12 },
++      { start: 1, end: 3 },
++      { start: 2, end: 5 },
++    ];
++    const expected = [
++      { start: 1, end: 5 },
++      { start: 10, end: 12 },
++    ];
++    expect(coalesceIntervals(intervals)).toEqual(expected);
++    expect(coalesceIntervals([...intervals].reverse())).toEqual(expected);
+   });
+ });
+ 

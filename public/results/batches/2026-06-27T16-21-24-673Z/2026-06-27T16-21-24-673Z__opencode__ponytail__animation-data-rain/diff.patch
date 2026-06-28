@@ -1,0 +1,252 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..80bfabf 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,245 @@
+-import React from "react";
++import { useEffect, useRef, useState } from "react";
+ import { createRoot } from "react-dom/client";
+ import "./style.css";
+ 
++// ponytail: one canvas, columns per metric, bars stack by gravity. Symbols + labels so color isn't sole channel.
++type Metric = {
++  key: string;
++  label: string;
++  symbol: string;
++  color: string;
++  range: [number, number];
++};
++
++const METRICS: Metric[] = [
++  { key: "cpu", label: "CPU %", symbol: "▲", color: "#e4572e", range: [5, 95] },
++  { key: "mem", label: "MEM MB", symbol: "■", color: "#4c9f70", range: [50, 900] },
++  { key: "req", label: "REQ/s", symbol: "●", color: "#3c91e6", range: [0, 500] },
++  { key: "lat", label: "LAT ms", symbol: "◆", color: "#f0a202", range: [2, 240] },
++];
++
++type Bar = {
++  col: number;
++  h: number;
++  y: number; // top of bar in canvas px
++  v: number;
++  value: number;
++  metric: Metric;
++  restY: number;
++};
++
++const COL_W = 120;
++const BAR_W = 60;
++const FALL_SPEED = 320; // px/sec
++const FEED_MS = 700;
++
++function randInt([a, b]: [number, number]) {
++  return Math.round(a + Math.random() * (b - a));
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const canvasRef = useRef<HTMLCanvasElement | null>(null);
++  const [paused, setPaused] = useState(false);
++  const [reduced, setReduced] = useState(
++    () =>
++      typeof window !== "undefined" &&
++      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
++  );
++
++  // mutable sim state lives in refs so rAF doesn't re-create each render
++  const bars = useRef<Bar[]>([]);
++  const stackTop = useRef<number[]>(METRICS.map(() => 0)); // y of current stack top per col
++  const pausedRef = useRef(paused);
++  const reducedRef = useRef(reduced);
++  pausedRef.current = paused;
++  reducedRef.current = reduced;
++
++  // feed timer
++  useEffect(() => {
++    const id = window.setInterval(() => {
++      if (pausedRef.current) return;
++      spawn();
++    }, FEED_MS);
++    return () => clearInterval(id);
++  }, []);
++
++  function spawn() {
++    const canvas = canvasRef.current;
++    if (!canvas) return;
++    const H = canvas.height;
++    const m = METRICS[Math.floor(Math.random() * METRICS.length)];
++    const col = METRICS.indexOf(m);
++    const value = randInt(m.range);
++    const h = Math.max(8, (value - m.range[0]) / (m.range[1] - m.range[0]) * 160);
++    const floor = H - 20;
++    const topFromStack = stackTop.current[col];
++    const restY = Math.max(10, topFromStack === 0 ? floor - h : topFromStack - h);
++    bars.current.push({
++      col,
++      h,
++      y: -h - 10,
++      v: FALL_SPEED,
++      value,
++      metric: m,
++      restY,
++    });
++  }
++
++  // render loop
++  useEffect(() => {
++    const canvas = canvasRef.current;
++    if (!canvas) return;
++    const ctx = canvas.getContext("2d")!;
++    let raf = 0;
++    let last = performance.now();
++    let frame = 0;
++
++    const resize = () => {
++      const dpr = Math.min(window.devicePixelRatio || 1, 2);
++      const rect = canvas.getBoundingClientRect();
++      canvas.width = Math.floor(rect.width * dpr);
++      canvas.height = Math.floor(rect.height * dpr);
++      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
++    };
++    resize();
++    window.addEventListener("resize", resize);
++
++    const draw = (now: number) => {
++      raf = requestAnimationFrame(draw);
++      const dt = Math.min(0.05, (now - last) / 1000);
++      last = now;
++      frame++;
++
++      const W = canvas.clientWidth;
++      const H = canvas.clientHeight;
++      ctx.clearRect(0, 0, W, H);
++
++      // column guides + labels
++      ctx.font = "12px system-ui, sans-serif";
++      METRICS.forEach((m, i) => {
++        const cx = i * COL_W + COL_W / 2;
++        ctx.fillStyle = "rgba(255,255,255,0.06)";
++        ctx.fillRect(i * COL_W + (COL_W - BAR_W) / 2, 0, BAR_W, H);
++        ctx.fillStyle = "#ddd";
++        ctx.textAlign = "center";
++        ctx.fillText(m.label, cx, 16);
++        ctx.fillStyle = m.color;
++        ctx.fillText(m.symbol, cx, 32);
++      });
++
++      // step physics (skip when paused or reduced)
++      const step = !pausedRef.current && !reducedRef.current;
++      if (step) {
++        for (const b of bars.current) {
++          if (b.y < b.restY) {
++            b.y = Math.min(b.restY, b.y + b.v * dt);
++            // recompute rest in case a newer bar pushed stack
++            const top = stackTop.current[b.col];
++            b.restY = Math.max(10, top === 0 ? H - 20 - b.h : top - b.h);
++          } else if (b.y >= b.restY) {
++            // settled: contribute to stack
++            // (only counts once; tracked via stackTop)
++          }
++        }
++        // rebuild stackTop from settled bars
++        const newTop = METRICS.map(() => 0);
++        for (const b of bars.current) {
++          if (b.y >= b.restY - 0.5) {
++            if (newTop[b.col] === 0) {
++              newTop[b.col] = b.y;
++            } else {
++              newTop[b.col] = Math.min(newTop[b.col], b.y);
++            }
++          }
++        }
++        // sort settled bars bottom-up per column so stacking is stable
++        // simple approach: chain rest positions
++        const settled = bars.current
++          .filter((b) => b.y >= b.restY - 0.5)
++          .sort((a, b) => (a.col === b.col ? a.value - b.value : 0));
++        const floors = METRICS.map((_, i) => H - 20);
++        for (const b of settled) {
++          b.restY = floors[b.col] - b.h;
++          floors[b.col] = b.restY;
++        }
++        stackTop.current = floors;
++      }
++
++      // reduced motion: snap all bars to their rest positions (no falling)
++      if (reducedRef.current) {
++        const floors = METRICS.map((_, i) => H - 20);
++        const settled = bars.current
++          .slice()
++          .sort((a, b) => (a.col === b.col ? a.value - b.value : 0));
++        for (const b of settled) {
++          b.restY = floors[b.col] - b.h;
++          b.y = b.restY;
++          floors[b.col] = b.restY;
++        }
++        stackTop.current = floors;
++      }
++
++      // draw bars
++      ctx.textAlign = "center";
++      for (const b of bars.current) {
++        const x = b.col * COL_W + (COL_W - BAR_W) / 2;
++        ctx.fillStyle = b.metric.color;
++        ctx.fillRect(x, b.y, BAR_W, b.h);
++        ctx.strokeStyle = "rgba(0,0,0,0.4)";
++        ctx.strokeRect(x, b.y, BAR_W, b.h);
++        ctx.fillStyle = "#fff";
++        ctx.font = "11px system-ui, sans-serif";
++        ctx.fillText(b.metric.symbol + b.value, x + BAR_W / 2, b.y + b.h / 2 + 4);
++      }
++
++      // HUD: frame counter proves frames change
++      ctx.fillStyle = "#999";
++      ctx.textAlign = "right";
++      ctx.font = "11px ui-monospace, monospace";
++      const state = pausedRef.current ? "paused" : reducedRef.current ? "reduced" : "live";
++      ctx.fillText(`frame ${frame} · ${state}`, W - 8, H - 6);
++    };
++
++    raf = requestAnimationFrame(draw);
++    return () => {
++      cancelAnimationFrame(raf);
++      window.removeEventListener("resize", resize);
++    };
++  }, []);
++
++  const reset = () => {
++    bars.current = [];
++    stackTop.current = METRICS.map(() => 0);
++  };
++
++  return (
++    <main style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#111", color: "#eee" }}>
++      <header style={{ padding: 8, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
++        <strong>Metric Rain</strong>
++        <button onClick={() => setPaused((p) => !p)} aria-pressed={paused}>
++          {paused ? "Resume" : "Pause"}
++        </button>
++        <button onClick={reset}>Reset</button>
++        <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
++          <input
++            type="checkbox"
++            checked={reduced}
++            onChange={(e) => setReduced(e.target.checked)}
++          />
++          Reduced motion
++        </label>
++        <span style={{ fontSize: 12, color: "#aaa" }}>
++          {METRICS.map((m) => `${m.symbol} ${m.label}`).join("   ")}
++        </span>
++      </header>
++      <canvas
++        ref={canvasRef}
++        style={{ flex: 1, width: "100%", display: "block" }}
++        aria-label="Falling metric bars visualization"
++        role="img"
++      />
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);

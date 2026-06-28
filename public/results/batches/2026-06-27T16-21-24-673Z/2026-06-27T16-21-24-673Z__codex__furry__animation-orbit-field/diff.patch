@@ -1,0 +1,542 @@
+diff --git a/src/main.tsx b/src/main.tsx
+index eedf3e8..114f495 100644
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,9 +1,380 @@
+ import React from "react";
+ import { createRoot } from "react-dom/client";
++import { Pause, Play } from "lucide-react";
+ import "./style.css";
+ 
++const TAU = Math.PI * 2;
++const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
++
++type Satellite = {
++  band: number;
++  orbit: number;
++  angle: number;
++  speed: number;
++  size: number;
++  hue: number;
++  tilt: number;
++  wobble: number;
++};
++
++type PointerState = {
++  x: number;
++  y: number;
++  targetX: number;
++  targetY: number;
++  strength: number;
++  targetStrength: number;
++};
++
++const satellites: Satellite[] = Array.from({ length: 48 }, (_, index) => {
++  const band = index % 8;
++  const lane = Math.floor(index / 8);
++
++  return {
++    band,
++    orbit: 0.18 + band * 0.066 + lane * 0.015,
++    angle: index * 2.399963 + lane * 0.37,
++    speed: 0.28 + band * 0.028 + (index % 5) * 0.017,
++    size: 1.8 + (index % 4) * 0.46,
++    hue: 152 + ((index * 29) % 176),
++    tilt: -0.72 + band * 0.2,
++    wobble: 0.72 + (index % 6) * 0.07,
++  };
++});
++
++function fractionalNoise(value: number) {
++  const wave = Math.sin(value * 12.9898) * 43758.5453;
++  return wave - Math.floor(wave);
++}
++
++function drawBackground(
++  context: CanvasRenderingContext2D,
++  width: number,
++  height: number,
++) {
++  context.fillStyle = "#07090d";
++  context.fillRect(0, 0, width, height);
++
++  const amber = context.createRadialGradient(
++    width * 0.14,
++    height * 0.2,
++    0,
++    width * 0.14,
++    height * 0.2,
++    Math.max(width, height) * 0.72,
++  );
++  amber.addColorStop(0, "rgba(179, 88, 45, 0.2)");
++  amber.addColorStop(0.46, "rgba(39, 82, 89, 0.08)");
++  amber.addColorStop(1, "rgba(7, 9, 13, 0)");
++  context.fillStyle = amber;
++  context.fillRect(0, 0, width, height);
++
++  const violet = context.createRadialGradient(
++    width * 0.78,
++    height * 0.72,
++    0,
++    width * 0.78,
++    height * 0.72,
++    Math.max(width, height) * 0.64,
++  );
++  violet.addColorStop(0, "rgba(118, 86, 198, 0.18)");
++  violet.addColorStop(0.55, "rgba(20, 56, 50, 0.08)");
++  violet.addColorStop(1, "rgba(7, 9, 13, 0)");
++  context.fillStyle = violet;
++  context.fillRect(0, 0, width, height);
++
++  for (let index = 0; index < 92; index += 1) {
++    const x = fractionalNoise(index + 0.11) * width;
++    const y = fractionalNoise(index + 8.97) * height;
++    const radius = 0.38 + fractionalNoise(index + 2.41) * 1.2;
++    const alpha = 0.16 + fractionalNoise(index + 5.23) * 0.46;
++
++    context.beginPath();
++    context.fillStyle = `rgba(235, 244, 255, ${alpha})`;
++    context.arc(x, y, radius, 0, TAU);
++    context.fill();
++  }
++}
++
++function drawOrbitField(
++  context: CanvasRenderingContext2D,
++  width: number,
++  height: number,
++  elapsed: number,
++  pointer: PointerState,
++) {
++  drawBackground(context, width, height);
++
++  const shortestSide = Math.max(320, Math.min(width, height));
++  const baseOrbit = shortestSide * 0.54;
++  const centerX = width * 0.5 + (pointer.x - width * 0.5) * pointer.strength * 0.13;
++  const centerY = height * 0.5 + (pointer.y - height * 0.5) * pointer.strength * 0.1;
++  const pullRadius = shortestSide * 0.5;
++
++  if (pointer.strength > 0.02) {
++    const glow = context.createRadialGradient(
++      pointer.x,
++      pointer.y,
++      0,
++      pointer.x,
++      pointer.y,
++      pullRadius,
++    );
++    glow.addColorStop(0, `rgba(118, 236, 210, ${0.24 * pointer.strength})`);
++    glow.addColorStop(0.28, `rgba(237, 181, 90, ${0.1 * pointer.strength})`);
++    glow.addColorStop(1, "rgba(118, 236, 210, 0)");
++
++    context.beginPath();
++    context.fillStyle = glow;
++    context.arc(pointer.x, pointer.y, pullRadius, 0, TAU);
++    context.fill();
++  }
++
++  context.save();
++  context.translate(centerX, centerY);
++  context.lineWidth = 1;
++
++  for (let band = 0; band < 8; band += 1) {
++    const radius = baseOrbit * (0.18 + band * 0.078);
++    const yRadius = radius * (0.43 + band * 0.032);
++
++    context.beginPath();
++    context.ellipse(0, 0, radius * 1.18, yRadius, -0.75 + band * 0.2, 0, TAU);
++    context.strokeStyle = `hsla(${170 + band * 22}, 70%, 64%, ${0.12 + band * 0.012})`;
++    context.stroke();
++  }
++
++  context.restore();
++
++  const points = satellites.map((satellite) => {
++    const orbit = baseOrbit * satellite.orbit;
++    const angle = elapsed * satellite.speed + satellite.angle;
++    const tilt = satellite.tilt + Math.sin(elapsed * 0.12 + satellite.band) * 0.05;
++    const xOrbit = orbit * (1 + Math.sin(angle * satellite.wobble) * 0.08);
++    const yOrbit = orbit * (0.42 + satellite.band * 0.028);
++    const localX = Math.cos(angle) * xOrbit;
++    const localY = Math.sin(angle) * yOrbit;
++    const cos = Math.cos(tilt);
++    const sin = Math.sin(tilt);
++    let x = centerX + localX * cos - localY * sin;
++    let y = centerY + localX * sin + localY * cos;
++
++    const dx = pointer.x - x;
++    const dy = pointer.y - y;
++    const distance = Math.hypot(dx, dy);
++    const pull = Math.max(0, 1 - distance / pullRadius) * pointer.strength;
++    x += dx * pull * 0.34;
++    y += dy * pull * 0.34;
++
++    return { ...satellite, x, y, pull };
++  });
++
++  context.lineWidth = 1;
++  for (let index = 1; index < points.length; index += 1) {
++    const current = points[index];
++    const previous = points[index - 1];
++    const distance = Math.hypot(current.x - previous.x, current.y - previous.y);
++
++    if (distance < shortestSide * 0.34) {
++      context.beginPath();
++      context.moveTo(previous.x, previous.y);
++      context.lineTo(current.x, current.y);
++      context.strokeStyle = `rgba(128, 221, 204, ${0.04 + current.pull * 0.12})`;
++      context.stroke();
++    }
++  }
++
++  for (const point of points) {
++    const haloSize = point.size * (5.2 + point.pull * 7);
++    const halo = context.createRadialGradient(point.x, point.y, 0, point.x, point.y, haloSize);
++
++    halo.addColorStop(0, `hsla(${point.hue}, 86%, 68%, ${0.32 + point.pull * 0.25})`);
++    halo.addColorStop(1, `hsla(${point.hue}, 86%, 68%, 0)`);
++    context.beginPath();
++    context.fillStyle = halo;
++    context.arc(point.x, point.y, haloSize, 0, TAU);
++    context.fill();
++
++    context.beginPath();
++    context.fillStyle = `hsl(${point.hue}, 92%, ${66 + point.pull * 14}%)`;
++    context.arc(point.x, point.y, point.size + point.pull * 1.3, 0, TAU);
++    context.fill();
++  }
++}
++
++function getPrefersReducedMotion() {
++  return typeof window !== "undefined" && window.matchMedia(REDUCED_MOTION_QUERY).matches;
++}
++
+ function App() {
+-  return <main><h1>Furmark task workspace</h1></main>;
++  const initialReducedMotion = React.useMemo(getPrefersReducedMotion, []);
++  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
++  const frameRef = React.useRef<number | null>(null);
++  const lastFrameRef = React.useRef<number | null>(null);
++  const elapsedRef = React.useRef(0);
++  const pausedRef = React.useRef(false);
++  const reducedMotionRef = React.useRef(initialReducedMotion);
++  const [paused, setPaused] = React.useState(false);
++  const [reducedMotion, setReducedMotion] = React.useState(initialReducedMotion);
++  const pointerRef = React.useRef<PointerState>({
++    x: 0,
++    y: 0,
++    targetX: 0,
++    targetY: 0,
++    strength: 0,
++    targetStrength: 0,
++  });
++
++  React.useEffect(() => {
++    pausedRef.current = paused;
++  }, [paused]);
++
++  React.useEffect(() => {
++    reducedMotionRef.current = reducedMotion;
++  }, [reducedMotion]);
++
++  React.useEffect(() => {
++    const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
++    const syncPreference = () => setReducedMotion(mediaQuery.matches);
++
++    syncPreference();
++    mediaQuery.addEventListener("change", syncPreference);
++
++    return () => mediaQuery.removeEventListener("change", syncPreference);
++  }, []);
++
++  React.useEffect(() => {
++    const canvas = canvasRef.current;
++    const parent = canvas?.parentElement;
++
++    if (!canvas || !parent) {
++      return;
++    }
++
++    const context = canvas.getContext("2d", { alpha: false });
++    const pointer = pointerRef.current;
++    let width = 0;
++    let height = 0;
++    let hasSized = false;
++
++    if (!context) {
++      return;
++    }
++
++    const resize = () => {
++      const rect = parent.getBoundingClientRect();
++      const dpr = Math.min(window.devicePixelRatio || 1, 2);
++
++      width = Math.max(1, rect.width);
++      height = Math.max(1, rect.height);
++      canvas.width = Math.round(width * dpr);
++      canvas.height = Math.round(height * dpr);
++      canvas.style.width = `${width}px`;
++      canvas.style.height = `${height}px`;
++      context.setTransform(dpr, 0, 0, dpr, 0, 0);
++
++      if (!hasSized) {
++        pointer.x = width * 0.5;
++        pointer.y = height * 0.5;
++        pointer.targetX = pointer.x;
++        pointer.targetY = pointer.y;
++        hasSized = true;
++      }
++    };
++
++    const render = (timestamp: number) => {
++      const previousFrame = lastFrameRef.current ?? timestamp;
++      const deltaSeconds = Math.min(0.05, (timestamp - previousFrame) / 1000);
++      const motionScale = reducedMotionRef.current ? 0.08 : 1;
++
++      lastFrameRef.current = timestamp;
++      pointer.x += (pointer.targetX - pointer.x) * 0.12;
++      pointer.y += (pointer.targetY - pointer.y) * 0.12;
++      pointer.strength += (pointer.targetStrength - pointer.strength) * 0.1;
++
++      if (!pausedRef.current) {
++        elapsedRef.current += deltaSeconds * motionScale;
++      }
++
++      drawOrbitField(context, width, height, elapsedRef.current, pointer);
++      frameRef.current = window.requestAnimationFrame(render);
++    };
++
++    resize();
++    drawOrbitField(context, width, height, elapsedRef.current, pointer);
++
++    const resizeObserver = new ResizeObserver(resize);
++    resizeObserver.observe(parent);
++    frameRef.current = window.requestAnimationFrame(render);
++
++    return () => {
++      resizeObserver.disconnect();
++
++      if (frameRef.current !== null) {
++        window.cancelAnimationFrame(frameRef.current);
++      }
++    };
++  }, []);
++
++  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
++    const rect = event.currentTarget.getBoundingClientRect();
++    const pointer = pointerRef.current;
++
++    pointer.targetX = event.clientX - rect.left;
++    pointer.targetY = event.clientY - rect.top;
++    pointer.targetStrength = 1;
++  };
++
++  const handlePointerLeave = () => {
++    const canvas = canvasRef.current;
++    const pointer = pointerRef.current;
++
++    if (!canvas) {
++      return;
++    }
++
++    pointer.targetX = canvas.clientWidth * 0.5;
++    pointer.targetY = canvas.clientHeight * 0.5;
++    pointer.targetStrength = 0;
++  };
++
++  return (
++    <main className="orbit-app">
++      <section className="orbit-stage" aria-labelledby="orbit-title">
++        <canvas
++          ref={canvasRef}
++          className="orbit-canvas"
++          role="img"
++          aria-label="Animated orbit field"
++          onPointerMove={handlePointerMove}
++          onPointerLeave={handlePointerLeave}
++        >
++          Animated orbit field
++        </canvas>
++
++        <div className="orbit-panel">
++          <h1 id="orbit-title">Orbit Field</h1>
++          <button
++            className="motion-toggle"
++            type="button"
++            aria-label={paused ? "Resume orbit field animation" : "Pause orbit field animation"}
++            onClick={() => setPaused((isPaused) => !isPaused)}
++          >
++            {paused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
++            <span>{paused ? "Resume" : "Pause"}</span>
++          </button>
++        </div>
++
++        <p className="sr-only" aria-live="polite">
++          {paused
++            ? "Orbit field paused."
++            : reducedMotion
++              ? "Orbit field running with reduced motion."
++              : "Orbit field running."}
++        </p>
++      </section>
++    </main>
++  );
+ }
+ 
+ createRoot(document.getElementById("root")!).render(<App />);
+diff --git a/src/style.css b/src/style.css
+index 6a6f6bd..f931f1f 100644
+--- a/src/style.css
++++ b/src/style.css
+@@ -1 +1,150 @@
+-body { margin: 0; font-family: system-ui, sans-serif; }
++* {
++  box-sizing: border-box;
++}
++
++:root {
++  color: #f7f4ec;
++  background: #07090d;
++  font-family:
++    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
++    sans-serif;
++  font-synthesis: none;
++  text-rendering: optimizeLegibility;
++  -webkit-font-smoothing: antialiased;
++  -moz-osx-font-smoothing: grayscale;
++}
++
++body {
++  min-width: 320px;
++  min-height: 100vh;
++  margin: 0;
++  overflow: hidden;
++}
++
++button {
++  font: inherit;
++}
++
++#root,
++.orbit-app,
++.orbit-stage {
++  min-height: 100svh;
++}
++
++.orbit-app {
++  background: #07090d;
++}
++
++.orbit-stage {
++  position: relative;
++  width: 100%;
++  overflow: hidden;
++  isolation: isolate;
++}
++
++.orbit-canvas {
++  position: absolute;
++  inset: 0;
++  display: block;
++  width: 100%;
++  height: 100%;
++  cursor: crosshair;
++  touch-action: none;
++}
++
++.orbit-canvas:focus-visible {
++  outline: 3px solid #f3c56d;
++  outline-offset: -8px;
++}
++
++.orbit-panel {
++  position: relative;
++  z-index: 1;
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 16px;
++  width: min(100% - 32px, 1120px);
++  margin: 0 auto;
++  padding: 24px 0;
++  pointer-events: none;
++}
++
++.orbit-panel h1 {
++  margin: 0;
++  color: #fbf5e6;
++  font-size: clamp(1.4rem, 3.4vw, 3rem);
++  font-weight: 760;
++  letter-spacing: 0;
++  text-shadow: 0 2px 28px rgb(0 0 0 / 0.42);
++}
++
++.motion-toggle {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 8px;
++  min-width: 118px;
++  min-height: 44px;
++  padding: 10px 16px;
++  border: 1px solid rgb(255 255 255 / 0.3);
++  border-radius: 8px;
++  color: #fffaf0;
++  background: rgb(8 10 14 / 0.7);
++  box-shadow: 0 14px 34px rgb(0 0 0 / 0.3);
++  cursor: pointer;
++  pointer-events: auto;
++  backdrop-filter: blur(12px);
++}
++
++.motion-toggle:hover {
++  border-color: rgb(243 197 109 / 0.72);
++  background: rgb(32 30 27 / 0.8);
++}
++
++.motion-toggle:focus-visible {
++  outline: 3px solid #f3c56d;
++  outline-offset: 3px;
++}
++
++.motion-toggle svg {
++  flex: 0 0 auto;
++}
++
++.motion-toggle span {
++  line-height: 1;
++}
++
++.sr-only {
++  position: absolute;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
++  white-space: nowrap;
++  border: 0;
++}
++
++@media (max-width: 560px) {
++  body {
++    overflow: auto;
++  }
++
++  .orbit-panel {
++    width: min(100% - 24px, 1120px);
++    padding-top: 16px;
++  }
++
++  .motion-toggle {
++    min-width: 108px;
++    padding-inline: 12px;
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .motion-toggle {
++    transition: none;
++  }
++}

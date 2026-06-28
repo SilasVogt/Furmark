@@ -236,6 +236,12 @@ function TaskView({ runs, tasks }: { runs: RunResult[]; tasks: TaskSpec[] }) {
                 <span>{categoryLabels[task.category]}</span>
                 <strong>{winner ? `${agentLabels[winner.agent]} ${modeLabels[winner.mode]}` : "No runs"}</strong>
                 <span>{winner ? `${winner.scores.total.toFixed(1)} total` : "0.0 total"}</span>
+                {winner?.artifacts.site ? (
+                  <a className="openWinnerLink" href={appUrl(winner.artifacts.site)} target="_blank" rel="noreferrer">
+                    <ExternalLink size={14} />
+                    Open winner
+                  </a>
+                ) : null}
               </div>
             </article>
           );

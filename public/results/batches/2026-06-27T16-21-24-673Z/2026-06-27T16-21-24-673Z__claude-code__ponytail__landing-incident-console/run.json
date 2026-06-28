@@ -39,7 +39,8 @@
     "screenshots": [
       "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__landing-incident-console/screenshots/desktop.png",
       "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__landing-incident-console/screenshots/mobile.png"
-    ]
+    ],
+    "site": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__ponytail__landing-incident-console/site/index.html"
   },
   "errors": [],
   "skillName": "ponytail",

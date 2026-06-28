@@ -52,6 +52,7 @@ export const ArtifactUrlsSchema = z.object({
   metrics: z.string().optional(),
   verification: z.string().optional(),
   playwrightReport: z.string().optional(),
+  site: z.string().optional(),
   screenshots: z.array(z.string()).default([]),
 });
 export type ArtifactUrls = z.infer<typeof ArtifactUrlsSchema>;
@@ -132,4 +133,3 @@ export const ResultIndexSchema = z.object({
   runs: z.array(RunResultSchema),
 });
 export type ResultIndex = z.infer<typeof ResultIndexSchema>;
-

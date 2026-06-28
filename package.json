@@ -17,6 +17,7 @@
     "bench:dry-run": "tsx scripts/dry-run.ts",
     "bench:run": "tsx scripts/bench-run.ts",
     "bench:score": "tsx scripts/score.ts",
+    "bench:sites": "tsx scripts/publish-sites.ts",
     "bench:skill": "tsx scripts/skill.ts"
   },
   "dependencies": {

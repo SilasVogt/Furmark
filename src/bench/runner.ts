@@ -264,6 +264,7 @@ async function runRealCase(input: {
     setup,
   };
   let browserMetrics: Record<string, unknown> = {};
+  let siteUrl: string | undefined;
   if (isBrowserTask(task)) {
     const screenshotDir = path.join(publicDir, "screenshots");
     await ensureDir(screenshotDir);
@@ -275,6 +276,7 @@ async function runRealCase(input: {
         browserVerificationError: error instanceof Error ? error.message : String(error),
       };
     }
+    siteUrl = await publishSiteArtifact({ workspacePath, publicDir, batchId: input.batchId, runId });
   }
   const combinedMetrics = { ...metrics, ...browserMetrics };
 
@@ -291,6 +293,7 @@ async function runRealCase(input: {
     verificationText: verification.output,
     events: parsed.events,
     screenshots: screenshotNames,
+    site: siteUrl,
   });
   const scores = scoreRun({
     task,
@@ -550,6 +553,7 @@ async function writeArtifacts(input: {
   verificationText: string;
   events: unknown[];
   screenshots: string[];
+  site?: string;
 }): Promise<RunResult["artifacts"]> {
   await ensureDir(input.rawDir);
   await ensureDir(input.publicDir);
@@ -588,8 +592,35 @@ async function writeArtifacts(input: {
     diff: `results/batches/${input.batchId}/${input.runId}/diff.patch`,
     metrics: `results/batches/${input.batchId}/${input.runId}/metrics.json`,
     verification: `results/batches/${input.batchId}/${input.runId}/verification.txt`,
+    site: input.site,
     screenshots: screenshotUrls,
   };
+}
+
+async function publishSiteArtifact(input: {
+  workspacePath: string;
+  publicDir: string;
+  batchId: string;
+  runId: string;
+}): Promise<string | undefined> {
+  const distDir = path.join(input.workspacePath, "dist");
+  const siteDir = path.join(input.publicDir, "site");
+  const indexPath = path.join(siteDir, "index.html");
+  try {
+    await fs.access(path.join(distDir, "index.html"));
+    await fs.rm(siteDir, { recursive: true, force: true });
+    await fs.cp(distDir, siteDir, { recursive: true });
+    await rewriteNestedSiteIndex(indexPath);
+    return `results/batches/${input.batchId}/${input.runId}/site/index.html`;
+  } catch {
+    return undefined;
+  }
+}
+
+async function rewriteNestedSiteIndex(indexPath: string): Promise<void> {
+  const html = await fs.readFile(indexPath, "utf8");
+  const rewritten = html.replace(/\b(src|href)=(["'])\/assets\//g, "$1=$2./assets/");
+  if (rewritten !== html) await writeText(indexPath, rewritten);
 }
 
 async function verifyWorkspaceCommands(workspacePath: string): Promise<{

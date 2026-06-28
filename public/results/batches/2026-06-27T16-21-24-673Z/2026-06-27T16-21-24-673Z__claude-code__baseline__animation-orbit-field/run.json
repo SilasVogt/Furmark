@@ -39,7 +39,8 @@
     "screenshots": [
       "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__animation-orbit-field/screenshots/desktop.png",
       "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__animation-orbit-field/screenshots/mobile.png"
-    ]
+    ],
+    "site": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__baseline__animation-orbit-field/site/index.html"
   },
   "errors": [],
   "skillName": "baseline",

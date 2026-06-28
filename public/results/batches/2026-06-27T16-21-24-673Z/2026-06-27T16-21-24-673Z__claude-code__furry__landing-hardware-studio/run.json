@@ -39,7 +39,8 @@
     "screenshots": [
       "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/screenshots/desktop.png",
       "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/screenshots/mobile.png"
-    ]
+    ],
+    "site": "results/batches/2026-06-27T16-21-24-673Z/2026-06-27T16-21-24-673Z__claude-code__furry__landing-hardware-studio/site/index.html"
   },
   "errors": [],
   "skillName": "furry",

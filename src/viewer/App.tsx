@@ -4,6 +4,7 @@ import {
   Boxes,
   Code2,
   Download,
+  ExternalLink,
   Eye,
   FileJson,
   Filter,
@@ -325,6 +326,12 @@ function RunPanel({
         </div>
       </dl>
       <div className="artifactButtons">
+        {run.artifacts.site ? (
+          <a href={appUrl(run.artifacts.site)} target="_blank" rel="noreferrer">
+            <ExternalLink size={14} />
+            Open app
+          </a>
+        ) : null}
         {artifacts
           .filter((item) => item.url)
           .map((item) => (

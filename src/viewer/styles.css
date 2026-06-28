@@ -32,7 +32,8 @@ body {
 }
 
 button,
-select {
+select,
+.artifactButtons a {
   font: inherit;
 }
 
@@ -99,6 +100,7 @@ input:focus-visible {
 .segmented button,
 .iconButton,
 .artifactButtons button,
+.artifactButtons a,
 .drawerHeader button {
   display: inline-flex;
   align-items: center;
@@ -109,18 +111,21 @@ input:focus-visible {
   background: transparent;
   color: var(--text);
   padding: 0 10px;
+  text-decoration: none;
 }
 
 .segmented button.active,
 .iconButton,
-.artifactButtons button {
+.artifactButtons button,
+.artifactButtons a {
   border-color: var(--line);
   background: var(--surface);
 }
 
 .segmented button:active,
 .iconButton:active,
-.artifactButtons button:active {
+.artifactButtons button:active,
+.artifactButtons a:active {
   transform: translateY(1px);
 }
 
@@ -478,4 +483,3 @@ input:focus-visible {
     overflow-x: auto;
   }
 }
-

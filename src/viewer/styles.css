@@ -151,7 +151,7 @@ input:focus-visible {
 }
 
 .panel,
-.runPicker,
+.taskPicker,
 .runPanel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -174,7 +174,7 @@ input:focus-visible {
 
 .panelHeader h2,
 .drawerHeader h2,
-.runPicker h2 {
+.taskPicker h2 {
   margin: 0;
   font-size: 16px;
 }
@@ -266,18 +266,116 @@ input:focus-visible {
 
 .compareLayout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 340px minmax(0, 1fr);
   gap: 14px;
 }
 
-.runPicker {
+.taskPicker {
   max-height: calc(100dvh - 170px);
   overflow: auto;
   padding: 12px;
 }
 
-.runPicker h2 {
+.taskPicker h2 {
   margin-bottom: 10px;
+}
+
+.taskPickerList {
+  display: grid;
+  gap: 6px;
+}
+
+.taskPickerList button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  padding: 10px;
+  text-align: left;
+}
+
+.taskPickerList button.active {
+  border-color: rgb(23 102 74 / 0.3);
+  background: rgb(23 102 74 / 0.08);
+}
+
+.taskPickerList strong {
+  font-size: 13px;
+}
+
+.taskPickerList span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.compareWorkspace {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.compareControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px 14px;
+}
+
+.compareControls > div:first-child {
+  min-width: min(420px, 100%);
+  margin-right: auto;
+}
+
+.compareControls p,
+.compareControls h2 {
+  margin: 0;
+}
+
+.compareControls p,
+.compareControls legend {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.compareControls h2 {
+  font-size: 16px;
+}
+
+.compareControls fieldset {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.checkPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.checkPills label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .checkRow {
@@ -298,7 +396,7 @@ input:focus-visible {
 
 .comparePanels {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
 }
 
@@ -320,6 +418,14 @@ input:focus-visible {
 .runPanel p {
   margin: 0;
   word-break: break-word;
+}
+
+.missingRun {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 180px;
+  background: color-mix(in srgb, var(--surface), var(--surface-2) 45%);
 }
 
 .status {
@@ -473,7 +579,7 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 
-  .runPicker {
+  .taskPicker {
     max-height: 280px;
   }
 

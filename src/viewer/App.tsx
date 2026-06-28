@@ -15,7 +15,7 @@ import {
   RefreshCcw,
   Table2,
 } from "lucide-react";
-import type { ResultIndex, RunResult, TaskCategory, TaskSpec } from "../bench/schema";
+import type { AgentId, Mode, ResultIndex, RunResult, TaskCategory, TaskId, TaskSpec } from "../bench/schema";
 
 type View = "matrix" | "tasks" | "compare" | "uplift";
 type ArtifactKind = "final" | "metrics" | "diff" | "verification" | "stdout" | "stderr" | "events" | "screenshot";
@@ -41,10 +41,13 @@ const agentLabels: Record<string, string> = {
 };
 
 const modeLabels: Record<string, string> = {
-  baseline: "Baseline",
+  baseline: "Normal",
   ponytail: "Ponytail",
   furry: "Furry",
 };
+
+const compareAgents: AgentId[] = ["claude-code", "codex", "opencode"];
+const compareModes: Mode[] = ["baseline", "ponytail", "furry"];
 
 function appUrl(path: string): string {
   const cleanPath = path.replace(/^\/+/, "");
@@ -58,8 +61,10 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>("matrix");
   const [category, setCategory] = useState<TaskCategory | "all">("all");
-  const [batchId, setBatchId] = useState<string>("all");
-  const [selectedRuns, setSelectedRuns] = useState<string[]>([]);
+  const [batchId, setBatchId] = useState<string>("latest");
+  const [selectedTaskId, setSelectedTaskId] = useState<TaskId | null>(null);
+  const [selectedAgents, setSelectedAgents] = useState<AgentId[]>(compareAgents);
+  const [selectedModes, setSelectedModes] = useState<Mode[]>(compareModes);
   const [artifact, setArtifact] = useState<{ run: RunResult; kind: ArtifactKind; url: string } | null>(null);
 
   useEffect(() => {
@@ -70,17 +75,28 @@ export function App() {
 
   const filteredRuns = useMemo(() => {
     const runs = index?.runs ?? [];
+    const resolvedBatchId = index ? resolveBatchId(index, batchId) : batchId;
     return runs.filter((run) => {
       const categoryOk = category === "all" || run.category === category;
-      const batchOk = batchId === "all" || run.batchId === batchId;
+      const batchOk = resolvedBatchId === "all" || run.batchId === resolvedBatchId;
       return categoryOk && batchOk;
     });
   }, [batchId, category, index]);
 
+  const visibleTasks = useMemo(() => {
+    const tasks = index?.tasks ?? [];
+    return tasks.filter((task) => category === "all" || task.category === category);
+  }, [category, index]);
+
   useEffect(() => {
-    if (selectedRuns.length > 0 || filteredRuns.length === 0) return;
-    setSelectedRuns(filteredRuns.slice(0, 3).map((run) => run.runId));
-  }, [filteredRuns, selectedRuns.length]);
+    if (visibleTasks.length === 0) {
+      setSelectedTaskId(null);
+      return;
+    }
+    if (!selectedTaskId || !visibleTasks.some((task) => task.id === selectedTaskId)) {
+      setSelectedTaskId(visibleTasks[0].id);
+    }
+  }, [selectedTaskId, visibleTasks]);
 
   if (error) {
     return (
@@ -141,6 +157,7 @@ export function App() {
         <label className="selectLabel">
           <Boxes size={15} />
           <select value={batchId} onChange={(event) => setBatchId(event.target.value)}>
+            <option value="latest">Latest batch</option>
             <option value="all">All batches</option>
             {index.batches.map((batch) => (
               <option key={batch.batchId} value={batch.batchId}>
@@ -152,16 +169,21 @@ export function App() {
       </section>
 
       {view === "matrix" && <MatrixView runs={filteredRuns} />}
-      {view === "tasks" && <TaskView runs={filteredRuns} tasks={index.tasks} />}
+      {view === "tasks" && <TaskView runs={filteredRuns} tasks={visibleTasks} />}
       {view === "compare" && (
         <CompareView
           runs={filteredRuns}
-          selectedRuns={selectedRuns}
-          onToggleRun={(runId) => setSelectedRuns((current) => toggleRun(current, runId))}
+          tasks={visibleTasks}
+          selectedTaskId={selectedTaskId}
+          selectedAgents={selectedAgents}
+          selectedModes={selectedModes}
+          onSelectTask={setSelectedTaskId}
+          onToggleAgent={(agent) => setSelectedAgents((current) => toggleValue(current, agent, compareAgents))}
+          onToggleMode={(mode) => setSelectedModes((current) => toggleValue(current, mode, compareModes))}
           onOpenArtifact={setArtifact}
         />
       )}
-      {view === "uplift" && <UpliftView runs={filteredRuns} tasks={index.tasks} />}
+      {view === "uplift" && <UpliftView runs={filteredRuns} tasks={visibleTasks} />}
       {artifact && <ArtifactDrawer artifact={artifact} onClose={() => setArtifact(null)} />}
     </Shell>
   );
@@ -253,41 +275,111 @@ function TaskView({ runs, tasks }: { runs: RunResult[]; tasks: TaskSpec[] }) {
 
 function CompareView({
   runs,
-  selectedRuns,
-  onToggleRun,
+  tasks,
+  selectedTaskId,
+  selectedAgents,
+  selectedModes,
+  onSelectTask,
+  onToggleAgent,
+  onToggleMode,
   onOpenArtifact,
 }: {
   runs: RunResult[];
-  selectedRuns: string[];
-  onToggleRun: (runId: string) => void;
+  tasks: TaskSpec[];
+  selectedTaskId: TaskId | null;
+  selectedAgents: AgentId[];
+  selectedModes: Mode[];
+  onSelectTask: (taskId: TaskId) => void;
+  onToggleAgent: (agent: AgentId) => void;
+  onToggleMode: (mode: Mode) => void;
   onOpenArtifact: (artifact: { run: RunResult; kind: ArtifactKind; url: string }) => void;
 }) {
-  const selected = runs.filter((run) => selectedRuns.includes(run.runId)).slice(0, 3);
+  const availableTasks = tasks.filter((task) => runs.some((run) => run.taskId === task.id));
+  const selectedTask = availableTasks.find((task) => task.id === selectedTaskId) ?? availableTasks[0] ?? null;
+  const slots = selectedTask ? compareSlots(runs, selectedTask.id, selectedAgents, selectedModes) : [];
+
   return (
     <section className="compareLayout">
-      <aside className="runPicker" aria-label="Run selector">
-        <h2>Select runs</h2>
-        {runs.map((run) => (
-          <label key={run.runId} className="checkRow">
-            <input
-              type="checkbox"
-              checked={selectedRuns.includes(run.runId)}
-              onChange={() => onToggleRun(run.runId)}
-              disabled={!selectedRuns.includes(run.runId) && selectedRuns.length >= 3}
-            />
-            <span>
-              {agentLabels[run.agent]} {modeLabels[run.mode]}
-              <small>{run.taskId}</small>
-            </span>
-          </label>
-        ))}
+      <aside className="taskPicker" aria-label="Task selector">
+        <h2>Tasks</h2>
+        <div className="taskPickerList">
+          {availableTasks.map((task) => {
+            const taskRuns = runs.filter((run) => run.taskId === task.id);
+            return (
+              <button
+                key={task.id}
+                className={selectedTask?.id === task.id ? "active" : ""}
+                type="button"
+                onClick={() => onSelectTask(task.id)}
+              >
+                <strong>{task.title}</strong>
+                <span>
+                  {categoryLabels[task.category]} · {taskRuns.length} runs
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </aside>
-      <div className="comparePanels">
-        {selected.map((run) => (
-          <RunPanel key={run.runId} run={run} onOpenArtifact={onOpenArtifact} />
-        ))}
+      <div className="compareWorkspace">
+        <div className="compareControls" aria-label="Comparison controls">
+          <div>
+            <p>Task</p>
+            <h2>{selectedTask?.title ?? "No task selected"}</h2>
+          </div>
+          <fieldset>
+            <legend>Models</legend>
+            <div className="checkPills">
+              {compareAgents.map((agent) => (
+                <label key={agent}>
+                  <input type="checkbox" checked={selectedAgents.includes(agent)} onChange={() => onToggleAgent(agent)} />
+                  <span>{agentLabels[agent]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Modes</legend>
+            <div className="checkPills">
+              {compareModes.map((mode) => (
+                <label key={mode}>
+                  <input type="checkbox" checked={selectedModes.includes(mode)} onChange={() => onToggleMode(mode)} />
+                  <span>{modeLabels[mode]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+        <div className="comparePanels">
+          {slots.length === 0 ? (
+            <EmptyState title="No matching runs" body="Choose at least one model and one mode." />
+          ) : (
+            slots.map((slot) =>
+              slot.run ? (
+                <RunPanel key={slot.key} run={slot.run} onOpenArtifact={onOpenArtifact} />
+              ) : (
+                <MissingRunPanel key={slot.key} agent={slot.agent} mode={slot.mode} taskId={selectedTask!.id} />
+              ),
+            )
+          )}
+        </div>
       </div>
     </section>
+  );
+}
+
+function MissingRunPanel({ agent, mode, taskId }: { agent: AgentId; mode: Mode; taskId: TaskId }) {
+  return (
+    <article className="runPanel missingRun">
+      <header>
+        <span className="status skipped">missing</span>
+        <h3>{agentLabels[agent]}</h3>
+        <p>
+          {modeLabels[mode]} · {taskId}
+        </p>
+      </header>
+      <p>No published run matches this model, mode, and task in the selected batch.</p>
+    </article>
   );
 }
 
@@ -372,9 +464,11 @@ function UpliftView({ runs, tasks }: { runs: RunResult[]; tasks: TaskSpec[] }) {
       </div>
       <div className="upliftTable" role="table">
         <div className="matrixHead">Model</div>
-        <div className="matrixHead">Baseline</div>
-        <div className="matrixHead">Ponytail</div>
-        <div className="matrixHead">Furry</div>
+        {compareModes.map((mode) => (
+          <div className="matrixHead" key={mode}>
+            {modeLabels[mode]}
+          </div>
+        ))}
         {agents.map((agent) => {
           const byMode = (mode: string) => runs.filter((run) => run.agent === agent && run.mode === mode);
           return (
@@ -456,9 +550,35 @@ async function loadIndex(): Promise<ResultIndex> {
   return response.json();
 }
 
-function toggleRun(current: string[], runId: string): string[] {
-  if (current.includes(runId)) return current.filter((id) => id !== runId);
-  return current.length >= 3 ? current : [...current, runId];
+function resolveBatchId(index: ResultIndex, value: string): string {
+  if (value !== "latest") return value;
+  return latestBatchId(index) ?? "all";
+}
+
+function latestBatchId(index: ResultIndex): string | null {
+  const candidates = index.batches.filter((batch) => !batch.batchId.toLowerCase().includes("dry-run"));
+  const batches = candidates.length > 0 ? candidates : index.batches;
+  return [...batches].sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0]?.batchId ?? null;
+}
+
+function toggleValue<T>(current: T[], value: T, fallback: T[]): T[] {
+  if (current.includes(value)) return current.filter((item) => item !== value);
+  const sorted = [...current, value];
+  return fallback.filter((item) => sorted.includes(item));
+}
+
+function compareSlots(runs: RunResult[], taskId: TaskId, agents: AgentId[], modes: Mode[]) {
+  return agents.flatMap((agent) =>
+    modes.map((mode) => {
+      const candidates = runs.filter((run) => run.taskId === taskId && run.agent === agent && run.mode === mode);
+      return {
+        key: `${agent}-${mode}`,
+        agent,
+        mode,
+        run: bestRun(candidates),
+      };
+    }),
+  );
 }
 
 function bestRun(runs: RunResult[]): RunResult | null {
